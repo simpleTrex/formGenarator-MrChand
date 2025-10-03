@@ -1,0 +1,35 @@
+<div class="card-body">
+    <div class="row">
+        <div class="col-sm-2 template-card" *ngFor="let table of dataTables" (click)="loadSelectedTable(table)">
+            {{table.name}} : {{table.version}}</div>
+    </div>
+</div>
+
+<div class="card-body">
+    <div class="row-sm-7">
+        <div class="col-sm-7">
+            <div class="card">
+                <div class="col-sm-2" *ngFor="let data of datalist">
+
+                    {{data.name}} <div class="card">
+                        <button class="btn btn-success" (click)="loadSeletedObject( data)">Load</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-sm-7">
+            <div class="card">
+                <div class="card-header">
+                    Data - {{newForm.name}}
+                </div>
+                <div class="card-body">
+                    <render-form [customForm]="newForm"></render-form><br>
+                    <button *ngIf="newForm.name" class="btn btn-success" (click)="insertData()">Add/Update
+                        Object</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

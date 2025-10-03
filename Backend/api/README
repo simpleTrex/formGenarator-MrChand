@@ -1,0 +1,10 @@
+https://www.baeldung.com/spring-data-mongodb-collection-name
+https://stackoverflow.com/questions/14268981/modify-a-class-definitions-annotation-string-parameter-at-runtime
+https://stackoverflow.com/questions/53692535/how-to-insert-document-to-specific-collection-in-mongodb-using-spring-data
+https://docs.spring.io/spring-data/mongodb/docs/2.1.2.RELEASE/reference/html/#mongo-template.save-update-remove
+
+// TODO Items
+1.Support array of model objects in CustomForm
+2.fix Image file support
+3.Table view
+4. 

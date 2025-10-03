@@ -1,0 +1,10 @@
+<div class="card option-card">
+    <div class="card-body">
+        <select class="form-control" #model_tag (change)="onSelected(model_tag.value)">
+            <option [ngValue]="null" disabled>Choose your Model</option>
+            <option *ngFor="let option of availableFormTemplates" [value]="option.name">
+                {{option.name}}
+            </option>
+        </select>
+    </div>
+</div>

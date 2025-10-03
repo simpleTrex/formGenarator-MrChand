@@ -1,0 +1,15 @@
+<button class="btn btn-info" (click)="addNewExpression()">Add Expression</button>
+<div class="card option-card" *ngIf="availableRegularExpressions?.length !== 0">
+    <div class="card-header">
+        Regular Expressions Details
+    </div>
+    <div class="card-body">
+        <ng-container *ngFor="let expression of availableRegularExpressions; let i = index">
+            <div class="form-group">
+                <label for="formName">Regular Expression {{i + 1}}</label>
+                <input type="text" class="form-control" placeholder="Enter Regular Expression" [(ngModel)]="expression.expression">
+                <input type="text" class="form-control" placeholder="Enter Regular Expression error message" [(ngModel)]="expression.errorMessage">
+            </div>
+        </ng-container>
+    </div>
+</div>

@@ -1,0 +1,15 @@
+<button class="btn btn-info" [disabled]="isRadio && availableOptions?.length === 2" (click)="addNewOptions()">Add {{textLabel}}</button>
+<div class="card option-card">
+    <div class="card option-card" *ngIf="availableOptions?.length !== 0">
+        {{textLabel}} Details
+    </div>
+    <div class="card-body">
+        <ng-container *ngFor="let option of availableOptions; let i = index">
+            <div class="form-group">
+                <label for="formName">{{textLabel}} {{i + 1}}</label>
+                <input type="text" class="form-control" placeholder="Enter {{textLabel}} Label" [(ngModel)]="option.optionLabel">
+                <input type="text" class="form-control" placeholder="Enter {{textLabel}} Value" [(ngModel)]="option.optionValue">
+            </div>
+        </ng-container>
+    </div>
+</div>

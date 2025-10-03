@@ -1,0 +1,18 @@
+.form-group {
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.card {
+    margin-top: 10px;
+}
+
+.template-card {
+    padding: 10px;
+    background-color: blue;
+    color: aqua;
+    margin: 10px;
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
+}

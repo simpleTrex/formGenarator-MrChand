@@ -1,0 +1,94 @@
+<div class="row">
+  <div class="col-sm-1"></div>
+  <div class="col-sm-10">
+    <div class="row">
+      <h2>Form Generator Simulator</h2>
+      <div class="card">
+        <div class="card-header">
+          Available Forms
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-sm-2 template-card" *ngFor="let template of availableFormTemplates"
+              (click)="setSelectedForm(template)">
+              {{template.name}}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-5">
+        <div class="form-group">
+          <label for="formName">Form Name</label>
+          <input type="text" class="form-control" placeholder="Enter form name" [(ngModel)]="newForm.name">
+          <input type="number" class="form-control" placeholder="Model Version" [(ngModel)]="newForm.version">
+        </div><br>
+        <div class="card">
+          <div class="card-header">
+            New Field Details
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="formName">Field Name</label>
+              <input type="text" class="form-control" placeholder="Enter field name" [(ngModel)]="newField.name">
+            </div>
+            <div class="form-group">
+              <label for="fieldType">Field Type</label>
+              <select class="form-control" [(ngModel)]="newField.elementType" placeholder="Select field type">
+                <option *ngFor="let fieldType of availableFormFieldTypes" [value]="fieldType.value">{{fieldType.label}}
+                </option>
+              </select>
+            </div>
+            <ng-container
+              *ngIf="newField.elementType === 'select' || newField.elementType === 'checkBox' || newField.elementType === 'radio'">
+              <select-options #select [isRadio]="newField.elementType === 'radio'"
+                [availableOptions]="newField.options"></select-options>
+            </ng-container>
+            <ng-container *ngIf="newField.elementType === 'model'">
+              <model-options #model_tag (change)="onSelected(model_tag.model)"></model-options>
+            </ng-container>
+            <div class="form-group">
+              <label for="formName">Placeholder</label>
+              <input type="text" class="form-control" placeholder="Enter place holder"
+                [(ngModel)]="newField.placeHolder">
+            </div>
+            <div class="form-group">
+              <label for="formName">Default Value</label>
+              <input type="text" class="form-control" placeholder="Enter default value" [(ngModel)]="newField.value">
+            </div>
+            <regular-expression #expressions [availableRegularExpressions]="newField.regularExpression">
+            </regular-expression><br><br>
+            <button class="btn btn-primary pull-right" (click)="addFieldToForm()">
+              Add to form
+            </button>
+            <br> <br>
+            <label for="formName">Form Actions/Process:</label>
+            <br>
+            <!--select-options textLabel="Action" [availableOptions]="newForm.action.options"></select-options-->
+            <br>
+            <div class="card">
+              <br>
+              <label for="formName">Form Actions/Process:</label>
+              <br>
+              <!--TODO Need to put a ListBox so we can move the items up and down to specify the order of process/status of this object-->
+              <select-options textLabel="Action" [availableOptions]="newForm.process.action.options"></select-options>
+              <br>
+            </div>
+            <br>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-7">
+        <div class="card">
+          <div class="card-header">
+            Preview - {{newForm.name}}
+          </div>
+          <div class="card-body">
+            <render-form [customForm]="newForm"></render-form><br>
+            <button class="btn btn-success" (click)="saveFormTemplate()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-1"></div>
+</div>

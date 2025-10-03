@@ -1,0 +1,72 @@
+<ng-container *ngIf="customForm">
+    <ng-container *ngFor="let element of customForm.fields">
+        <ng-container
+            *ngIf="element.elementType === 'text' || element.elementType === 'number' || element.elementType === 'email' || element.elementType === 'password' || element.elementType === 'date' || element.elementType === 'time' || element.elementType === 'datetime-local' || element.elementType === 'color'">
+            <div class="form-group">
+                <label for="formName">{{element.name}}</label>
+                <input [type]="element.elementType" class="form-control" [placeholder]="element.placeHolder"
+                    [(ngModel)]="element.value">
+            </div><br>
+        </ng-container>
+        <ng-container *ngIf="element.elementType === 'textArea'">
+            <div class="form-group">
+                <label for="formName">{{element.name}}</label>
+                <textarea class="form-control" rows="6" [placeholder]="element.placeHolder"
+                    [(ngModel)]="element.value"></textarea>
+            </div>
+        </ng-container>
+        <ng-container *ngIf="element.elementType === 'select'">
+            <div class="form-group">
+                <label for="formName">{{element.name}}</label>
+                <select class="form-control" [(ngModel)]="element.value">
+                    <option *ngFor="let option of element.options" [value]="option.optionValue">{{option.optionLabel}}
+                    </option>
+                </select>
+            </div><br>
+        </ng-container>
+        <ng-container *ngIf="element.elementType === 'model'">
+            <div class="form-group">
+                <label for="formName">{{element.name}} : {{element.model}}</label>
+                <model-render [element]="element">{{element.value}}</model-render>
+            </div><br>
+        </ng-container>
+        <ng-container *ngIf="element.elementType === 'checkBox'">
+            <label for="formName">{{element.name}}</label>
+            <div *ngFor="let option of element.options" class="form-check">
+                <input type="checkbox" class="form-check-input" [(ngModel)]="element.value">
+                <label class="form-check-label" for="exampleCheck1">{{option.optionLabel}}</label>
+            </div><br>
+        </ng-container>
+        <ng-container *ngIf="element.elementType === 'radio'">
+            <label for="formName">{{element.name}}</label>
+            <div *ngFor="let option of element.options" class="form-check">
+                <input class="form-check-input" type="radio" [name]="element.name" [value]="option.optionValue">
+                <label class="form-check-label" for="exampleRadios2">
+                    {{option.optionLabel}}
+                </label>
+            </div><br>
+        </ng-container>
+        <ng-container *ngIf="element.elementType === 'image'">
+            <!--Need to support multiple image files to upload and also edit in the same tag-->
+            <label for="formName">{{element.name}}</label>
+            <div class="form-group">
+                <input type="file" accept="image/png,img/jpeg" [(ngModel)]="element.value">
+                <img [alt]="element.placeHolder" width="50" height="50"
+                    src="https://media.istockphoto.com/vectors/cute-flat-sun-icon-vector-id1124567572" />
+            </div>
+        </ng-container>
+    </ng-container>
+    <ng-container *ngIf="customForm.process?.action !== null">
+        <ng-container *ngIf="customForm.process.action.options?.length !== 0">
+            <div class="form-group">
+                <label for="formName">Business Process Actions/Status</label>
+                <select class="form-control" [(ngModel)]="customForm.process.action.value">
+                    <!--//TODO remove ?.options ? once all DB objects has action-->
+                    <option *ngFor="let option of customForm?.process?.action?.options" [value]="option.optionValue">
+                        {{option.optionLabel}}
+                    </option>
+                </select>
+            </div><br>
+        </ng-container>
+    </ng-container>
+</ng-container>
