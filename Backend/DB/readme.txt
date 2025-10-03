@@ -1,5 +1,2 @@
 Once Mongo deamon is running, do restore existing backup
-
-
-to access mongodb use followign app and connect to database host in proxmox
-mongodb-compass
+see config.sh to install a tool to ease.
