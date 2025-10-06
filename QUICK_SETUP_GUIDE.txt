@@ -1,0 +1,96 @@
+QUICK SETUP GUIDE - Form Generator Project
+=========================================
+
+Step-by-Step: How We Got It Working
+-----------------------------------
+
+1. **Switched from Docker to Local Development**
+   - Decided to run everything locally for easier debugging and faster iteration.
+
+2. **Installed MongoDB in WSL**
+   - Installed MongoDB 6.0 in WSL (Ubuntu).
+   - Started MongoDB with:  
+     sudo systemctl start mongod
+     sudo systemctl status mongod
+
+3. **Seeded the Database**
+   - Ran the generator service to create roles and users:
+     cd /mnt/d/MrChandFormGEnarator/form_generator/Backend/DB/generator
+     npm install
+     node server.js
+
+4. **Fixed Role Names in MongoDB**
+   - Updated role names to match Java enum values:
+     mongosh --eval 'db.getSiblingDB("app").roles.updateMany({name:"admin"}, {$set:{name:"ROLE_ADMIN"}})'
+     mongosh --eval 'db.getSiblingDB("app").roles.updateMany({name:"user"}, {$set:{name:"ROLE_USER"}})'
+     mongosh --eval 'db.getSiblingDB("app").roles.updateMany({name:"moderator"}, {$set:{name:"ROLE_MODERATOR"}})'
+
+5. **Refactored Backend Code**
+   - Changed User.java to store role ObjectIds instead of @DBRef Role.
+   - Updated UserDetailsServiceImpl.java to resolve ObjectIds to Role entities using RoleRepository.
+   - Added an overloaded UserDetailsImpl.build(user, roles) method.
+
+6. **Rebuilt and Ran the Backend**
+   - In WSL:
+     cd /mnt/d/MrChandFormGEnarator/form_generator/Backend/api
+     ./mvnw clean package -DskipTests
+     ./mvnw spring-boot:run
+   
+   - Or in PowerShell:
+     cd D:\MrChandFormGEnarator\form_generator\Backend\api
+     .\mvnw.cmd clean package -DskipTests
+     .\mvnw.cmd spring-boot:run
+
+7. **Tested Authentication**
+   - Verified login works with:
+     curl -v -X POST http://localhost:8005/custom_form/auth/login \
+       -H "Content-Type: application/json" \
+       -d '{"username":"admin","password":"password"}'
+   - Got HTTP 200 and JWT token.
+
+8. **Created a Comprehensive .gitignore**
+   - Added a .gitignore file to exclude build artifacts, dependencies, logs, IDE files, and sensitive data.
+
+Result:
+-------
+- Authentication works locally.
+- Backend and database are properly connected.
+- Ready for frontend testing and further development.
+
+Prerequisites:
+--------------
+- WSL with Ubuntu (or native Linux)
+- Java 17 installed
+- Node.js and npm installed
+- MongoDB 6.0 installed
+
+Key Commands Summary:
+--------------------
+# Start MongoDB
+sudo systemctl start mongod
+
+# Seed database
+cd Backend/DB/generator && npm install && node server.js
+
+# Fix role names in MongoDB
+mongosh --eval 'db.getSiblingDB("app").roles.updateMany({name:"admin"}, {$set:{name:"ROLE_ADMIN"}})'
+mongosh --eval 'db.getSiblingDB("app").roles.updateMany({name:"user"}, {$set:{name:"ROLE_USER"}})'
+mongosh --eval 'db.getSiblingDB("app").roles.updateMany({name:"moderator"}, {$set:{name:"ROLE_MODERATOR"}})'
+
+# Build and run backend
+cd Backend/api && ./mvnw clean package -DskipTests && ./mvnw spring-boot:run
+
+# Test authentication
+curl -X POST http://localhost:8005/custom_form/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"password"}'
+
+# Run frontend (when ready)
+cd Frontend && npm install && npm start
+
+Important Notes:
+---------------
+- Make sure MongoDB is running before starting the backend
+- The admin user credentials are: username="admin", password="password"
+- Backend runs on http://localhost:8005
+- Frontend will run on http://localhost:4200
+
+Share these steps with your team to get the project running smoothly!
