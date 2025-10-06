@@ -20,6 +20,8 @@ import com.formgenerator.platform.auth.ERole;
 import com.formgenerator.platform.auth.MessageResponse;
 import com.formgenerator.platform.auth.Role;
 import com.formgenerator.platform.auth.User;
+import org.bson.types.ObjectId;
+import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 
@@ -87,8 +89,12 @@ public class UserController {
 	public ResponseEntity<?> assignRoleToUser(@PathVariable String userIdentity,
 			@Valid @RequestBody CreateRoleModel createRoleModel) {
 
-		User user = userRepository.findById(userIdentity).get();
-		Set<Role> roles = user.getRoles();
+	User user = userRepository.findById(userIdentity).get();
+	// Convert stored ObjectId references into Role entities
+	Set<Role> roles = user.getRoles().stream()
+		.map(id -> roleRepository.findById(id.toHexString()).orElse(null))
+		.filter(r -> r != null)
+		.collect(Collectors.toSet());
 
 		Role newRole = roleRepository.findByRoleName(createRoleModel.getRoleName().toUpperCase()).get();
 
@@ -100,7 +106,9 @@ public class UserController {
 				return ResponseEntity.badRequest().body(new MessageResponse("Error: Role is already assigned!"));
 			} else {
 				roles.add(newRole);
-				user.setRoles(roles);
+				// save back as ObjectId references
+				Set<ObjectId> roleIds = roles.stream().map(r -> new ObjectId(r.getId())).collect(Collectors.toSet());
+				user.setRoles(roleIds);
 				userRepository.save(user);
 				return ResponseEntity.ok(new MessageResponse("User Role Updated successfully!"));
 			}

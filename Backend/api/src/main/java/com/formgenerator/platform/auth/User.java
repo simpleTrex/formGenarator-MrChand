@@ -3,6 +3,7 @@ package com.formgenerator.platform.auth;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -24,8 +25,8 @@ public class User {
 	@NotBlank
 	@Size(max = 120)
 	private String password;
-	// @DBRef
-	private Set<Role> roles = new HashSet<>();
+	// generator inserts ObjectId references into users.roles; store them as ObjectId
+	private Set<ObjectId> roles = new HashSet<>();
 
 	public User() {
 	}
@@ -68,11 +69,11 @@ public class User {
 		this.password = password;
 	}
 
-	public Set<Role> getRoles() {
+	public Set<ObjectId> getRoles() {
 		return roles;
 	}
 
-	public void setRoles(Set<Role> roles) {
+	public void setRoles(Set<ObjectId> roles) {
 		this.roles = roles;
 	}
 }

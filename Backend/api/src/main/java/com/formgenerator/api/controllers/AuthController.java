@@ -26,6 +26,7 @@ import com.formgenerator.platform.auth.JwtUtils;
 import com.formgenerator.platform.auth.LoginRequest;
 import com.formgenerator.platform.auth.MessageResponse;
 import com.formgenerator.platform.auth.Role;
+import org.bson.types.ObjectId;
 import com.formgenerator.platform.auth.SignupRequest;
 import com.formgenerator.platform.auth.User;
 import com.formgenerator.platform.auth.UserDetailsImpl;
@@ -78,7 +79,7 @@ public class AuthController {
 		User user = new User(signUpRequest.getUsername(), signUpRequest.getEmail(),
 				encoder.encode(signUpRequest.getPassword()));
 		Set<String> strRoles = signUpRequest.getRoles();
-		Set<Role> roles = new HashSet<>();
+	Set<Role> roles = new HashSet<>();
 		if (strRoles == null) {
 			Role userRole = roleRepository.findByName(ERole.ROLE_USER)
 					.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
@@ -103,7 +104,9 @@ public class AuthController {
 				}
 			});
 		}
-		user.setRoles(roles);
+	// convert Role entities to ObjectId references for User.roles
+	Set<ObjectId> roleIds = roles.stream().map(r -> new ObjectId(r.getId())).collect(Collectors.toSet());
+	user.setRoles(roleIds);
 		userRepository.save(user);
 		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
 	}
