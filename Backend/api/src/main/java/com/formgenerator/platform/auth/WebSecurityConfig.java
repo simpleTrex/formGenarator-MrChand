@@ -9,6 +9,7 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -45,12 +46,13 @@ public class WebSecurityConfig /* extends WebSecurityConfigurerAdapter */ {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http
-				.cors(cors -> cors.disable())
-				.csrf(csrf -> csrf.disable())
+	http
+		.cors();
+	http.csrf(csrf -> csrf.disable())
 				.exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
 				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
+					.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/error").permitAll()
 						.requestMatchers("/custom_form/auth/**").permitAll()
 						.requestMatchers("/custom_form/model/**").hasAnyRole("ADMIN", "MODERATOR")

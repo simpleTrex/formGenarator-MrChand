@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.Set;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -30,8 +31,17 @@ public class UserDetailsImpl implements UserDetails {
 	}
 
 	public static UserDetailsImpl build(User user) {
-		List<GrantedAuthority> authorities = user.getRoles().stream()
-				.map(role -> new SimpleGrantedAuthority(role.getName().name())).collect(Collectors.toList());
+		// User.getRoles() may contain ObjectId references (when users are seeded by generator).
+		// Prefer using the overloaded build(User, Set<Role>) when resolved Role entities are available.
+		List<GrantedAuthority> authorities = List.of();
+		return new UserDetailsImpl(user.getId(), user.getUsername(), user.getEmail(), user.getPassword(), authorities);
+	}
+
+	// Overloaded builder that accepts resolved Role entities (when User stores ObjectId references)
+	public static UserDetailsImpl build(User user, Set<Role> resolvedRoles) {
+		List<GrantedAuthority> authorities = resolvedRoles.stream()
+				.map(role -> new SimpleGrantedAuthority(role.getName().name()))
+				.collect(Collectors.toList());
 		return new UserDetailsImpl(user.getId(), user.getUsername(), user.getEmail(), user.getPassword(), authorities);
 	}
 
