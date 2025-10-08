@@ -24,12 +24,12 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 // allow all origins for now. If you want to restrict to configured origin,
                 // change allowedOriginPatterns to a list containing frontendOrigin.
-                registry.addMapping("/**")
-                        .allowedOriginPatterns("*")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                        .allowedHeaders("*")
-                        .allowCredentials(true)
-                        .maxAge(3600);
+        registry.addMapping("/**")
+            .allowedOriginPatterns("*")
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+            .allowedHeaders("*")
+            .allowCredentials(true)
+            .maxAge(3600);
             }
         };
     }
@@ -39,9 +39,10 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow any origin for now. To restrict to configured origin, use:
         // configuration.setAllowedOrigins(Arrays.asList(frontendOrigin));
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"));
+    configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+    // Allow any header so custom headers like 'token' are accepted during preflight
+    configuration.addAllowedHeader("*");
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

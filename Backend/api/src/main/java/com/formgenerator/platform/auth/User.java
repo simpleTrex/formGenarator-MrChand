@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+//Tells Spring Data MongoDB to store/read instances from the users collection.
 @Document(collection = "users")
 public class User {
 	@Id
