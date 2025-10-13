@@ -16,7 +16,7 @@ public class ApiApplication {
 	private static ApplicationContext applicationContext;
 
 	public static void main(String[] args) {
-		ApiApplication.applicationContext = SpringApplication.run(ApiApplication.class, args);
+		SpringApplication.run(ApiApplication.class, args);
 	}
 
 	public static ApplicationContext getApplicationContext() {
