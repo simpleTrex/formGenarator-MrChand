@@ -28,6 +28,7 @@ app.use(
 
 const db = require("./app/models");
 const Role = db.role;
+const Domain = db.domain; // Assuming Domain model exists
 
 db.mongoose
   .connect(`mongodb://${dbConfig.HOST}:${dbConfig.PORT}/${dbConfig.DB}`, {
@@ -99,4 +100,23 @@ function initial() {
       });
     }
   });
+
+  // Create global domain if it doesn't exist
+  if (Domain) {
+    Domain.estimatedDocumentCount((err, count) => {
+      if (!err && count === 0) {
+        new Domain({
+          name: "global",
+          ownerUserId: null,
+          createdAt: new Date(),
+          metadata: { description: "Default global domain for users without specific domain" }
+        }).save(err => {
+          if (err) {
+            console.log("error creating global domain", err);
+          }
+          console.log("added 'global' domain to domains collection");
+        });
+      }
+    });
+  }
 }
