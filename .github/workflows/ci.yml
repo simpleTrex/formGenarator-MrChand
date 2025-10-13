@@ -33,4 +33,4 @@ jobs:
         run: |
           cd Frontend
           npm ci
-          npm run build -- --configuration=production
+          npm run build -- --configuration=development
