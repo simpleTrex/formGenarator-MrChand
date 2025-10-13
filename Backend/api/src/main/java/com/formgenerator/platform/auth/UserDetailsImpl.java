@@ -40,7 +40,13 @@ public class UserDetailsImpl implements UserDetails {
 	// Overloaded builder that accepts resolved Role entities (when User stores ObjectId references)
 	public static UserDetailsImpl build(User user, Set<Role> resolvedRoles) {
 		List<GrantedAuthority> authorities = resolvedRoles.stream()
-				.map(role -> new SimpleGrantedAuthority(role.getName().name()))
+				.map(role -> {
+					// Prefer roleName if present (canonical), otherwise fall back to enum name
+					String authorityName = (role.getRoleName() != null && !role.getRoleName().isEmpty()) 
+						? role.getRoleName() 
+						: role.getName().name();
+					return new SimpleGrantedAuthority(authorityName);
+				})
 				.collect(Collectors.toList());
 		return new UserDetailsImpl(user.getId(), user.getUsername(), user.getEmail(), user.getPassword(), authorities);
 	}

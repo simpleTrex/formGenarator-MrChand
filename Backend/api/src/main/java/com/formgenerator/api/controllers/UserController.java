@@ -75,10 +75,30 @@ public class UserController {
 		if (createRoleModel.getRoleName().isEmpty() || createRoleModel.getRoleName().isBlank()) {
 			return ResponseEntity.badRequest().body(new MessageResponse("Error: Role Name is not valid!"));
 		} else {
+			String roleName = createRoleModel.getRoleName().toUpperCase();
+			
+			// Map role names to appropriate ERole enum values
+			ERole mappedERole;
+			switch (roleName) {
+				case "BUSINESS_OWNER":
+					mappedERole = ERole.ROLE_BUSINESS_OWNER;
+					break;
+				case "DOMAIN_ADMIN":
+					mappedERole = ERole.ROLE_DOMAIN_ADMIN;
+					break;
+				case "APP_ADMIN":
+					mappedERole = ERole.ROLE_APP_ADMIN;
+					break;
+				case "BUSINESS_USER":
+					mappedERole = ERole.ROLE_BUSINESS_USER;
+					break;
+				default:
+					return ResponseEntity.badRequest().body(new MessageResponse("Error: Invalid role name!"));
+			}
 
 			Role role = new Role();
-			role.setRoleName(createRoleModel.getRoleName().toUpperCase());
-			role.setName(ERole.ROLE_ADMIN);
+			role.setRoleName(roleName);
+			role.setName(mappedERole);
 			roleRepository.save(role);
 
 			return ResponseEntity.ok(new MessageResponse("User Role Created successfully!"));
