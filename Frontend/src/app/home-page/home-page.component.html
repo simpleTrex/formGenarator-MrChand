@@ -1,8 +1,34 @@
-<p>Home Page</p>
-<p *ngIf="_authService.isLoggedIn()">
-    Welcome {{ _authService.currentUser?.username }}
-</p>
-<ul>
-    <li *ngIf="!_authService.isLoggedIn()"><a routerLink="/login">Login</a></li>
-    <li *ngIf="_authService.isLoggedIn()"><a (click)="_authService.logout()">Logout</a></li>
-</ul>
+
+<div class="home-container fade-in">
+    <div class="hero">
+        <div>
+            <h1 class="hero-title">Home Page</h1>
+            <p class="hero-subtitle" *ngIf="_authService.isLoggedIn()">
+                Welcome {{ _authService.currentUser?.username }}
+            </p>
+            <p class="hero-subtitle" *ngIf="!_authService.isLoggedIn()">
+                Welcome! Please log in to access your forms.
+            </p>
+        </div>
+        <div class="cta-group">
+            <button *ngIf="!_authService.isLoggedIn()" class="btn btn-primary" routerLink="/login">Login</button>
+            <button *ngIf="_authService.isLoggedIn()" class="btn btn-secondary" (click)="_authService.logout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- Example card grid for future features -->
+    <div class="card-grid">
+        <div class="card">
+            <div class="card-title">Create Form</div>
+            <div class="card-desc">Start building a new custom form for your workflow.</div>
+        </div>
+        <div class="card">
+            <div class="card-title">View Forms</div>
+            <div class="card-desc">Browse and manage your existing forms.</div>
+        </div>
+        <div class="card">
+            <div class="card-title">User Profile</div>
+            <div class="card-desc">Update your account details and preferences.</div>
+        </div>
+    </div>
+</div>
