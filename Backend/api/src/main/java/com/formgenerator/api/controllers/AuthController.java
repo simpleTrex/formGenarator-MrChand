@@ -20,12 +20,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.formgenerator.api.repository.RoleRepository;
+import com.formgenerator.api.repository.DomainRepository;
 import com.formgenerator.api.repository.UserRepository;
 import com.formgenerator.platform.auth.ERole;
 import com.formgenerator.platform.auth.JwtUtils;
 import com.formgenerator.platform.auth.LoginRequest;
 import com.formgenerator.platform.auth.MessageResponse;
 import com.formgenerator.platform.auth.Role;
+import com.formgenerator.platform.auth.Domain;
 import org.bson.types.ObjectId;
 import com.formgenerator.platform.auth.SignupRequest;
 import com.formgenerator.platform.auth.User;
@@ -44,6 +46,8 @@ public class AuthController {
 	@Autowired
 	RoleRepository roleRepository;
 	@Autowired
+	DomainRepository domainRepository;
+	@Autowired
 	PasswordEncoder encoder;
 	@Autowired
 	JwtUtils jwtUtils;
@@ -54,6 +58,10 @@ public class AuthController {
 				new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+		// Ensure user has a domain assigned; if not, reject login for now
+		if (userDetails.getDomainId() == null || userDetails.getDomainId().isBlank()) {
+			return ResponseEntity.badRequest().body(new MessageResponse("Error: User has no domain assigned."));
+		}
 		ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
 		List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())
 				.collect(Collectors.toList());
@@ -64,7 +72,7 @@ public class AuthController {
 		System.out.println(jwtCookie.toString());
 
 		return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString()).body(new UserInfoResponse(
-				userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles, jwtCookie.getValue()));
+				userDetails.getId(), userDetails.getDomainId(), userDetails.getUsername(), userDetails.getEmail(), roles, jwtCookie.getValue()));
 	}
 
 	@PostMapping("/signup")
@@ -120,7 +128,39 @@ public class AuthController {
 	// convert Role entities to ObjectId references for User.roles
 	Set<ObjectId> roleIds = roles.stream().map(r -> new ObjectId(r.getId())).collect(Collectors.toSet());
 	user.setRoles(roleIds);
-		userRepository.save(user);
+		// First save to generate an ID for the user
+		User saved = userRepository.save(user);
+		// Assign a domainId according to simple policy
+		String domainId = assignDomainForUser(saved, roles);
+		saved.setDomainId(domainId);
+		userRepository.save(saved);
 		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+	}
+
+	// Simple domain assignment policy:
+	// - If user has BUSINESS_OWNER role, create a dedicated domain owned by the user (name based on username)
+	// - Otherwise, assign (or create) a global domain named "global"
+	private String assignDomainForUser(User savedUser, Set<Role> roles) {
+		boolean isBusinessOwner = roles.stream().anyMatch(r ->
+			("BUSINESS_OWNER".equalsIgnoreCase(r.getRoleName())) || r.getName() == ERole.ROLE_BUSINESS_OWNER);
+		if (isBusinessOwner) {
+			String baseName = savedUser.getUsername() != null ? savedUser.getUsername().toLowerCase() : "domain";
+			String name = baseName;
+			// Ensure uniqueness in a simple way
+			if (domainRepository.existsByName(name)) {
+				name = baseName + "-" + savedUser.getId().substring(0, Math.min(6, savedUser.getId().length()));
+			}
+			Domain d = new Domain(name, savedUser.getId());
+			Domain created = domainRepository.save(d);
+			return created.getId();
+		} else {
+			return domainRepository.findByName("global")
+				.map(Domain::getId)
+				.orElseGet(() -> {
+					Domain global = new Domain("global", savedUser.getId());
+					Domain created = domainRepository.save(global);
+					return created.getId();
+				});
+		}
 	}
 }
