@@ -55,8 +55,9 @@ public class WebSecurityConfig /* extends WebSecurityConfigurerAdapter */ {
 					.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/error").permitAll()
 						.requestMatchers("/custom_form/auth/**").permitAll()
-						.requestMatchers("/custom_form/model/**").hasAnyRole("ADMIN", "MODERATOR")
-						.requestMatchers("/custom_form/data/**").hasAnyRole("ADMIN", "USER")
+						// Use canonical authorities issued by UserDetailsImpl (roleName):
+						.requestMatchers("/custom_form/model/**").hasAnyAuthority("APP_ADMIN", "DOMAIN_ADMIN", "BUSINESS_OWNER")
+						.requestMatchers("/custom_form/data/**").hasAnyAuthority("APP_ADMIN", "DOMAIN_ADMIN", "BUSINESS_OWNER", "BUSINESS_USER")
 						.requestMatchers("/custom_form/**").authenticated()
 						.anyRequest().denyAll())
 				.formLogin(form -> form.disable())

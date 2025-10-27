@@ -47,7 +47,7 @@ public class DomainController {
      * The creating user becomes the domain owner (Business Owner role).
      */
     @PostMapping("")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('MODERATOR')")
+    @PreAuthorize("hasAnyAuthority('BUSINESS_OWNER', 'DOMAIN_ADMIN', 'APP_ADMIN')")
     public ResponseEntity<?> createDomain(@Valid @RequestBody CreateDomainRequest createDomainRequest) {
         // Get current authenticated user
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -78,7 +78,7 @@ public class DomainController {
      * Get all domains owned by the current user.
      */
     @GetMapping("")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('MODERATOR')")
+    @PreAuthorize("hasAnyAuthority('BUSINESS_USER', 'DOMAIN_ADMIN', 'BUSINESS_OWNER', 'APP_ADMIN')")
     public ResponseEntity<List<DomainResponse>> getUserDomains() {
         // Get current authenticated user
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -98,7 +98,7 @@ public class DomainController {
      * Get specific domain by ID. Only the owner can access their domains.
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('MODERATOR')")
+    @PreAuthorize("@domainSecurity.isSameDomain(#id, principal.domainId)")
     public ResponseEntity<?> getDomain(@PathVariable String id) {
         // Get current authenticated user
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
