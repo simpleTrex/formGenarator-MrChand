@@ -81,26 +81,39 @@ public class AuthController {
 		Set<String> strRoles = signUpRequest.getRoles();
 	Set<Role> roles = new HashSet<>();
 		if (strRoles == null) {
-			Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-					.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-			roles.add(userRole);
+			Role defaultRole = roleRepository.findByRoleName("BUSINESS_USER")
+					.orElseGet(() -> roleRepository.findByName(ERole.ROLE_BUSINESS_USER)
+							.orElseThrow(() -> new RuntimeException("Error: Default role is not found.")));
+			roles.add(defaultRole);
 		} else {
 			strRoles.forEach(role -> {
 				switch (role) {
+				case "BUSINESS_OWNER":
+					Role businessOwnerRole = roleRepository.findByRoleName("BUSINESS_OWNER")
+							.orElseGet(() -> roleRepository.findByName(ERole.ROLE_BUSINESS_OWNER)
+									.orElseThrow(() -> new RuntimeException("Error: Role is not found.")));
+					roles.add(businessOwnerRole);
+					break;
+				case "DOMAIN_ADMIN":
 				case "admin":
-					Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(adminRole);
+					Role domainAdminRole = roleRepository.findByRoleName("DOMAIN_ADMIN")
+							.orElseGet(() -> roleRepository.findByName(ERole.ROLE_DOMAIN_ADMIN)
+									.orElseThrow(() -> new RuntimeException("Error: Role is not found.")));
+					roles.add(domainAdminRole);
 					break;
-				case "mod":
-					Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR)
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(modRole);
+				case "APP_ADMIN":
+					Role appAdminRole = roleRepository.findByRoleName("APP_ADMIN")
+							.orElseGet(() -> roleRepository.findByName(ERole.ROLE_APP_ADMIN)
+									.orElseThrow(() -> new RuntimeException("Error: Role is not found.")));
+					roles.add(appAdminRole);
 					break;
+				case "BUSINESS_USER":
+				case "user":
 				default:
-					Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(userRole);
+					Role businessUserRole = roleRepository.findByRoleName("BUSINESS_USER")
+							.orElseGet(() -> roleRepository.findByName(ERole.ROLE_BUSINESS_USER)
+									.orElseThrow(() -> new RuntimeException("Error: Role is not found.")));
+					roles.add(businessUserRole);
 				}
 			});
 		}

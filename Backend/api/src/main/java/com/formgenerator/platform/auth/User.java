@@ -28,6 +28,9 @@ public class User {
 	private String password;
 	// generator inserts ObjectId references into users.roles; store them as ObjectId
 	private Set<ObjectId> roles = new HashSet<>();
+	
+	// Domain reference for multi-tenancy - references a Domain document by ObjectId
+	private String domainId;
 
 	public User() {
 	}
@@ -76,5 +79,13 @@ public class User {
 
 	public void setRoles(Set<ObjectId> roles) {
 		this.roles = roles;
+	}
+
+	public String getDomainId() {
+		return domainId;
+	}
+
+	public void setDomainId(String domainId) {
+		this.domainId = domainId;
 	}
 }
