@@ -19,10 +19,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.formgenerator.api.repository.RoleRepository;
 import com.formgenerator.api.repository.UserRepository;
+import com.formgenerator.api.repository.DomainRepository;
 import com.formgenerator.platform.auth.ERole;
 import com.formgenerator.platform.auth.MessageResponse;
 import com.formgenerator.platform.auth.Role;
 import com.formgenerator.platform.auth.SignupRequest;
+import com.formgenerator.platform.auth.User;
+import com.formgenerator.platform.auth.Domain;
 
 @ExtendWith(MockitoExtension.class)
 public class AuthControllerCanonicalRoleTest {
@@ -32,6 +35,9 @@ public class AuthControllerCanonicalRoleTest {
 
     @Mock
     private RoleRepository roleRepository;
+
+    @Mock
+    private DomainRepository domainRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -47,11 +53,19 @@ public class AuthControllerCanonicalRoleTest {
         businessOwnerRole.setRoleName("BUSINESS_OWNER");
         businessOwnerRole.setName(ERole.ROLE_BUSINESS_OWNER);
 
+        User savedUser = new User("testuser", "test@example.com", "encoded_password");
+        savedUser.setId("mockUserId");
+
+        Domain createdDomain = new Domain("testuser", "mockUserId");
+        createdDomain.setId("mockDomainId");
+
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(roleRepository.findByRoleName("BUSINESS_OWNER")).thenReturn(Optional.of(businessOwnerRole));
         when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
-        when(userRepository.save(any())).thenReturn(null);
+        when(userRepository.save(any())).thenReturn(savedUser);
+        when(domainRepository.existsByName("testuser")).thenReturn(false);
+        when(domainRepository.save(any(Domain.class))).thenReturn(createdDomain);
 
         SignupRequest signupRequest = new SignupRequest();
         signupRequest.setUsername("testuser");
@@ -76,11 +90,18 @@ public class AuthControllerCanonicalRoleTest {
         domainAdminRole.setRoleName("DOMAIN_ADMIN");
         domainAdminRole.setName(ERole.ROLE_DOMAIN_ADMIN);
 
+        User savedUser = new User("adminuser", "admin@example.com", "encoded_password");
+        savedUser.setId("mockUserId");
+
+        Domain globalDomain = new Domain("global", "someOwnerId");
+        globalDomain.setId("globalDomainId");
+
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(roleRepository.findByRoleName("DOMAIN_ADMIN")).thenReturn(Optional.of(domainAdminRole));
         when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
-        when(userRepository.save(any())).thenReturn(null);
+        when(userRepository.save(any())).thenReturn(savedUser);
+        when(domainRepository.findByName("global")).thenReturn(Optional.of(globalDomain));
 
         SignupRequest signupRequest = new SignupRequest();
         signupRequest.setUsername("adminuser");
@@ -105,11 +126,18 @@ public class AuthControllerCanonicalRoleTest {
         businessUserRole.setRoleName("BUSINESS_USER");
         businessUserRole.setName(ERole.ROLE_BUSINESS_USER);
 
+        User savedUser = new User("regularuser", "user@example.com", "encoded_password");
+        savedUser.setId("mockUserId");
+
+        Domain globalDomain = new Domain("global", "someOwnerId");
+        globalDomain.setId("globalDomainId");
+
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(roleRepository.findByRoleName("BUSINESS_USER")).thenReturn(Optional.of(businessUserRole));
         when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
-        when(userRepository.save(any())).thenReturn(null);
+        when(userRepository.save(any())).thenReturn(savedUser);
+        when(domainRepository.findByName("global")).thenReturn(Optional.of(globalDomain));
 
         SignupRequest signupRequest = new SignupRequest();
         signupRequest.setUsername("regularuser");
