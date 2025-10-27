@@ -8,6 +8,18 @@ on:
 jobs:
   build-backend:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        # GitHub Actions will wait for the service port to be reachable
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        # before starting the job steps.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -18,7 +30,7 @@ jobs:
       - name: Build & Test Spring Boot
         run: |
           cd Backend/api
-          ./mvnw -B clean verify
+          ./mvnw -B -Dspring.data.mongodb.uri=mongodb://localhost:27017/app clean verify
 
   build-frontend:
     runs-on: ubuntu-latest
