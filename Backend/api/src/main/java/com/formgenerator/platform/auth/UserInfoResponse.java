@@ -5,13 +5,15 @@ import java.util.List;
 public class UserInfoResponse {
 
 	private String id;
+	private String domainId;
 	private String username;
 	private String email;
 	private String token;
 	List<String> roles;
 
-	public UserInfoResponse(String id, String username, String email, List<String> roles, String token) {
+	public UserInfoResponse(String id, String domainId, String username, String email, List<String> roles, String token) {
 		this.id = id;
+		this.domainId = domainId;
 		this.username = username;
 		this.email = email;
 		this.roles = roles;
@@ -24,6 +26,14 @@ public class UserInfoResponse {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	public String getDomainId() {
+		return domainId;
+	}
+
+	public void setDomainId(String domainId) {
+		this.domainId = domainId;
 	}
 
 	public String getUsername() {
