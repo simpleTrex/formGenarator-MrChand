@@ -14,6 +14,11 @@ jobs:
         ports:
           - 27017:27017
         # GitHub Actions will wait for the service port to be reachable
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
         # before starting the job steps.
     steps:
       - uses: actions/checkout@v4
@@ -23,12 +28,9 @@ jobs:
           java-version: '17'
           cache: 'maven'
       - name: Build & Test Spring Boot
-        env:
-          # Point Spring to the CI MongoDB service
-          SPRING_DATA_MONGODB_URI: mongodb://localhost:27017/app
         run: |
           cd Backend/api
-          ./mvnw -B clean verify
+          ./mvnw -B -Dspring.data.mongodb.uri=mongodb://localhost:27017/app clean verify
 
   build-frontend:
     runs-on: ubuntu-latest
