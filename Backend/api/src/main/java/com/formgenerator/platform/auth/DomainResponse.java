@@ -9,18 +9,24 @@ import java.util.Map;
 public class DomainResponse {
     private String id;
     private String name;
+    private String slug;
     private String ownerUserId;
     private Date createdAt;
     private Map<String, Object> metadata;
+    private String description;
+    private String industry;
 
     public DomainResponse() {}
 
     public DomainResponse(Domain domain) {
         this.id = domain.getId();
         this.name = domain.getName();
+        this.slug = domain.getSlug();
         this.ownerUserId = domain.getOwnerUserId();
         this.createdAt = domain.getCreatedAt();
         this.metadata = domain.getMetadata();
+        this.description = domain.getDescription();
+        this.industry = domain.getIndustry();
     }
 
     public String getId() {
@@ -33,6 +39,14 @@ public class DomainResponse {
 
     public String getName() {
         return name;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 
     public void setName(String name) {
@@ -61,5 +75,21 @@ public class DomainResponse {
 
     public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getIndustry() {
+        return industry;
+    }
+
+    public void setIndustry(String industry) {
+        this.industry = industry;
     }
 }
