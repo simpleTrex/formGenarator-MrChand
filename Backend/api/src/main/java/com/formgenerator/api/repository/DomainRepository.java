@@ -33,4 +33,14 @@ public interface DomainRepository extends MongoRepository<Domain, String> {
      * @return list of domains owned by the user
      */
     List<Domain> findByOwnerUserId(String ownerUserId);
+
+    /**
+     * Find domain by URL slug (unique).
+     */
+    Optional<Domain> findBySlug(String slug);
+
+    /**
+     * Check if a slug already exists.
+     */
+    Boolean existsBySlug(String slug);
 }

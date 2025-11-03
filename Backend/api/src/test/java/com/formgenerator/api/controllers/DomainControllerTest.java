@@ -48,6 +48,7 @@ class DomainControllerTest {
         // Given
         CreateDomainRequest request = new CreateDomainRequest();
         request.setName("acme");
+        request.setSlug("acme");
 
         User user = new User("u1", "u1@example.com", "pw");
         user.setId("u1");
@@ -55,8 +56,8 @@ class DomainControllerTest {
         Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
         when(userRepository.findById("u1")).thenReturn(Optional.of(user));
-        when(domainRepository.existsByName("acme")).thenReturn(false);
-        Domain saved = new Domain("acme", "u1");
+        when(domainRepository.existsBySlug("acme")).thenReturn(false);
+        Domain saved = new Domain("acme", "acme", "u1");
         saved.setId("d1");
         when(domainRepository.save(any(Domain.class))).thenReturn(saved);
 
@@ -76,9 +77,12 @@ class DomainControllerTest {
             DomainResponse domainResponse = (DomainResponse) response.getBody();
             assertEquals("d1", domainResponse.getId());
             assertEquals("acme", domainResponse.getName());
+            assertEquals("acme", domainResponse.getSlug());
             assertEquals("u1", domainResponse.getOwnerUserId());
 
             verify(domainRepository).save(any(Domain.class));
+            verify(userRepository).findById("u1");
+            verify(domainRepository).existsBySlug("acme");
         }
     }
 
@@ -87,13 +91,14 @@ class DomainControllerTest {
         // Given
         CreateDomainRequest request = new CreateDomainRequest();
         request.setName("acme");
+        request.setSlug("acme");
 
         User user = new User("u1", "u1@example.com", "pw");
         user.setId("u1");
         UserDetailsImpl userDetails = UserDetailsImpl.build(user);
         Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-        when(domainRepository.existsByName("acme")).thenReturn(true);
+        when(domainRepository.existsBySlug("acme")).thenReturn(true);
 
         // Mock SecurityContextHolder
         try (MockedStatic<SecurityContextHolder> mockedSecurityContext = Mockito.mockStatic(SecurityContextHolder.class)) {
@@ -105,8 +110,9 @@ class DomainControllerTest {
             ResponseEntity<?> response = domainController.createDomain(request);
 
             // Then
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+            assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
             assertNotNull(response.getBody());
+            verify(domainRepository).existsBySlug("acme");
         }
     }
 

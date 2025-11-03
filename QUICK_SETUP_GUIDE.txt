@@ -1,6 +1,10 @@
 QUICK SETUP GUIDE - Form Generator Project
 =========================================
 
+Test:
+./mvnw test
+
+
 Step-by-Step: How We Got It Working
 -----------------------------------
 
