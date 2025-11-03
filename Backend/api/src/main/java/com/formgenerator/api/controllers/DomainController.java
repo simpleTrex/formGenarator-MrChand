@@ -83,7 +83,7 @@ public class DomainController {
      * Get all domains owned by the current user.
      */
     @GetMapping("")
-    @PreAuthorize("hasAnyAuthority('BUSINESS_USER', 'DOMAIN_ADMIN', 'BUSINESS_OWNER', 'APP_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('BUSINESS_USER', 'DOMAIN_ADMIN', 'BUSINESS_OWNER', 'APP_ADMIN', 'ROLE_BUSINESS_USER', 'ROLE_DOMAIN_ADMIN', 'ROLE_BUSINESS_OWNER', 'ROLE_APP_ADMIN')")
     public ResponseEntity<List<DomainResponse>> getUserDomains() {
         // Get current authenticated user
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
