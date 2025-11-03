@@ -18,7 +18,8 @@ export class BaseService {
     if (isAuthorizedRequest) {
       return this.http.get(path, {
         headers: {
-          "Authorization": this.tokenGenerator()
+          "Authorization": this.tokenGenerator(),
+          "token": this.tokenRaw()
         }
       })
     } else {
@@ -31,6 +32,7 @@ export class BaseService {
       return this.http.post(path, data, {
         headers: {
           "Authorization": this.tokenGenerator(),
+          "token": this.tokenRaw(),
         }
       });
     } else {
@@ -42,7 +44,8 @@ export class BaseService {
     if (isAuthorizedRequest) {
       return this.http.put(path, data, {
         headers: {
-          "Authorization": this.tokenGenerator()
+          "Authorization": this.tokenGenerator(),
+          "token": this.tokenRaw()
         }
       })
     } else {
@@ -54,7 +57,8 @@ export class BaseService {
     if (isAuthorizedRequest) {
       return this.http.request("delete", path, {
         headers: {
-          "Authorization": this.tokenGenerator()
+          "Authorization": this.tokenGenerator(),
+          "token": this.tokenRaw()
         },
         body: data
       })
@@ -66,6 +70,10 @@ export class BaseService {
   }
 
   private tokenGenerator() {
-    return "Bearer " + sessionStorage.getItem("token")
+    return "Bearer " + this.tokenRaw();
+  }
+
+  private tokenRaw() {
+    return sessionStorage.getItem("token") || '';
   }
 }
