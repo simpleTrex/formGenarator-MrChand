@@ -1,0 +1,20 @@
+<div style="max-width:800px;margin:20px auto;">
+  <h2>Domain</h2>
+  <div *ngIf="error" style="color:#b00020;">{{ error }}</div>
+  <div *ngIf="domain">
+    <p><strong>Name:</strong> {{ domain.name }}</p>
+    <p><strong>Slug:</strong> {{ domain.slug }}</p>
+    <p *ngIf="domain.description"><strong>Description:</strong> {{ domain.description }}</p>
+    <p *ngIf="domain.industry"><strong>Industry:</strong> {{ domain.industry }}</p>
+  </div>
+</div>
+<div style="max-width: 800px; margin: 20px auto;">
+  <h2>Domain</h2>
+  <div *ngIf="error" style="color:#b00020;">{{ error }}</div>
+  <div *ngIf="domain">
+    <p><strong>Name:</strong> {{ domain.name }}</p>
+    <p><strong>Slug:</strong> {{ domain.slug }}</p>
+    <p *ngIf="domain.description"><strong>Description:</strong> {{ domain.description }}</p>
+    <p *ngIf="domain.industry"><strong>Industry:</strong> {{ domain.industry }}</p>
+  </div>
+</div>

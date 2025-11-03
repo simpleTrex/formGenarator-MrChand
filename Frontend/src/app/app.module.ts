@@ -21,6 +21,9 @@ import { AuthService } from './services/auth.service';
 import { CommonModule } from '@angular/common';
 import { httpInterceptorProviders } from './services/httpinterceptor';
 import { AuthGuard } from './services/AuthGuard';
+import { DomainCreateComponent } from './domain-create/domain-create.component';
+import { DomainHomeComponent } from './domain-home/domain-home.component';
+import { DomainService } from './services/domain.service';
 
 @NgModule({
   declarations: [
@@ -35,6 +38,8 @@ import { AuthGuard } from './services/AuthGuard';
     ModelOptionsComponent,
     ModelRenderComponent,
     LoginComponent,
+    DomainCreateComponent,
+    DomainHomeComponent,
   ],
   imports: [
     ReactiveFormsModule,
@@ -47,6 +52,8 @@ import { AuthGuard } from './services/AuthGuard';
     RouterModule.forRoot([
       { path: 'login', component: LoginComponent },
       { path: '', component: HomePageComponent, canActivate: [AuthGuard] },
+      { path: 'create-domain', component: DomainCreateComponent, canActivate: [AuthGuard] },
+      { path: 'domain/:slug', component: DomainHomeComponent, canActivate: [AuthGuard] },
       { path: 'model', component: ModelPageComponent , canActivate: [AuthGuard] },
       { path: 'data', component: DataComponent , canActivate: [AuthGuard] },
       { path: '**', component: NotFoundPageComponent , canActivate: [AuthGuard] },
@@ -55,6 +62,7 @@ import { AuthGuard } from './services/AuthGuard';
   providers: [
     AuthService,
     AuthGuard,
+    DomainService,
     httpInterceptorProviders
   ],
   bootstrap: [AppComponent]

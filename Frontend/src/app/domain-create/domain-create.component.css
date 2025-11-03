@@ -1,0 +1,7 @@
+input, textarea, button { width:100%; padding:8px; box-sizing:border-box; }
+label { display:block; font-weight:500; }
+button { cursor:pointer; }
+/* Minimal spacing only */
+input, textarea, button { width: 100%; padding: 8px; box-sizing: border-box; }
+label { font-weight: 500; display: block; }
+button { cursor: pointer; }

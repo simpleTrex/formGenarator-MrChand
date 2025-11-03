@@ -13,7 +13,25 @@
         <div class="cta-group">
             <button *ngIf="!_authService.isLoggedIn()" class="btn btn-primary" routerLink="/login">Login</button>
             <button *ngIf="_authService.isLoggedIn()" class="btn btn-secondary" (click)="_authService.logout()">Logout</button>
+            <button *ngIf="_authService.isLoggedIn()" class="btn" routerLink="/create-domain">Create Domain</button>
         </div>
+    </div>
+
+    <!-- User's Domains Section -->
+    <div *ngIf="_authService.isLoggedIn() && !loadingDomains && domains.length > 0" class="domains-section">
+        <h2 class="section-title">Your Domains</h2>
+        <div class="domains-grid">
+            <div *ngFor="let domain of domains" class="domain-card" (click)="navigateToDomain(domain.slug)">
+                <div class="domain-name">{{ domain.name }}</div>
+                <div class="domain-slug">{{ domain.slug }}</div>
+                <div class="domain-description" *ngIf="domain.description">{{ domain.description }}</div>
+                <div class="domain-industry" *ngIf="domain.industry">{{ domain.industry }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="_authService.isLoggedIn() && loadingDomains" class="loading-section">
+        <p>Loading your domains...</p>
     </div>
 
     <!-- Example card grid for future features -->

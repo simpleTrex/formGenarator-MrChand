@@ -104,6 +104,81 @@
 	margin: 0;
 }
 
+/* Domains Section */
+.domains-section {
+	margin-top: 2rem;
+	padding: 1.5rem;
+	background: #ffffff;
+	border-radius: 12px;
+	box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06);
+}
+
+.section-title {
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: #0f172a;
+	margin: 0 0 1rem 0;
+}
+
+.domains-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 1rem;
+}
+
+.domain-card {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 1rem;
+	cursor: pointer;
+	transition: all 160ms ease;
+	box-shadow: 0 2px 8px rgba(16, 24, 40, 0.04);
+}
+
+.domain-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 16px rgba(16, 24, 40, 0.12);
+	background: #ffffff;
+	border-color: #2563eb;
+}
+
+.domain-name {
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: #0f172a;
+	margin: 0 0 0.25rem 0;
+}
+
+.domain-slug {
+	font-size: 0.85rem;
+	color: #64748b;
+	margin: 0 0 0.5rem 0;
+	font-family: 'Courier New', monospace;
+}
+
+.domain-description {
+	font-size: 0.9rem;
+	color: #475569;
+	margin: 0 0 0.25rem 0;
+}
+
+.domain-industry {
+	font-size: 0.8rem;
+	color: #7c3aed;
+	font-weight: 500;
+	margin: 0;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.loading-section {
+	margin-top: 2rem;
+	text-align: center;
+	padding: 2rem;
+	color: #64748b;
+}
+
 /* subtle fade-in for page content */
 .fade-in {
 	animation: fadeIn 280ms ease-out both;
