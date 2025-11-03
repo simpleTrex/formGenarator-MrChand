@@ -7,6 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+import java.util.List;
+import java.util.Arrays;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -141,6 +143,63 @@ class DomainControllerTest {
             // Then
             assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
             assertNotNull(response.getBody());
+        }
+    }
+
+    @Test
+    void getUserDomains_shouldReturnUserDomains() {
+        // Given
+        User user = new User("u1", "u1@example.com", "pw");
+        user.setId("u1");
+        UserDetailsImpl userDetails = UserDetailsImpl.build(user);
+        Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+        Domain domain1 = new Domain("acme", "acme", "u1");
+        domain1.setId("d1");
+        domain1.setDescription("Test domain 1");
+        domain1.setIndustry("Tech");
+
+        Domain domain2 = new Domain("beta", "beta", "u1");
+        domain2.setId("d2");
+        domain2.setDescription("Test domain 2");
+        domain2.setIndustry("Finance");
+
+        List<Domain> userDomains = Arrays.asList(domain1, domain2);
+
+        when(domainRepository.findByOwnerUserId("u1")).thenReturn(userDomains);
+
+        // Mock SecurityContextHolder
+        try (MockedStatic<SecurityContextHolder> mockedSecurityContext = Mockito.mockStatic(SecurityContextHolder.class)) {
+            SecurityContext context = Mockito.mock(SecurityContext.class);
+            when(context.getAuthentication()).thenReturn(auth);
+            mockedSecurityContext.when(SecurityContextHolder::getContext).thenReturn(context);
+
+            // When
+            ResponseEntity<List<DomainResponse>> response = domainController.getUserDomains();
+
+            // Then
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertNotNull(response.getBody());
+            List<DomainResponse> domainResponses = response.getBody();
+            assertEquals(2, domainResponses.size());
+
+            DomainResponse firstDomain = domainResponses.get(0);
+            assertEquals("d1", firstDomain.getId());
+            assertEquals("acme", firstDomain.getName());
+            assertEquals("acme", firstDomain.getSlug());
+            assertEquals("u1", firstDomain.getOwnerUserId());
+            assertEquals("Test domain 1", firstDomain.getDescription());
+            assertEquals("Tech", firstDomain.getIndustry());
+
+            DomainResponse secondDomain = domainResponses.get(1);
+            assertEquals("d2", secondDomain.getId());
+            assertEquals("beta", secondDomain.getName());
+            assertEquals("beta", secondDomain.getSlug());
+            assertEquals("u1", secondDomain.getOwnerUserId());
+            assertEquals("Test domain 2", secondDomain.getDescription());
+            assertEquals("Finance", secondDomain.getIndustry());
+
+            verify(domainRepository).findByOwnerUserId("u1");
         }
     }
 }
