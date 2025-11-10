@@ -1,0 +1,25 @@
+<div class="login-card">
+  <h2>Domain User Login</h2>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <label>Domain slug
+      <input type="text" formControlName="domainSlug" [class.invalid]="submitted && f['domainSlug'].errors">
+    </label>
+    <div *ngIf="submitted && f['domainSlug'].errors" class="error-text">Domain slug is required</div>
+
+    <label>Username
+      <input type="text" formControlName="username" [class.invalid]="submitted && f['username'].errors">
+    </label>
+    <div *ngIf="submitted && f['username'].errors" class="error-text">Username is required</div>
+
+    <label>Password
+      <input type="password" formControlName="password" [class.invalid]="submitted && f['password'].errors">
+    </label>
+    <div *ngIf="submitted && f['password'].errors" class="error-text">Password is required</div>
+
+    <button [disabled]="loading">Login</button>
+    <div *ngIf="error" class="error-text">{{ error }}</div>
+  </form>
+  <div class="helper-links">
+    <a routerLink="/login">Owner login</a>
+  </div>
+</div>

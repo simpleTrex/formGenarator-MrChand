@@ -24,6 +24,9 @@ import { AuthGuard } from './services/AuthGuard';
 import { DomainCreateComponent } from './domain-create/domain-create.component';
 import { DomainHomeComponent } from './domain-home/domain-home.component';
 import { DomainService } from './services/domain.service';
+import { DomainLoginComponent } from './domain-login/domain-login.component';
+import { OwnerSignupComponent } from './owner-signup/owner-signup.component';
+import { DomainSignupComponent } from './domain-signup/domain-signup.component';
 
 @NgModule({
   declarations: [
@@ -40,6 +43,9 @@ import { DomainService } from './services/domain.service';
     LoginComponent,
     DomainCreateComponent,
     DomainHomeComponent,
+    DomainLoginComponent,
+    OwnerSignupComponent,
+    DomainSignupComponent,
   ],
   imports: [
     ReactiveFormsModule,
@@ -51,12 +57,12 @@ import { DomainService } from './services/domain.service';
     UtilModule,
     RouterModule.forRoot([
       { path: 'login', component: LoginComponent },
-      { path: '', component: HomePageComponent, canActivate: [AuthGuard] },
+      { path: 'owner-login', component: LoginComponent },
+      { path: 'owner-signup', component: OwnerSignupComponent },
+      { path: '', component: HomePageComponent },
       { path: 'create-domain', component: DomainCreateComponent, canActivate: [AuthGuard] },
-      { path: 'domain/:slug', component: DomainHomeComponent, canActivate: [AuthGuard] },
-      { path: 'model', component: ModelPageComponent , canActivate: [AuthGuard] },
-      { path: 'data', component: DataComponent , canActivate: [AuthGuard] },
-      { path: '**', component: NotFoundPageComponent , canActivate: [AuthGuard] },
+      { path: 'domain/:slug', component: DomainHomeComponent },
+      { path: '**', component: NotFoundPageComponent },
     ])
   ],
   providers: [

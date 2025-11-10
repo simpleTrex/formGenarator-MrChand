@@ -13,6 +13,8 @@ export class HomePageComponent implements OnInit {
   _authService: AuthService;
   domains: any[] = [];
   loadingDomains = false;
+  ownerContext = false;
+  notice = '';
 
   constructor(
     private authService: AuthService,
@@ -23,9 +25,18 @@ export class HomePageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this._authService.isLoggedIn()) {
-      this.loadUserDomains();
+    if (!this._authService.isLoggedIn()) {
+      return;
     }
+    const ctx = this._authService.getContext();
+    if (ctx?.principalType === 'OWNER') {
+      this.ownerContext = true;
+      this.loadUserDomains();
+      return;
+    }
+    this._authService.logout();
+    this.ownerContext = false;
+    this.notice = 'AdaptiveBP owner portal is restricted to owners. Please login as an owner.';
   }
 
   loadUserDomains(): void {
@@ -44,5 +55,9 @@ export class HomePageComponent implements OnInit {
 
   navigateToDomain(slug: string): void {
     this.router.navigate(['/domain', slug]);
+  }
+
+  get displayName(): string | undefined {
+    return this._authService.getContext()?.username || this._authService.getContext()?.email;
   }
 }

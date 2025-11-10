@@ -10,7 +10,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.WebUtils;
 
+import com.formgenerator.platform.auth.AdaptiveUserDetails;
+import com.formgenerator.platform.auth.JwtPrincipalClaims;
+import com.formgenerator.platform.auth.PrincipalType;
+
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -57,6 +62,16 @@ public class JwtUtils {
 		return cookie;
 	}
 
+	public ResponseCookie generateOwnerJwtCookie(AdaptiveUserDetails principal) {
+		String jwt = generateToken(principal);
+		return ResponseCookie.from(jwtCookie, jwt).path("/").maxAge(24 * 60 * 60).httpOnly(true).sameSite("None")
+				.build();
+	}
+
+	public ResponseCookie generateDomainJwtCookie(AdaptiveUserDetails principal) {
+		return generateOwnerJwtCookie(principal);
+	}
+
 	public ResponseCookie getCleanJwtCookie() {
 		ResponseCookie cookie = ResponseCookie.from(jwtCookie, "").path("/").build();
 		return cookie;
@@ -64,6 +79,22 @@ public class JwtUtils {
 
 	public String getUserNameFromJwtToken(String token) {
 		return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody().getSubject();
+	}
+
+	public JwtPrincipalClaims parseClaims(String token) {
+		Claims claims = Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
+		String principalId = claims.get("pid", String.class);
+		String principalType = claims.get("ptype", String.class);
+		String domainId = claims.get("domainId", String.class);
+		String username = claims.getSubject();
+		PrincipalType type = null;
+		if (principalType != null) {
+			try {
+				type = PrincipalType.valueOf(principalType);
+			} catch (IllegalArgumentException ignored) {
+			}
+		}
+		return new JwtPrincipalClaims(principalId, type, domainId, username);
 	}
 
 	public boolean validateJwtToken(String authToken) {
@@ -88,5 +119,17 @@ public class JwtUtils {
 		return Jwts.builder().setSubject(username).setIssuedAt(new Date())
 				.setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
 				.signWith(SignatureAlgorithm.HS512, jwtSecret).compact();
+	}
+
+	public String generateToken(AdaptiveUserDetails principal) {
+		return Jwts.builder()
+				.setSubject(principal.getUsername())
+				.claim("pid", principal.getId())
+				.claim("ptype", principal.getPrincipalType().name())
+				.claim("domainId", principal.getDomainId())
+				.setIssuedAt(new Date())
+				.setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+				.signWith(SignatureAlgorithm.HS512, jwtSecret)
+				.compact();
 	}
 }
