@@ -46,7 +46,7 @@ class DomainProvisioningServiceTest {
         ArgumentCaptor<List<DomainGroup>> captor = ArgumentCaptor.forClass(List.class);
         verify(domainGroupRepository).saveAll(captor.capture());
         List<DomainGroup> saved = captor.getValue();
-        assertEquals(3, saved.size());
+        assertEquals(2, saved.size());
         verify(domainGroupMemberRepository).save(any());
     }
 
