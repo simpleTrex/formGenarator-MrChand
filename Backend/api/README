@@ -8,3 +8,60 @@ https://docs.spring.io/spring-data/mongodb/docs/2.1.2.RELEASE/reference/html/#mo
 2.fix Image file support
 3.Table view
 4. 
+
+---
+
+AdaptiveBP RBAC & Auth Overview
+===============================
+
+The platform now uses a multi-tier RBAC model driven by MongoDB collections and exposed through `/adaptive/...` APIs.
+
+Owner / Control Plane
+---------------------
+- Owners sign up and log in via:
+  - `POST /adaptive/auth/owner/signup`
+  - `POST /adaptive/auth/owner/login`
+- Owner JWTs carry `principalType=OWNER`. Owners automatically have access to all domains.
+
+Domain Users & Auth
+-------------------
+- Domain-specific signup/login:
+  - `POST /adaptive/domains/{slug}/auth/signup`
+  - `POST /adaptive/domains/{slug}/auth/login`
+- Domain JWTs carry `principalType=DOMAIN_USER` and `domainId`.
+
+Domain Roles (Fixed)
+--------------------
+- Each domain has two system groups seeded by `DomainProvisioningService`:
+  - **Domain Admin**: full permissions (`DOMAIN_MANAGE`, `DOMAIN_MANAGE_USERS`, `DOMAIN_MANAGE_APPS`, `DOMAIN_USE_APP`).
+  - **Domain Contributor**: limited to `DOMAIN_MANAGE_APPS` + `DOMAIN_USE_APP`.
+- Custom domain-group creation is disabled; admins only assign users to existing groups.
+
+Domain Group Management APIs
+----------------------------
+- `GET /adaptive/domains/{slug}/groups` — list groups (admins only).
+- `POST /adaptive/domains/{slug}/groups/{groupId}/members` — add member by username.
+- `DELETE /adaptive/domains/{slug}/groups/{groupId}/members/{userId}` — remove member.
+- `GET /adaptive/domains/{slug}/access/me` — returns the caller’s permissions & group names (used by frontend to tailor UI).
+
+Application Management
+----------------------
+- `GET /adaptive/domains/{slug}/apps` — requires `DOMAIN_USE_APP` (contributors can list apps).
+- `POST /adaptive/domains/{slug}/apps` — requires `DOMAIN_MANAGE_APPS`.
+- App-level groups/memberships are still flexible: `AppGroupController` mirrors the domain endpoints for per-app RBAC (Add/remove members by username, etc.).
+
+Permission Enforcement
+----------------------
+- `PermissionService` resolves domain/app permissions by aggregating group memberships.
+- Owners bypass checks; domain users must belong to the appropriate group.
+- `DomainPermission.DOMAIN_USE_APP` is granted to all domain users automatically, plus any permissions from their group(s).
+
+Frontend Hooks (Key Points)
+---------------------------
+- Owner portal (AdaptiveBP home) only renders when `principalType=OWNER`.
+- Domain pages (`/domain/:slug`) host their own login/signup, show logout + AdaptiveBP buttons, and reveal group/app management panels based on the permissions returned by `/access/me`.
+- Domain group membership is assigned by **username** from the UI.
+
+Data Migration Notes
+--------------------
+- Legacy domains may still have the old “Domain Owner” group with `DOMAIN_VIEW_REPORTS`. A one-time cleanup (removing outdated groups) is recommended to align with the new fixed-role model.

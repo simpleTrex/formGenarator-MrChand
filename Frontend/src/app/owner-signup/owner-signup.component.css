@@ -1,0 +1,6 @@
+@import '../login/login.component.css';
+
+.success-text {
+  color: #2e8b57;
+  font-size: 13px;
+}

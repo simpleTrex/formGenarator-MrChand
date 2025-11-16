@@ -1,6 +1,7 @@
 package com.formgenerator.api.controllers;
 
 import java.util.List;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -18,12 +19,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.formgenerator.api.repository.DomainRepository;
-import com.formgenerator.api.repository.UserRepository;
+import com.formgenerator.api.services.DomainProvisioningService;
+import com.formgenerator.api.services.PermissionService;
+import com.formgenerator.platform.auth.AdaptiveUserDetails;
 import com.formgenerator.platform.auth.CreateDomainRequest;
 import com.formgenerator.platform.auth.Domain;
 import com.formgenerator.platform.auth.DomainResponse;
 import com.formgenerator.platform.auth.MessageResponse;
-import com.formgenerator.platform.auth.User;
+import com.formgenerator.platform.auth.PrincipalType;
 import com.formgenerator.platform.auth.UserDetailsImpl;
 
 import jakarta.validation.Valid;
@@ -40,19 +43,20 @@ public class DomainController {
     DomainRepository domainRepository;
 
     @Autowired
-    UserRepository userRepository;
+    DomainProvisioningService domainProvisioningService;
 
     /**
      * Create a new domain. Only authenticated users can create domains.
      * The creating user becomes the domain owner (Business Owner role).
      */
     @PostMapping("")
-    @PreAuthorize("hasAnyAuthority('BUSINESS_OWNER','DOMAIN_ADMIN','APP_ADMIN','BUSINESS_USER','ROLE_BUSINESS_OWNER','ROLE_DOMAIN_ADMIN','ROLE_APP_ADMIN','ROLE_BUSINESS_USER')")
+    @PreAuthorize("@permissionService.isOwner()")
     public ResponseEntity<?> createDomain(@Valid @RequestBody CreateDomainRequest createDomainRequest) {
-        // Get current authenticated user
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        String currentUserId = userDetails.getId();
+        AdaptiveUserDetails owner = currentAdaptivePrincipal();
+        if (owner == null || owner.getPrincipalType() != PrincipalType.OWNER) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        String currentUserId = owner.getId();
 
         // Normalize slug
         String normalizedSlug = slugify(createDomainRequest.getSlug());
@@ -63,18 +67,12 @@ public class DomainController {
                     .body(new MessageResponse("Error: Preferred domain name (slug) is already taken!"));
         }
 
-        // Verify user exists
-        Optional<User> userOpt = userRepository.findById(currentUserId);
-        if (!userOpt.isPresent()) {
-            return ResponseEntity.badRequest()
-                    .body(new MessageResponse("Error: User not found!"));
-        }
-
         // Create new domain
         Domain domain = new Domain(createDomainRequest.getName(), normalizedSlug, currentUserId);
         domain.setDescription(createDomainRequest.getDescription());
         domain.setIndustry(createDomainRequest.getIndustry());
         Domain savedDomain = domainRepository.save(domain);
+        domainProvisioningService.provisionDefaults(savedDomain, null);
 
         return ResponseEntity.ok(new DomainResponse(savedDomain));
     }
@@ -83,33 +81,36 @@ public class DomainController {
      * Get all domains owned by the current user.
      */
     @GetMapping("")
-    @PreAuthorize("hasAnyAuthority('BUSINESS_USER', 'DOMAIN_ADMIN', 'BUSINESS_OWNER', 'APP_ADMIN', 'ROLE_BUSINESS_USER', 'ROLE_DOMAIN_ADMIN', 'ROLE_BUSINESS_OWNER', 'ROLE_APP_ADMIN')")
     public ResponseEntity<List<DomainResponse>> getUserDomains() {
-        // Get current authenticated user
+        AdaptiveUserDetails principal = currentAdaptivePrincipal();
+        if (principal != null) {
+            if (principal.getPrincipalType() == PrincipalType.OWNER) {
+                List<Domain> domains = domainRepository.findByOwnerUserId(principal.getId());
+                return ResponseEntity.ok(domains.stream().map(DomainResponse::new).collect(Collectors.toList()));
+            }
+            if (principal.getPrincipalType() == PrincipalType.DOMAIN_USER && principal.getDomainId() != null) {
+                return domainRepository.findById(principal.getDomainId())
+                        .map(domain -> ResponseEntity.ok(List.of(new DomainResponse(domain))))
+                        .orElse(ResponseEntity.ok(List.of()));
+            }
+        }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        String currentUserId = userDetails.getId();
-
-        // Find domains owned by current user
-        List<Domain> domains = domainRepository.findByOwnerUserId(currentUserId);
-        List<DomainResponse> domainResponses = domains.stream()
-                .map(DomainResponse::new)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(domainResponses);
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
+            String currentUserId = userDetails.getId();
+            List<Domain> domains = domainRepository.findByOwnerUserId(currentUserId);
+            List<DomainResponse> domainResponses = domains.stream()
+                    .map(DomainResponse::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(domainResponses);
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     /**
      * Get specific domain by ID. Only the owner can access their domains.
      */
     @GetMapping("/{id}")
-    @PreAuthorize("@domainSecurity.isSameDomain(#id, principal.domainId)")
     public ResponseEntity<?> getDomain(@PathVariable String id) {
-        // Get current authenticated user
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        String currentUserId = userDetails.getId();
-
         // Find domain by ID
         Optional<Domain> domainOpt = domainRepository.findById(id);
         if (!domainOpt.isPresent()) {
@@ -118,10 +119,29 @@ public class DomainController {
 
         Domain domain = domainOpt.get();
 
-        // Check if current user is the owner of this domain
-        if (!domain.getOwnerUserId().equals(currentUserId)) {
+        AdaptiveUserDetails principal = currentAdaptivePrincipal();
+        if (principal != null) {
+            if (principal.getPrincipalType() == PrincipalType.OWNER
+                    && domain.getOwnerUserId().equals(principal.getId())) {
+                return ResponseEntity.ok(new DomainResponse(domain));
+            }
+            if (principal.getPrincipalType() == PrincipalType.DOMAIN_USER
+                    && id.equals(principal.getDomainId())) {
+                return ResponseEntity.ok(new DomainResponse(domain));
+            }
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new MessageResponse("Error: Access denied. You are not the owner of this domain."));
+                    .body(new MessageResponse("Error: Access denied."));
+        }
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
+            String currentUserId = userDetails.getId();
+            if (!domain.getOwnerUserId().equals(currentUserId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new MessageResponse("Error: Access denied. You are not the owner of this domain."));
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         return ResponseEntity.ok(new DomainResponse(domain));
@@ -131,13 +151,7 @@ public class DomainController {
      * Get specific domain by slug. Only the owner can access their domains.
      */
     @GetMapping("/slug/{slug}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getDomainBySlug(@PathVariable String slug) {
-        // Get current authenticated user
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        String currentUserId = userDetails.getId();
-
         String normalizedSlug = slugify(slug);
 
         Optional<Domain> domainOpt = domainRepository.findBySlug(normalizedSlug);
@@ -146,15 +160,43 @@ public class DomainController {
         }
 
         Domain domain = domainOpt.get();
-        if (!domain.getOwnerUserId().equals(currentUserId)) {
+        AdaptiveUserDetails principal = currentAdaptivePrincipal();
+        if (principal != null) {
+            if (principal.getPrincipalType() == PrincipalType.OWNER
+                    && domain.getOwnerUserId().equals(principal.getId())) {
+                return ResponseEntity.ok(new DomainResponse(domain));
+            }
+            if (principal.getPrincipalType() == PrincipalType.DOMAIN_USER
+                    && domain.getId().equals(principal.getDomainId())) {
+                return ResponseEntity.ok(new DomainResponse(domain));
+            }
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new MessageResponse("Error: Access denied. You are not the owner of this domain."));
+                    .body(new MessageResponse("Error: Access denied."));
+        }
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetailsImpl userDetails) {
+            String currentUserId = userDetails.getId();
+            if (!domain.getOwnerUserId().equals(currentUserId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new MessageResponse("Error: Access denied. You are not the owner of this domain."));
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         return ResponseEntity.ok(new DomainResponse(domain));
     }
 
     // --- helpers ---
+    private AdaptiveUserDetails currentAdaptivePrincipal() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof AdaptiveUserDetails details) {
+            return details;
+        }
+        return null;
+    }
+
     private String slugify(String input) {
         if (input == null) return null;
         String s = input.trim().toLowerCase();

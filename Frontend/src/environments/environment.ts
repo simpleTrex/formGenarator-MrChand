@@ -5,6 +5,7 @@
 export const environment = {
   production: false,
   api: 'http://localhost:8005/custom_form',
+  adaptiveApi: 'http://localhost:8005/adaptive',
 };
 
 /*

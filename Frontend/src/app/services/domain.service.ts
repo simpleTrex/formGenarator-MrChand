@@ -10,8 +10,16 @@ export interface CreateDomainPayload {
   industry?: string;
 }
 
+export interface CreateApplicationPayload {
+  name: string;
+  slug: string;
+  ownerUserId?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DomainService {
+  private adaptive = environment.adaptiveApi;
+
   constructor(private baseService: BaseService) {}
 
   createDomain(payload: CreateDomainPayload): Observable<any> {
@@ -24,6 +32,30 @@ export class DomainService {
 
   getBySlug(slug: string): Observable<any> {
     return this.baseService.get(`${environment.api}/domain/slug/${slug}`, true);
+  }
+
+  getDomainGroups(slug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/groups`, true);
+  }
+
+  getDomainRoles(slug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/access/me`, true);
+  }
+
+  addDomainGroupMember(slug: string, groupId: string, username: string): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${slug}/groups/${groupId}/members`, true, { username });
+  }
+
+  removeDomainGroupMember(slug: string, groupId: string, userId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${slug}/groups/${groupId}/members/${userId}`, true, {});
+  }
+
+  getApplications(slug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/apps`, true);
+  }
+
+  createApplication(slug: string, payload: CreateApplicationPayload): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${slug}/apps`, true, payload);
   }
 }
 

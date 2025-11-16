@@ -1,20 +1,114 @@
-<div style="max-width:800px;margin:20px auto;">
+<div class="domain-container">
+  <div class="page-actions">
+    <button class="back-btn" (click)="goBackToAdaptive()">AdaptiveBP</button>
+    <button class="back-btn" *ngIf="auth.isLoggedIn()" (click)="logout()">Logout</button>
+  </div>
+
   <h2>Domain</h2>
-  <div *ngIf="error" style="color:#b00020;">{{ error }}</div>
+  <div *ngIf="error" class="error-text">{{ error }}</div>
   <div *ngIf="domain">
     <p><strong>Name:</strong> {{ domain.name }}</p>
     <p><strong>Slug:</strong> {{ domain.slug }}</p>
     <p *ngIf="domain.description"><strong>Description:</strong> {{ domain.description }}</p>
     <p *ngIf="domain.industry"><strong>Industry:</strong> {{ domain.industry }}</p>
   </div>
-</div>
-<div style="max-width: 800px; margin: 20px auto;">
-  <h2>Domain</h2>
-  <div *ngIf="error" style="color:#b00020;">{{ error }}</div>
-  <div *ngIf="domain">
-    <p><strong>Name:</strong> {{ domain.name }}</p>
-    <p><strong>Slug:</strong> {{ domain.slug }}</p>
-    <p *ngIf="domain.description"><strong>Description:</strong> {{ domain.description }}</p>
-    <p *ngIf="domain.industry"><strong>Industry:</strong> {{ domain.industry }}</p>
+
+  <div *ngIf="isDomainUser() || isOwnerContext(); else domainAuthForms" class="actions">
+    <button class="btn primary" *ngIf="canUseApps">Launch Models</button>
+    <button class="btn" *ngIf="canManageApps">Create App</button>
+  </div>
+
+  <ng-template #domainAuthForms>
+    <div class="auth-forms">
+      <div class="card">
+        <h3>Domain Login</h3>
+        <form [formGroup]="loginForm" (ngSubmit)="submitLogin()">
+          <label>Username
+            <input type="text" formControlName="username" [class.invalid]="submittedLogin && lf['username'].errors">
+          </label>
+          <div *ngIf="submittedLogin && lf['username'].errors" class="error-text">Username is required</div>
+
+          <label>Password
+            <input type="password" formControlName="password" [class.invalid]="submittedLogin && lf['password'].errors">
+          </label>
+          <div *ngIf="submittedLogin && lf['password'].errors" class="error-text">Password is required</div>
+
+          <button [disabled]="loadingLogin">Login</button>
+          <div *ngIf="loginError" class="error-text">{{ loginError }}</div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Sign Up</h3>
+        <form [formGroup]="signupForm" (ngSubmit)="submitSignup()">
+          <label>Username
+            <input type="text" formControlName="username" [class.invalid]="submittedSignup && sf['username'].errors">
+          </label>
+          <div *ngIf="submittedSignup && sf['username'].errors" class="error-text">Username is required</div>
+
+          <label>Email
+            <input type="email" formControlName="email" [class.invalid]="submittedSignup && sf['email'].errors">
+          </label>
+          <div *ngIf="submittedSignup && sf['email'].errors" class="error-text">
+            <div *ngIf="sf['email'].errors['required']">Email is required</div>
+            <div *ngIf="sf['email'].errors['email']">Invalid email</div>
+          </div>
+
+          <label>Password
+            <input type="password" formControlName="password" [class.invalid]="submittedSignup && sf['password'].errors">
+          </label>
+          <div *ngIf="submittedSignup && sf['password'].errors" class="error-text">
+            <div *ngIf="sf['password'].errors['required']">Password is required</div>
+            <div *ngIf="sf['password'].errors['minlength']">At least 6 characters</div>
+          </div>
+
+          <button [disabled]="loadingSignup">Create account</button>
+          <div *ngIf="signupError" class="error-text">{{ signupError }}</div>
+          <div *ngIf="signupMessage" class="success-text">{{ signupMessage }}</div>
+        </form>
+      </div>
+    </div>
+  </ng-template>
+
+  <div *ngIf="isOwnerContext() || canUseApps || canManageUsers" class="owner-panels">
+    <div class="card" *ngIf="canManageUsers">
+      <h3>Domain Groups</h3>
+      <p class="info-text">Assign users to <strong>Domain Admin</strong> or <strong>Domain Contributor</strong> by username.</p>
+      <div *ngIf="domainGroupsLoading">Loading groups...</div>
+      <div *ngIf="groupError" class="error-text">{{ groupError }}</div>
+      <div class="group-list">
+        <div *ngFor="let group of domainGroups" class="group-item">
+          <div class="group-header">
+            <strong>{{ group.name }}</strong>
+            <div class="chips">
+              <span class="chip" *ngFor="let perm of group.permissions">{{ perm }}</span>
+            </div>
+          </div>
+          <div class="member-form">
+            <input type="text" placeholder="Username" [(ngModel)]="memberInputs[group.id]" [ngModelOptions]="{standalone:true}">
+            <button (click)="addMember(group.id)">Add Member</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" *ngIf="canUseApps || canManageApps">
+      <h3>Applications</h3>
+      <div *ngIf="appsLoading">Loading applications...</div>
+      <div *ngIf="appError" class="error-text">{{ appError }}</div>
+      <div *ngIf="appMessage" class="success-text">{{ appMessage }}</div>
+      <div class="app-create" *ngIf="canManageApps">
+        <input type="text" placeholder="App name" [(ngModel)]="newApp.name" [ngModelOptions]="{standalone:true}">
+        <input type="text" placeholder="Slug" [(ngModel)]="newApp.slug" [ngModelOptions]="{standalone:true}">
+        <input type="text" placeholder="Owner User ID (optional)" [(ngModel)]="newApp.ownerUserId" [ngModelOptions]="{standalone:true}">
+        <button (click)="submitNewApp()">Create App</button>
+      </div>
+      <div class="app-list">
+        <div class="app-card" *ngFor="let app of apps">
+          <div><strong>{{ app.name }}</strong> ({{ app.slug }})</div>
+          <div *ngIf="app.ownerUserId">Owner: {{ app.ownerUserId }}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

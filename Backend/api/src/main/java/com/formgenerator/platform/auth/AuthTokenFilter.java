@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -18,6 +17,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import com.formgenerator.platform.auth.JwtPrincipalClaims;
+
 public class AuthTokenFilter extends OncePerRequestFilter {
 
 	@Autowired
@@ -25,6 +26,9 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
 	@Autowired
 	private UserDetailsServiceImpl userDetailsService;
+
+	@Autowired
+	private com.formgenerator.api.services.AdaptivePrincipalService adaptivePrincipalService;
 
 	private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
 
@@ -34,14 +38,22 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 		try {
 			String jwt = parseJwt(request);
 			if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-				String username = jwtUtils.getUserNameFromJwtToken(jwt);
-				UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-				UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-						userDetails, null, userDetails.getAuthorities());
-				authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-				SecurityContextHolder.getContext().setAuthentication(authentication);
-				for (GrantedAuthority role : userDetails.getAuthorities()) {
-					System.out.println("ROLE:>>" + role.getAuthority());
+				JwtPrincipalClaims claims = jwtUtils.parseClaims(jwt);
+				if (claims.getPrincipalType() != null && claims.getPrincipalId() != null) {
+					adaptivePrincipalService.loadById(claims.getPrincipalId(), claims.getPrincipalType(),
+							claims.getDomainId()).ifPresent(principal -> {
+								UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+										principal, null, principal.getAuthorities());
+								authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+								SecurityContextHolder.getContext().setAuthentication(authentication);
+							});
+				} else {
+					String username = jwtUtils.getUserNameFromJwtToken(jwt);
+					UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+					UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+							userDetails, null, userDetails.getAuthorities());
+					authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+					SecurityContextHolder.getContext().setAuthentication(authentication);
 				}
 			}
 		} catch (Exception e) {

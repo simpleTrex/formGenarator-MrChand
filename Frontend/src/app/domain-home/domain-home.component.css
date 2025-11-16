@@ -1,1 +1,125 @@
 /* minimal *//* Minimal spacing */
+@import '../login/login.component.css';
+
+.domain-container {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 16px;
+}
+
+.back-btn {
+  margin-bottom: 12px;
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.auth-forms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.success-text {
+  color: #2e8b57;
+  font-size: 13px;
+}
+
+.owner-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.app-create {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.app-create input {
+  padding: 8px;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+}
+
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.group-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  background: #e0e7ff;
+  color: #1e3a8a;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.member-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.member-form input {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+}
+
+.app-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.info-text {
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 12px;
+}

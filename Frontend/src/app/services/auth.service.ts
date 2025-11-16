@@ -5,49 +5,100 @@ import { environment } from 'src/environments/environment';
 import { BaseService } from './base.service';
 const helper = new JwtHelperService();
 
+export type PrincipalType = 'OWNER' | 'DOMAIN_USER';
+
+export interface AuthContext {
+  userId: string;
+  username?: string;
+  email?: string;
+  domainId?: string | null;
+  principalType: PrincipalType;
+  token?: string;
+}
+
 @Injectable()
 export class AuthService {
-  currentUser: User | null;
+  currentUser: AuthContext | null;
 
   constructor(
     private baseService: BaseService) {
-    let user = localStorage.getItem('user');
-    this.currentUser = new User();
-    if (user) {
-      this.currentUser = JSON.parse(user);
-    }
+    const stored = localStorage.getItem('authContext');
+    this.currentUser = stored ? JSON.parse(stored) : null;
   }
 
+  loginOwner(email: string, password: string) {
+    return this.baseService.post(`${environment.adaptiveApi}/auth/owner/login`, false, { email, password })
+      .pipe(map(response => this.handleAuthResponse(response)));
+  }
+
+  loginDomain(domainSlug: string, username: string, password: string) {
+    const slug = domainSlug?.trim().toLowerCase();
+    return this.baseService.post(`${environment.adaptiveApi}/domains/${slug}/auth/login`, false, { username, password })
+      .pipe(map(response => this.handleAuthResponse(response)));
+  }
+
+  /**
+   * Legacy login kept for backward compatibility until all components are updated.
+   * Defaults to calling domain login with the provided username/password against the slug 'default'.
+   */
   login(username: string, password: string) {
-    return this.baseService.post(`${environment.api}/auth/login`, true, { username, password })
-      .pipe(map(response => {
-        console.log(response);
-        if (response && response.token) {
-          //localStorage.setItem('token', response.token);
-          this.setCookie('token', response.token, 1);
-          //document.cookie = 'token_=' + response.token + ';expire=' + new Date() + '; HttpOnly=true;';
-          response.token = null;
-          localStorage.setItem('user', JSON.stringify(response));
-          return true;
-        }
-        else return false;
-      }));
+    return this.loginDomain('default', username, password);
   }
 
   logout() {
-    //localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('authContext');
+    sessionStorage.removeItem('token');
     this.currentUser = null;
     this.deleteCookie('token');
   }
 
+  signupOwner(displayName: string, email: string, password: string) {
+    return this.baseService.post(`${environment.adaptiveApi}/auth/owner/signup`, false, {
+      displayName,
+      email,
+      password
+    });
+  }
+
+  signupDomain(domainSlug: string, username: string, email: string, password: string) {
+    const slug = domainSlug?.trim().toLowerCase();
+    return this.baseService.post(`${environment.adaptiveApi}/domains/${slug}/auth/signup`, false, {
+      username,
+      email,
+      password
+    });
+  }
+
   public isLoggedIn() {
-    //let token = localStorage.getItem('token');
     let token = this.getCookie('token');
-    if (token && this.currentUser && token) {
-      return !helper.isTokenExpired(token);
+    if (!token) {
+      token = sessionStorage.getItem('token') || '';
     }
-    return false;
+    return !!(token && !helper.isTokenExpired(token) && this.currentUser);
+  }
+
+  getContext(): AuthContext | null {
+    return this.currentUser;
+  }
+
+  private handleAuthResponse(response: any) {
+    if (response && response.token) {
+      this.setCookie('token', response.token, 1);
+      sessionStorage.setItem('token', response.token);
+    }
+    const context: AuthContext = {
+      userId: response?.userId,
+      username: response?.username,
+      email: response?.email,
+      domainId: response?.domainId,
+      principalType: response?.principalType,
+      token: response?.token
+    };
+    this.currentUser = context;
+    localStorage.setItem('authContext', JSON.stringify(context));
+    localStorage.setItem('user', JSON.stringify(context));
+    return true;
   }
 
   getCookie(name: string) {
@@ -77,14 +128,6 @@ export class AuthService {
     document.cookie = `${name}=${value}; SameSite=Strict; ${expires}${cpath}`;
   }
 
-}
-
-export class User {
-  id?: number;
-  username?: string;
-  email?: string;
-  roles?: string;
-  //token?: string;
 }
 
 export const _authService = [
