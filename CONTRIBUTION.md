@@ -144,7 +144,7 @@ Use the **Jira board / Confluence space** for:
 
 If you’re stuck or have questions:
 - Open a **GitHub Discussion** or issue.
-- Mention **@UGSNBandara** or **@BanukaRajapaksha** for DevOps-related help.
+- Mention **@UGSNBandara** or **@PrageethBanuka** for DevOps-related help.
 
 ---
 
