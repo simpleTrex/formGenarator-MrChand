@@ -2,23 +2,28 @@
 <div class="home-container fade-in">
     <div class="hero">
         <div>
-            <h1 class="hero-title">Home Page</h1>
-            <p class="hero-subtitle" *ngIf="_authService.isLoggedIn()">
-                Welcome {{ _authService.currentUser?.username }}
+            <h1 class="hero-title">AdaptiveBP</h1>
+            <p class="hero-subtitle" *ngIf="ownerContext">
+                Welcome {{ displayName }}
             </p>
-            <p class="hero-subtitle" *ngIf="!_authService.isLoggedIn()">
-                Welcome! Please log in to access your forms.
+            <p class="hero-subtitle" *ngIf="!ownerContext">
+                Manage your domains and applications from one place.
             </p>
+            <p class="notice" *ngIf="notice">{{ notice }}</p>
         </div>
         <div class="cta-group">
-            <button *ngIf="!_authService.isLoggedIn()" class="btn btn-primary" routerLink="/login">Login</button>
-            <button *ngIf="_authService.isLoggedIn()" class="btn btn-secondary" (click)="_authService.logout()">Logout</button>
-            <button *ngIf="_authService.isLoggedIn()" class="btn" routerLink="/create-domain">Create Domain</button>
+            <ng-container *ngIf="!ownerContext; else ownerActions">
+                <button class="btn btn-primary" routerLink="/owner-login">Owner Login</button>
+                <button class="btn" routerLink="/owner-signup">Owner Signup</button>
+            </ng-container>
+            <ng-template #ownerActions>
+                <button class="btn" routerLink="/create-domain">Create Domain</button>
+                <button class="btn" (click)="_authService.logout()">Logout</button>
+            </ng-template>
         </div>
     </div>
 
-    <!-- User's Domains Section -->
-    <div *ngIf="_authService.isLoggedIn() && !loadingDomains && domains.length > 0" class="domains-section">
+    <div *ngIf="ownerContext && !loadingDomains && domains.length > 0" class="domains-section">
         <h2 class="section-title">Your Domains</h2>
         <div class="domains-grid">
             <div *ngFor="let domain of domains" class="domain-card" (click)="navigateToDomain(domain.slug)">
@@ -30,23 +35,7 @@
         </div>
     </div>
 
-    <div *ngIf="_authService.isLoggedIn() && loadingDomains" class="loading-section">
+    <div *ngIf="ownerContext && loadingDomains" class="loading-section">
         <p>Loading your domains...</p>
-    </div>
-
-    <!-- Example card grid for future features -->
-    <div class="card-grid">
-        <div class="card">
-            <div class="card-title">Create Form</div>
-            <div class="card-desc">Start building a new custom form for your workflow.</div>
-        </div>
-        <div class="card">
-            <div class="card-title">View Forms</div>
-            <div class="card-desc">Browse and manage your existing forms.</div>
-        </div>
-        <div class="card">
-            <div class="card-title">User Profile</div>
-            <div class="card-desc">Update your account details and preferences.</div>
-        </div>
     </div>
 </div>

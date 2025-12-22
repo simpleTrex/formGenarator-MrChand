@@ -1,34 +1,25 @@
-<div class="col-md-6 offset-md-3 mt-5">
-    <div class="alert alert-info">
-        Username: admin/guest/chand<br />
-        Password: admin/admin/admin
+<div class="login-card">
+  <h2>AdaptiveBP Owner Login</h2>
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+    <label>Email
+      <input type="email" formControlName="email" [class.invalid]="submitted && f['email'].errors" />
+    </label>
+    <div *ngIf="submitted && f['email'].errors" class="error-text">
+      <div *ngIf="f['email'].errors['required']">Email is required</div>
+      <div *ngIf="f['email'].errors['email']">Email is invalid</div>
     </div>
-    <div class="card">
-        <h4 class="card-header">Angular 10 JWT Login Example</h4>
-        <div class="card-body">
-            <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" formControlName="username" class="form-control"
-                        [ngClass]="{ 'is-invalid': submitted && f['username'].errors }" />
-                    <div *ngIf="submitted && f['username'].errors" class="invalid-feedback">
-                        <div *ngIf="f['username'].errors['required']">Username is required</div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" formControlName="password" class="form-control"
-                        [ngClass]="{ 'is-invalid': submitted && f['password'].errors }" />
-                    <div *ngIf="submitted && f['password'].errors" class="invalid-feedback">
-                        <div *ngIf="f['password'].errors['required']">Password is required</div>
-                    </div>
-                </div>
-                <button [disabled]="loading" class="btn btn-primary">
-                    <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
-                    Login
-                </button>
-                <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
-            </form>
-        </div>
+
+    <label>Password
+      <input type="password" formControlName="password" [class.invalid]="submitted && f['password'].errors" />
+    </label>
+    <div *ngIf="submitted && f['password'].errors" class="error-text">
+      <div *ngIf="f['password'].errors['required']">Password is required</div>
     </div>
+
+    <button [disabled]="loading">Login</button>
+    <div *ngIf="error" class="error-text">{{ error }}</div>
+  </form>
+  <div class="helper-links">
+    <a routerLink="/domain-login">Domain user login</a>
+  </div>
 </div>

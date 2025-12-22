@@ -1,0 +1,32 @@
+<div class="login-card">
+  <h2>Create AdaptiveBP Owner Account</h2>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <label>Display name
+      <input type="text" formControlName="displayName" [class.invalid]="submitted && f['displayName'].errors">
+    </label>
+    <div *ngIf="submitted && f['displayName'].errors" class="error-text">Display name is required</div>
+
+    <label>Email
+      <input type="email" formControlName="email" [class.invalid]="submitted && f['email'].errors">
+    </label>
+    <div *ngIf="submitted && f['email'].errors" class="error-text">
+      <div *ngIf="f['email'].errors['required']">Email is required</div>
+      <div *ngIf="f['email'].errors['email']">Invalid email</div>
+    </div>
+
+    <label>Password
+      <input type="password" formControlName="password" [class.invalid]="submitted && f['password'].errors">
+    </label>
+    <div *ngIf="submitted && f['password'].errors" class="error-text">
+      <div *ngIf="f['password'].errors['required']">Password is required</div>
+      <div *ngIf="f['password'].errors['minlength']">At least 6 characters</div>
+    </div>
+
+    <button [disabled]="loading">Create account</button>
+    <div *ngIf="error" class="error-text">{{ error }}</div>
+    <div *ngIf="message" class="success-text">{{ message }}</div>
+  </form>
+  <div class="helper-links">
+    <a routerLink="/owner-login">Back to owner login</a>
+  </div>
+</div>

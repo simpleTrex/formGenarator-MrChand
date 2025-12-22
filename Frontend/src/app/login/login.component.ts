@@ -21,12 +21,11 @@ export class LoginComponent implements OnInit {
     private router: Router,
     private authenticationService: AuthService
   ) {
-    // redirect to home if already logged in
     if (this.authenticationService.isLoggedIn()) {
       this.router.navigate(['/']);
     }
     this.loginForm = this.formBuilder.group({
-      username: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required]
     });
   }
@@ -34,28 +33,22 @@ export class LoginComponent implements OnInit {
   ngOnInit() {
   }
 
-  // convenience getter for easy access to form fields
   get f() { return this.loginForm.controls; }
 
   onSubmit() {
     this.submitted = true;
-
-    // stop here if form is invalid
     if (this.loginForm.invalid) {
       return;
     }
-
     this.loading = true;
-    this.authenticationService.login(this.f['username'].value, this.f['password'].value)
-      //.pipe(first())
+    this.authenticationService.loginOwner(this.f['email'].value, this.f['password'].value)
       .subscribe({
         next: () => {
-          // get return url from route parameters or default to '/'
           const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
           this.router.navigate([returnUrl]);
         },
         error: error => {
-          this.error = error;
+          this.error = error?.error ?? 'Login failed';
           this.loading = false;
         }
       });
