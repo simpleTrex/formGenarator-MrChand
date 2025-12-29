@@ -1,0 +1,86 @@
+<div class="container-fluid mt-4">
+  <div class="row mb-3">
+    <div class="col">
+      <h2>Domain Users & Groups</h2>
+      <p class="text-muted">Drag and drop users to assign them to groups</p>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && !error" class="row">
+    <!-- Groups with their members -->
+    <div class="col-md-9">
+      <div class="row">
+        <div *ngFor="let group of groups" class="col-md-6 mb-4">
+          <div class="card h-100"
+               (dragover)="onDragOver($event)"
+               (drop)="onDrop($event, group.id)">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">{{ group.name }}</h5>
+              <small>{{ getUsersInGroup(group.id).length }} member(s)</small>
+            </div>
+            <div class="card-body drop-zone" style="min-height: 200px;">
+              <div *ngIf="getUsersInGroup(group.id).length === 0" class="text-muted text-center py-4">
+                <i class="bi bi-people"></i>
+                <p>Drop users here to add them to this group</p>
+              </div>
+              
+              <div *ngFor="let user of getUsersInGroup(group.id)" 
+                   class="user-card mb-2 p-2 bg-light rounded"
+                   draggable="true"
+                   (dragstart)="onDragStart($event, user, group.id)"
+                   (dragend)="onDragEnd()">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>{{ user.username }}</strong>
+                    <br>
+                    <small class="text-muted">{{ user.email }}</small>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger"
+                          (click)="removeUserFromGroup(user, group.id)"
+                          title="Remove from group">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unassigned users -->
+    <div class="col-md-3">
+      <div class="card sticky-top" style="top: 20px;">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0">Unassigned Users</h5>
+          <small>{{ getUsersWithoutGroups().length }} user(s)</small>
+        </div>
+        <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+          <div *ngIf="getUsersWithoutGroups().length === 0" class="text-muted text-center py-4">
+            <p>All users are assigned to groups</p>
+          </div>
+          
+          <div *ngFor="let user of getUsersWithoutGroups()" 
+               class="user-card mb-2 p-2 bg-light rounded"
+               draggable="true"
+               (dragstart)="onDragStart($event, user, null)"
+               (dragend)="onDragEnd()">
+            <strong>{{ user.username }}</strong>
+            <br>
+            <small class="text-muted">{{ user.email }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

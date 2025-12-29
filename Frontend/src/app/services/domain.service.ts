@@ -42,6 +42,18 @@ export class DomainService {
     return this.baseService.get(`${this.adaptive}/domains/${slug}/access/me`, true);
   }
 
+  getDomainUsersWithGroups(slug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/groups/users`, true);
+  }
+
+  getGroupMembers(slug: string, groupId: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/groups/${groupId}/members`, true);
+  }
+
+  getUserGroups(slug: string, userId: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/groups/users/${userId}`, true);
+  }
+
   addDomainGroupMember(slug: string, groupId: string, username: string): Observable<any> {
     return this.baseService.post(`${this.adaptive}/domains/${slug}/groups/${groupId}/members`, true, { username });
   }

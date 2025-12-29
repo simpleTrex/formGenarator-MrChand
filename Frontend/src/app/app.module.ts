@@ -27,6 +27,7 @@ import { DomainService } from './services/domain.service';
 import { DomainLoginComponent } from './domain-login/domain-login.component';
 import { OwnerSignupComponent } from './owner-signup/owner-signup.component';
 import { DomainSignupComponent } from './domain-signup/domain-signup.component';
+import { DomainUsersComponent } from './domain-users/domain-users.component';
 
 @NgModule({
   declarations: [
@@ -46,6 +47,7 @@ import { DomainSignupComponent } from './domain-signup/domain-signup.component';
     DomainLoginComponent,
     OwnerSignupComponent,
     DomainSignupComponent,
+    DomainUsersComponent,
   ],
   imports: [
     ReactiveFormsModule,

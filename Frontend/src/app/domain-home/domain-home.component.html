@@ -1,16 +1,20 @@
 <div class="domain-container">
+  <!-- Header Section -->
   <div class="page-actions">
-    <button class="back-btn" (click)="goBackToAdaptive()">AdaptiveBP</button>
+    <button class="back-btn" (click)="goBackToAdaptive()">← AdaptiveBP</button>
     <button class="back-btn" *ngIf="auth.isLoggedIn()" (click)="logout()">Logout</button>
   </div>
 
-  <h2>Domain</h2>
-  <div *ngIf="error" class="error-text">{{ error }}</div>
-  <div *ngIf="domain">
-    <p><strong>Name:</strong> {{ domain.name }}</p>
-    <p><strong>Slug:</strong> {{ domain.slug }}</p>
-    <p *ngIf="domain.description"><strong>Description:</strong> {{ domain.description }}</p>
-    <p *ngIf="domain.industry"><strong>Industry:</strong> {{ domain.industry }}</p>
+  <!-- Domain Info Section -->
+  <div class="domain-info-section">
+    <h2>Domain Information</h2>
+    <div *ngIf="error" class="error-text">{{ error }}</div>
+    <div *ngIf="domain" class="domain-details">
+      <p><strong>Name:</strong> {{ domain.name }}</p>
+      <p><strong>Slug:</strong> {{ domain.slug }}</p>
+      <p *ngIf="domain.description"><strong>Description:</strong> {{ domain.description }}</p>
+      <p *ngIf="domain.industry"><strong>Industry:</strong> {{ domain.industry }}</p>
+    </div>
   </div>
 
   <div *ngIf="isDomainUser() || isOwnerContext(); else domainAuthForms" class="actions">
@@ -72,21 +76,63 @@
 
   <div *ngIf="isOwnerContext() || canUseApps || canManageUsers" class="owner-panels">
     <div class="card" *ngIf="canManageUsers">
-      <h3>Domain Groups</h3>
-      <p class="info-text">Assign users to <strong>Domain Admin</strong> or <strong>Domain Contributor</strong> by username.</p>
-      <div *ngIf="domainGroupsLoading">Loading groups...</div>
+      <h3>Domain Groups & Users</h3>
+      <p class="info-text">Drag and drop users to assign them to groups</p>
+      <div *ngIf="domainGroupsLoading || usersLoading">Loading...</div>
       <div *ngIf="groupError" class="error-text">{{ groupError }}</div>
-      <div class="group-list">
-        <div *ngFor="let group of domainGroups" class="group-item">
-          <div class="group-header">
-            <strong>{{ group.name }}</strong>
-            <div class="chips">
+      
+      <div class="groups-users-container">
+        <!-- Groups with drag-and-drop -->
+        <div class="groups-grid">
+          <div *ngFor="let group of domainGroups" class="group-card"
+               (dragover)="onDragOver($event)"
+               (drop)="onDrop($event, group.id)">
+            <div class="group-card-header">
+              <strong>{{ group.name }}</strong>
+              <span class="badge">{{ getUsersInGroup(group.id).length }} member(s)</span>
+            </div>
+            <div class="group-permissions">
               <span class="chip" *ngFor="let perm of group.permissions">{{ perm }}</span>
             </div>
+            <div class="group-members">
+              <div *ngIf="getUsersInGroup(group.id).length === 0" class="empty-message">
+                Drop users here to add them
+              </div>
+              <div *ngFor="let user of getUsersInGroup(group.id)" 
+                   class="user-item"
+                   draggable="true"
+                   (dragstart)="onDragStart($event, user, group.id)"
+                   (dragend)="onDragEnd()">
+                <div class="user-info">
+                  <strong>{{ user.username }}</strong>
+                  <small>{{ user.email }}</small>
+                </div>
+                <button class="btn-remove" (click)="removeUserFromGroup(user, group.id)" title="Remove">×</button>
+              </div>
+            </div>
           </div>
-          <div class="member-form">
-            <input type="text" placeholder="Username" [(ngModel)]="memberInputs[group.id]" [ngModelOptions]="{standalone:true}">
-            <button (click)="addMember(group.id)">Add Member</button>
+        </div>
+
+        <!-- Unassigned users -->
+        <div class="unassigned-panel">
+          <div class="panel-header">
+            <strong>Unassigned Users</strong>
+            <span class="badge">{{ getUsersWithoutGroups().length }}</span>
+          </div>
+          <div class="unassigned-list">
+            <div *ngIf="getUsersWithoutGroups().length === 0" class="empty-message">
+              All users are assigned
+            </div>
+            <div *ngFor="let user of getUsersWithoutGroups()" 
+                 class="user-item"
+                 draggable="true"
+                 (dragstart)="onDragStart($event, user, null)"
+                 (dragend)="onDragEnd()">
+              <div class="user-info">
+                <strong>{{ user.username }}</strong>
+                <small>{{ user.email }}</small>
+              </div>
+            </div>
           </div>
         </div>
       </div>
