@@ -15,7 +15,7 @@
     </div>
   </div>
 
-  <div *ngIf="isOwnerContext() || canManageApp" class="manage-panels">
+  <div *ngIf="canManageAppGroups" class="manage-panels">
     <div class="card">
       <h3>Application Groups & Users</h3>
       <p class="info-text">Drag and drop users between groups to manage access. All users are automatically in "App Viewer" by default.</p>

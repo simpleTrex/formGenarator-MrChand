@@ -62,7 +62,9 @@ public class AppGroupController {
     @GetMapping
     public ResponseEntity<?> list(@PathVariable String slug, @PathVariable String appSlug) {
         ApplicationWithDomain appWithDomain = requireApplication(slug, appSlug);
-        if (!permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        // Allow if user has APP_READ or is domain admin
+        if (!permissionService.hasAppPermission(appWithDomain.application.getId(), AppPermission.APP_READ) &&
+            !permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
             return ResponseEntity.status(403).build();
         }
         List<AppGroup> groups = appGroupRepository.findByAppId(appWithDomain.application.getId());
@@ -72,7 +74,9 @@ public class AppGroupController {
     @GetMapping("/users")
     public ResponseEntity<?> listUsersWithGroups(@PathVariable String slug, @PathVariable String appSlug) {
         ApplicationWithDomain appWithDomain = requireApplication(slug, appSlug);
-        if (!permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        // Allow if user has APP_WRITE or is domain admin
+        if (!permissionService.hasAppPermission(appWithDomain.application.getId(), AppPermission.APP_WRITE) &&
+            !permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
             return ResponseEntity.status(403).build();
         }
         
@@ -134,7 +138,9 @@ public class AppGroupController {
         if (group == null || !group.getAppId().equals(appWithDomain.application.getId())) {
             return ResponseEntity.notFound().build();
         }
-        if (!permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        // Allow if user has APP_READ or is domain admin
+        if (!permissionService.hasAppPermission(appWithDomain.application.getId(), AppPermission.APP_READ) &&
+            !permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
             return ResponseEntity.status(403).build();
         }
         
@@ -184,7 +190,9 @@ public class AppGroupController {
     public ResponseEntity<?> addMember(@PathVariable String slug, @PathVariable String appSlug,
             @PathVariable String groupId, @Valid @RequestBody AssignMemberRequest request) {
         ApplicationWithDomain appWithDomain = requireApplication(slug, appSlug);
-        if (!permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        // Allow if user has APP_WRITE or is domain admin
+        if (!permissionService.hasAppPermission(appWithDomain.application.getId(), AppPermission.APP_WRITE) &&
+            !permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
             return ResponseEntity.status(403).build();
         }
         AppGroup group = appGroupRepository.findById(groupId).orElse(null);
@@ -213,7 +221,12 @@ public class AppGroupController {
     public ResponseEntity<?> listUserGroups(@PathVariable String slug, @PathVariable String appSlug,
             @PathVariable String userId) {
         ApplicationWithDomain appWithDomain = requireApplication(slug, appSlug);
-        if (!permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        // Allow if user is checking their own groups OR has APP_WRITE permission OR is domain admin
+        String currentUserId = currentPrincipalId();
+        boolean isOwnGroups = userId.equals(currentUserId);
+        if (!isOwnGroups && 
+            !permissionService.hasAppPermission(appWithDomain.application.getId(), AppPermission.APP_WRITE) &&
+            !permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
             return ResponseEntity.status(403).build();
         }
         
@@ -240,7 +253,9 @@ public class AppGroupController {
     public ResponseEntity<?> removeMember(@PathVariable String slug, @PathVariable String appSlug,
             @PathVariable String groupId, @PathVariable String userId) {
         ApplicationWithDomain appWithDomain = requireApplication(slug, appSlug);
-        if (!permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        // Allow if user has APP_WRITE or is domain admin
+        if (!permissionService.hasAppPermission(appWithDomain.application.getId(), AppPermission.APP_WRITE) &&
+            !permissionService.hasDomainPermission(appWithDomain.domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
             return ResponseEntity.status(403).build();
         }
         AppGroup group = appGroupRepository.findById(groupId).orElse(null);

@@ -26,6 +26,7 @@ export class AppHomeComponent implements OnInit {
   draggedFromGroupId: string | null = null;
 
   domainAccess = { permissions: [] as string[], groups: [] as string[] };
+  currentUserAppGroups: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -80,9 +81,7 @@ export class AppHomeComponent implements OnInit {
       this.domainService.getDomainRoles(this.domainSlug).subscribe({
         next: res => {
           this.domainAccess = res || { permissions: [], groups: [] };
-          if (this.canManageApp) {
-            this.loadAppGroups();
-          }
+          this.loadCurrentUserAppGroups();
         },
         error: () => { /* ignore */ }
       });
@@ -107,8 +106,38 @@ export class AppHomeComponent implements OnInit {
     return this.isOwnerContext() || this.hasPermission('DOMAIN_MANAGE_APPS');
   }
 
+  get canManageAppGroups(): boolean {
+    // Only domain owner or users in "App Admin" group can manage app groups
+    if (this.isOwnerContext()) {
+      return true;
+    }
+    // Check if user is in "App Admin" group for this app
+    return this.currentUserAppGroups.some(
+      (group: any) => group.name === 'App Admin'
+    );
+  }
+
   private hasPermission(code: string): boolean {
     return this.domainAccess.permissions.includes(code);
+  }
+
+  // Load current user's app groups
+  loadCurrentUserAppGroups() {
+    const currentUserId = this.auth.getContext()?.userId;
+    if (!currentUserId) {
+      return;
+    }
+    this.domainService.getUserAppGroups(this.domainSlug, this.appSlug, currentUserId).subscribe({
+      next: (groups) => {
+        this.currentUserAppGroups = groups || [];
+        if (this.canManageAppGroups) {
+          this.loadAppGroups();
+        }
+      },
+      error: () => {
+        this.currentUserAppGroups = [];
+      }
+    });
   }
 
   // Load app groups and users
