@@ -150,7 +150,7 @@
         <button (click)="submitNewApp()">Create App</button>
       </div>
       <div class="app-list">
-        <div class="app-card" *ngFor="let app of apps">
+        <div class="app-card" *ngFor="let app of apps" [routerLink]="['/domain', slug, 'app', app.slug]" style="cursor: pointer;">
           <div><strong>{{ app.name }}</strong> ({{ app.slug }})</div>
           <div *ngIf="app.ownerUserId">Owner: {{ app.ownerUserId }}</div>
         </div>

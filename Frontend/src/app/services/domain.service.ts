@@ -69,6 +69,34 @@ export class DomainService {
   createApplication(slug: string, payload: CreateApplicationPayload): Observable<any> {
     return this.baseService.post(`${this.adaptive}/domains/${slug}/apps`, true, payload);
   }
+
+  getApplication(slug: string, appSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/apps/${appSlug}`, true);
+  }
+
+  getAppGroups(slug: string, appSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups`, true);
+  }
+
+  getAppUsersWithGroups(slug: string, appSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups/users`, true);
+  }
+
+  getAppGroupMembers(slug: string, appSlug: string, groupId: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups/${groupId}/members`, true);
+  }
+
+  getUserAppGroups(slug: string, appSlug: string, userId: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups/users/${userId}`, true);
+  }
+
+  addAppGroupMember(slug: string, appSlug: string, groupId: string, username: string): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups/${groupId}/members`, true, { username });
+  }
+
+  removeAppGroupMember(slug: string, appSlug: string, groupId: string, userId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups/${groupId}/members/${userId}`, true, {});
+  }
 }
 
 export const _domainService = [
