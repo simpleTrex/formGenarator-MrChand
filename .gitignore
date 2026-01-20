@@ -228,3 +228,5 @@ Backend/DB/dump/
 **/run/
 **/var/
 C4
+
+Backend/api/src/main/resources/application.properties
