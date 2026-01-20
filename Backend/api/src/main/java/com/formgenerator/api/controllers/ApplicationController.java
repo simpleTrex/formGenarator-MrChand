@@ -50,6 +50,17 @@ public class ApplicationController {
         return ResponseEntity.ok(apps);
     }
 
+    @GetMapping("/{appSlug}")
+    public ResponseEntity<?> getApplication(@PathVariable String slug, @PathVariable String appSlug) {
+        Domain domain = requireDomain(slug);
+        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_USE_APP)) {
+            return ResponseEntity.status(403).build();
+        }
+        Application app = applicationRepository.findByDomainIdAndSlug(domain.getId(), appSlug)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));
+        return ResponseEntity.ok(app);
+    }
+
     @PostMapping
     public ResponseEntity<?> create(@PathVariable String slug, @Valid @RequestBody CreateApplicationRequest request) {
         Domain domain = requireDomain(slug);

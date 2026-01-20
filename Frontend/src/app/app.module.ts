@@ -27,6 +27,8 @@ import { DomainService } from './services/domain.service';
 import { DomainLoginComponent } from './domain-login/domain-login.component';
 import { OwnerSignupComponent } from './owner-signup/owner-signup.component';
 import { DomainSignupComponent } from './domain-signup/domain-signup.component';
+import { DomainUsersComponent } from './domain-users/domain-users.component';
+import { AppHomeComponent } from './app-home/app-home.component';
 
 @NgModule({
   declarations: [
@@ -46,6 +48,8 @@ import { DomainSignupComponent } from './domain-signup/domain-signup.component';
     DomainLoginComponent,
     OwnerSignupComponent,
     DomainSignupComponent,
+    DomainUsersComponent,
+    AppHomeComponent,
   ],
   imports: [
     ReactiveFormsModule,
@@ -62,6 +66,7 @@ import { DomainSignupComponent } from './domain-signup/domain-signup.component';
       { path: '', component: HomePageComponent },
       { path: 'create-domain', component: DomainCreateComponent, canActivate: [AuthGuard] },
       { path: 'domain/:slug', component: DomainHomeComponent },
+      { path: 'domain/:slug/app/:appSlug', component: AppHomeComponent },
       { path: '**', component: NotFoundPageComponent },
     ])
   ],

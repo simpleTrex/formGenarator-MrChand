@@ -1,0 +1,56 @@
+<div class="app-container">
+  <!-- Header Section -->
+  <div class="page-actions">
+    <button class="back-btn" (click)="goBackToDomain()">← Back to Domain</button>
+  </div>
+
+  <!-- App Info Section -->
+  <div class="app-info-section">
+    <h2>Application: {{ app?.name }}</h2>
+    <div *ngIf="error" class="error-text">{{ error }}</div>
+    <div *ngIf="app" class="app-details">
+      <p><strong>Name:</strong> {{ app.name }}</p>
+      <p><strong>Slug:</strong> {{ app.slug }}</p>
+      <p><strong>Domain:</strong> {{ domain?.name }} ({{ domainSlug }})</p>
+    </div>
+  </div>
+
+  <div *ngIf="canManageAppGroups" class="manage-panels">
+    <div class="card">
+      <h3>Application Groups & Users</h3>
+      <p class="info-text">Drag and drop users between groups to manage access. All users are automatically in "App Viewer" by default.</p>
+      <div *ngIf="appGroupsLoading || usersLoading">Loading...</div>
+      <div *ngIf="groupError" class="error-text">{{ groupError }}</div>
+      
+      <div class="groups-grid-only">
+        <div *ngFor="let group of appGroups" class="group-card"
+             (dragover)="onDragOver($event)"
+             (drop)="onDrop($event, group.id)">
+          <div class="group-card-header">
+            <strong>{{ group.name }}</strong>
+            <span class="badge">{{ getUsersInGroup(group.id).length }} member(s)</span>
+          </div>
+          <div class="group-permissions">
+            <span class="chip" *ngFor="let perm of group.permissions">{{ perm }}</span>
+          </div>
+          <div class="group-members">
+            <div *ngIf="getUsersInGroup(group.id).length === 0" class="empty-message">
+              Drop users here to add them
+            </div>
+            <div *ngFor="let user of getUsersInGroup(group.id)" 
+                 class="user-item"
+                 draggable="true"
+                 (dragstart)="onDragStart($event, user, group.id)"
+                 (dragend)="onDragEnd()">
+              <div class="user-info">
+                <strong>{{ user.username }}</strong>
+                <small>{{ user.email }}</small>
+              </div>
+              <button class="btn-remove" (click)="removeUserFromGroup(user.id, group.id)" title="Remove">×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

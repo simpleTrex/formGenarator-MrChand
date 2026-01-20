@@ -1,0 +1,30 @@
+.user-card {
+  cursor: move;
+  transition: all 0.2s ease;
+  border: 1px solid #dee2e6;
+}
+
+.user-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.user-card:active {
+  cursor: grabbing;
+}
+
+.drop-zone {
+  transition: background-color 0.2s ease;
+}
+
+.card:hover .drop-zone {
+  background-color: #f8f9fa;
+}
+
+.sticky-top {
+  z-index: 100;
+}
+
+.bi {
+  font-size: 1.2rem;
+}

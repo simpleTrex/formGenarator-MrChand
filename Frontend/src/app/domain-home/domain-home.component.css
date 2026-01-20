@@ -2,9 +2,15 @@
 @import '../login/login.component.css';
 
 .domain-container {
-  max-width: 800px;
+  max-width: 1400px;
   margin: 20px auto;
   padding: 16px;
+}
+
+.page-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .back-btn {
@@ -14,6 +20,30 @@
   color: #007bff;
   cursor: pointer;
   font-weight: 600;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background: #f0f4f8;
+  border-radius: 6px;
+}
+
+.domain-info-section {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.domain-info-section h2 {
+  margin: 0 0 12px 0;
+  color: #1e293b;
+  font-size: 24px;
+}
+
+.domain-details p {
+  margin: 6px 0;
+  color: #475569;
 }
 
 .actions {
@@ -33,6 +63,20 @@
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 16px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #1e293b;
+}
+
+.info-text {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 16px;
 }
 
 .success-text {
@@ -41,10 +85,14 @@
 }
 
 .owner-panels {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   margin-top: 24px;
+}
+
+.owner-panels .card {
+  width: 100%;
 }
 
 .app-create {
@@ -98,6 +146,165 @@
   margin-top: 10px;
 }
 
+.groups-users-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+@media (min-width: 992px) {
+  .groups-users-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 16px;
+  }
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.group-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fafafa;
+  min-height: 200px;
+  transition: all 0.2s ease;
+}
+
+.group-card:hover {
+  background: #f0f4f8;
+  border-color: #cbd5e0;
+}
+
+.group-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.group-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.badge {
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.group-members {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: move;
+  transition: all 0.2s ease;
+}
+
+.user-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.user-item:active {
+  cursor: grabbing;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-info strong {
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.user-info small {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.btn-remove {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.btn-remove:hover {
+  color: #991b1b;
+  transform: scale(1.2);
+}
+
+.unassigned-panel {
+  border: 2px dashed #cbd5e0;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f9fafb;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+@media (min-width: 992px) {
+  .unassigned-panel {
+    position: sticky;
+    top: 20px;
+    max-height: 600px;
+  }
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.unassigned-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-message {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 24px 8px;
+}
+
 .member-form input {
   flex: 1;
   padding: 6px;
@@ -106,20 +313,28 @@
 }
 
 .app-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .app-card {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 10px;
+  padding: 12px;
   background: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.app-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-color: #cbd5e0;
 }
 
 .info-text {
-  font-size: 13px;
-  color: #475569;
-  margin-bottom: 12px;
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 16px;
+  line-height: 1.5;
 }
