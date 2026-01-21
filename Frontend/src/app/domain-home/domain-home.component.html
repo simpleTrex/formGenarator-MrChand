@@ -2,6 +2,9 @@
   <!-- Header Section -->
   <div class="page-actions">
     <button class="back-btn" (click)="goBackToAdaptive()">← AdaptiveBP</button>
+    <button class="back-btn" *ngIf="(isDomainUser() || isOwnerContext()) && mode !== 'PREVIEW'" (click)="enterPreviewMode()">Preview Mode</button>
+    <button class="back-btn" *ngIf="(isDomainUser() || isOwnerContext()) && canEditMode && mode !== 'EDIT'" (click)="enterEditMode()">Edit Mode</button>
+    <button class="back-btn" *ngIf="(isDomainUser() || isOwnerContext()) && canAccessManager && mode !== 'ACCESS'" (click)="enterAccessManagerMode()">Access Manager</button>
     <button class="back-btn" *ngIf="auth.isLoggedIn()" (click)="logout()">Logout</button>
   </div>
 
@@ -17,9 +20,115 @@
     </div>
   </div>
 
-  <div *ngIf="isDomainUser() || isOwnerContext(); else domainAuthForms" class="actions">
-    <button class="btn primary" *ngIf="canUseApps">Launch Models</button>
-    <button class="btn" *ngIf="canManageApps">Create App</button>
+  <div *ngIf="isDomainUser() || isOwnerContext(); else domainAuthForms">
+    <!-- Preview Mode (default for all users) -->
+    <div *ngIf="mode === 'PREVIEW'" class="card" style="margin-top: 12px;">
+      <h3>Home</h3>
+      <p class="info-text">
+        This is the domain home page (business landing). We can customize this later.
+      </p>
+      <p class="info-text" *ngIf="canEditMode">
+        You can switch to <strong>Edit Mode</strong> to create apps.
+      </p>
+      <p class="info-text" *ngIf="canAccessManager">
+        You can manage users/groups using <strong>Access Manager</strong>.
+      </p>
+    </div>
+
+    <div class="card" style="margin-top: 12px;" *ngIf="canUseApps || canManageApps">
+      <h3>Applications</h3>
+      <div *ngIf="appsLoading">Loading applications...</div>
+      <div *ngIf="appError" class="error-text">{{ appError }}</div>
+      <div *ngIf="apps && apps.length === 0 && !appsLoading" class="info-text">No applications yet.</div>
+      <div class="app-list" *ngIf="apps && apps.length > 0">
+        <div class="app-card" *ngFor="let app of apps" [routerLink]="['/domain', slug, 'app', app.slug]" style="cursor: pointer;">
+          <div><strong>{{ app.name }}</strong> ({{ app.slug }})</div>
+          <div *ngIf="app.ownerUserId">Owner: {{ app.ownerUserId }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Mode (contributors/admins/owners) -->
+    <div *ngIf="mode === 'EDIT'" class="card" style="margin-top: 12px;">
+      <h3>Edit Mode</h3>
+      <p class="info-text">Editor tools will appear here. For now: create applications.</p>
+
+      <button class="btn" *ngIf="canManageApps" (click)="toggleCreateAppForm()">
+        {{ showCreateAppForm ? 'Hide Create App' : 'Create App' }}
+      </button>
+
+      <div class="app-create" *ngIf="canManageApps && showCreateAppForm">
+        <input type="text" placeholder="App name" [(ngModel)]="newApp.name" [ngModelOptions]="{standalone:true}">
+        <input type="text" placeholder="Slug" [(ngModel)]="newApp.slug" [ngModelOptions]="{standalone:true}">
+        <input type="text" placeholder="Owner User ID (optional)" [(ngModel)]="newApp.ownerUserId" [ngModelOptions]="{standalone:true}">
+        <button (click)="submitNewApp()">Create App</button>
+      </div>
+
+      <div *ngIf="appMessage" class="success-text">{{ appMessage }}</div>
+      <div *ngIf="appError" class="error-text">{{ appError }}</div>
+    </div>
+
+    <!-- Access Manager (admins/owners) -->
+    <div *ngIf="mode === 'ACCESS' && canManageUsers" class="card" style="margin-top: 12px;">
+      <h3>Domain Groups & Users</h3>
+      <p class="info-text">Drag and drop users to assign them to groups</p>
+      <div *ngIf="domainGroupsLoading || usersLoading">Loading...</div>
+      <div *ngIf="groupError" class="error-text">{{ groupError }}</div>
+
+      <div class="groups-users-container">
+        <div class="groups-grid">
+          <div *ngFor="let group of domainGroups" class="group-card"
+               (dragover)="onDragOver($event)"
+               (drop)="onDrop($event, group.id)">
+            <div class="group-card-header">
+              <strong>{{ group.name }}</strong>
+              <span class="badge">{{ getUsersInGroup(group.id).length }} member(s)</span>
+            </div>
+            <div class="group-permissions">
+              <span class="chip" *ngFor="let perm of group.permissions">{{ perm }}</span>
+            </div>
+            <div class="group-members">
+              <div *ngIf="getUsersInGroup(group.id).length === 0" class="empty-message">
+                Drop users here to add them
+              </div>
+              <div *ngFor="let user of getUsersInGroup(group.id)"
+                   class="user-item"
+                   draggable="true"
+                   (dragstart)="onDragStart($event, user, group.id)"
+                   (dragend)="onDragEnd()">
+                <div class="user-info">
+                  <strong>{{ user.username }}</strong>
+                  <small>{{ user.email }}</small>
+                </div>
+                <button class="btn-remove" (click)="removeUserFromGroup(user, group.id)" title="Remove">×</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="unassigned-panel">
+          <div class="panel-header">
+            <strong>Unassigned Users</strong>
+            <span class="badge">{{ getUsersWithoutGroups().length }}</span>
+          </div>
+          <div class="unassigned-list">
+            <div *ngIf="getUsersWithoutGroups().length === 0" class="empty-message">
+              All users are assigned
+            </div>
+            <div *ngFor="let user of getUsersWithoutGroups()"
+                 class="user-item"
+                 draggable="true"
+                 (dragstart)="onDragStart($event, user, null)"
+                 (dragend)="onDragEnd()">
+              <div class="user-info">
+                <strong>{{ user.username }}</strong>
+                <small>{{ user.email }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <ng-template #domainAuthForms>
@@ -74,87 +183,4 @@
     </div>
   </ng-template>
 
-  <div *ngIf="isOwnerContext() || canUseApps || canManageUsers" class="owner-panels">
-    <div class="card" *ngIf="canManageUsers">
-      <h3>Domain Groups & Users</h3>
-      <p class="info-text">Drag and drop users to assign them to groups</p>
-      <div *ngIf="domainGroupsLoading || usersLoading">Loading...</div>
-      <div *ngIf="groupError" class="error-text">{{ groupError }}</div>
-      
-      <div class="groups-users-container">
-        <!-- Groups with drag-and-drop -->
-        <div class="groups-grid">
-          <div *ngFor="let group of domainGroups" class="group-card"
-               (dragover)="onDragOver($event)"
-               (drop)="onDrop($event, group.id)">
-            <div class="group-card-header">
-              <strong>{{ group.name }}</strong>
-              <span class="badge">{{ getUsersInGroup(group.id).length }} member(s)</span>
-            </div>
-            <div class="group-permissions">
-              <span class="chip" *ngFor="let perm of group.permissions">{{ perm }}</span>
-            </div>
-            <div class="group-members">
-              <div *ngIf="getUsersInGroup(group.id).length === 0" class="empty-message">
-                Drop users here to add them
-              </div>
-              <div *ngFor="let user of getUsersInGroup(group.id)" 
-                   class="user-item"
-                   draggable="true"
-                   (dragstart)="onDragStart($event, user, group.id)"
-                   (dragend)="onDragEnd()">
-                <div class="user-info">
-                  <strong>{{ user.username }}</strong>
-                  <small>{{ user.email }}</small>
-                </div>
-                <button class="btn-remove" (click)="removeUserFromGroup(user, group.id)" title="Remove">×</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Unassigned users -->
-        <div class="unassigned-panel">
-          <div class="panel-header">
-            <strong>Unassigned Users</strong>
-            <span class="badge">{{ getUsersWithoutGroups().length }}</span>
-          </div>
-          <div class="unassigned-list">
-            <div *ngIf="getUsersWithoutGroups().length === 0" class="empty-message">
-              All users are assigned
-            </div>
-            <div *ngFor="let user of getUsersWithoutGroups()" 
-                 class="user-item"
-                 draggable="true"
-                 (dragstart)="onDragStart($event, user, null)"
-                 (dragend)="onDragEnd()">
-              <div class="user-info">
-                <strong>{{ user.username }}</strong>
-                <small>{{ user.email }}</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" *ngIf="canUseApps || canManageApps">
-      <h3>Applications</h3>
-      <div *ngIf="appsLoading">Loading applications...</div>
-      <div *ngIf="appError" class="error-text">{{ appError }}</div>
-      <div *ngIf="appMessage" class="success-text">{{ appMessage }}</div>
-      <div class="app-create" *ngIf="canManageApps">
-        <input type="text" placeholder="App name" [(ngModel)]="newApp.name" [ngModelOptions]="{standalone:true}">
-        <input type="text" placeholder="Slug" [(ngModel)]="newApp.slug" [ngModelOptions]="{standalone:true}">
-        <input type="text" placeholder="Owner User ID (optional)" [(ngModel)]="newApp.ownerUserId" [ngModelOptions]="{standalone:true}">
-        <button (click)="submitNewApp()">Create App</button>
-      </div>
-      <div class="app-list">
-        <div class="app-card" *ngFor="let app of apps" [routerLink]="['/domain', slug, 'app', app.slug]" style="cursor: pointer;">
-          <div><strong>{{ app.name }}</strong> ({{ app.slug }})</div>
-          <div *ngIf="app.ownerUserId">Owner: {{ app.ownerUserId }}</div>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>

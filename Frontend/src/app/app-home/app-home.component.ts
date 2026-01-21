@@ -27,6 +27,9 @@ export class AppHomeComponent implements OnInit {
 
   domainAccess = { permissions: [] as string[], groups: [] as string[] };
   currentUserAppGroups: any[] = [];
+  appPermissions: string[] = [];
+
+  mode: 'PREVIEW' | 'EDIT' | 'ACCESS' = 'PREVIEW';
 
   constructor(
     private route: ActivatedRoute,
@@ -74,7 +77,7 @@ export class AppHomeComponent implements OnInit {
         'DOMAIN_USE_APP'
       ];
       this.domainAccess.groups = ['Domain Admin'];
-      this.loadAppGroups();
+      this.appPermissions = ['APP_READ', 'APP_WRITE', 'APP_EXECUTE'];
       return;
     }
     if (this.auth.isLoggedIn()) {
@@ -107,14 +110,34 @@ export class AppHomeComponent implements OnInit {
   }
 
   get canManageAppGroups(): boolean {
-    // Only domain owner or users in "App Admin" group can manage app groups
-    if (this.isOwnerContext()) {
-      return true;
+    return this.canAccessManager;
+  }
+
+  get canEditMode(): boolean {
+    return this.isOwnerContext() || this.appPermissions.includes('APP_WRITE');
+  }
+
+  get canAccessManager(): boolean {
+    return this.isOwnerContext() || this.appPermissions.includes('APP_EXECUTE');
+  }
+
+  enterPreviewMode() {
+    this.mode = 'PREVIEW';
+  }
+
+  enterEditMode() {
+    if (!this.canEditMode) {
+      return;
     }
-    // Check if user is in "App Admin" group for this app
-    return this.currentUserAppGroups.some(
-      (group: any) => group.name === 'App Admin'
-    );
+    this.mode = 'EDIT';
+  }
+
+  enterAccessManagerMode() {
+    if (!this.canAccessManager) {
+      return;
+    }
+    this.mode = 'ACCESS';
+    this.loadAppGroups();
   }
 
   private hasPermission(code: string): boolean {
@@ -130,18 +153,24 @@ export class AppHomeComponent implements OnInit {
     this.domainService.getUserAppGroups(this.domainSlug, this.appSlug, currentUserId).subscribe({
       next: (groups) => {
         this.currentUserAppGroups = groups || [];
-        if (this.canManageAppGroups) {
-          this.loadAppGroups();
-        }
+        const permissions = new Set<string>();
+        (this.currentUserAppGroups || []).forEach((g: any) => {
+          (g?.permissions || []).forEach((p: string) => permissions.add(p));
+        });
+        this.appPermissions = Array.from(permissions);
       },
       error: () => {
         this.currentUserAppGroups = [];
+        this.appPermissions = [];
       }
     });
   }
 
   // Load app groups and users
   loadAppGroups() {
+    if (!this.canAccessManager) {
+      return;
+    }
     this.appGroupsLoading = true;
     this.groupError = '';
 
