@@ -42,6 +42,9 @@ export class DomainHomeComponent implements OnInit {
 
   domainAccess = { permissions: [] as string[], groups: [] as string[] };
 
+  mode: 'PREVIEW' | 'EDIT' | 'ACCESS' = 'PREVIEW';
+  showCreateAppForm = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -71,6 +74,8 @@ export class DomainHomeComponent implements OnInit {
       this.domainService.getBySlug(this.slug).subscribe({
         next: (res) => {
           this.domain = res;
+          this.mode = 'PREVIEW';
+          this.showCreateAppForm = false;
           this.initializeAccess();
         },
         error: (err) => this.error = err?.error?.message || 'Domain not found or access denied'
@@ -90,17 +95,16 @@ export class DomainHomeComponent implements OnInit {
         'DOMAIN_USE_APP'
       ];
       this.domainAccess.groups = ['Domain Admin'];
-      this.loadDomainGroups();
       this.loadApplications();
+      if (this.mode === 'ACCESS') {
+        this.loadDomainGroups();
+      }
       return;
     }
     if (this.auth.isLoggedIn()) {
       this.domainService.getDomainRoles(this.slug).subscribe({
         next: res => {
           this.domainAccess = res || { permissions: [], groups: [] };
-          if (this.canManageUsers) {
-            this.loadDomainGroups();
-          }
           if (this.canUseApps || this.canManageApps) {
             this.loadApplications();
           }
@@ -135,6 +139,45 @@ export class DomainHomeComponent implements OnInit {
 
   get canManageApps(): boolean {
     return this.isOwnerContext() || this.hasPermission('DOMAIN_MANAGE_APPS');
+  }
+
+  get canEditMode(): boolean {
+    return this.isOwnerContext() || this.canManageApps;
+  }
+
+  get canAccessManager(): boolean {
+    return this.isOwnerContext() || this.canManageUsers;
+  }
+
+  enterPreviewMode() {
+    this.mode = 'PREVIEW';
+    this.showCreateAppForm = false;
+    if ((this.canUseApps || this.canManageApps) && !this.appsLoading && this.apps.length === 0) {
+      this.loadApplications();
+    }
+  }
+
+  enterEditMode() {
+    if (!this.canEditMode) {
+      return;
+    }
+    this.mode = 'EDIT';
+  }
+
+  enterAccessManagerMode() {
+    if (!this.canAccessManager) {
+      return;
+    }
+    this.mode = 'ACCESS';
+    this.showCreateAppForm = false;
+    this.loadDomainGroups();
+  }
+
+  toggleCreateAppForm() {
+    if (!this.canManageApps) {
+      return;
+    }
+    this.showCreateAppForm = !this.showCreateAppForm;
   }
 
   get canUseApps(): boolean {

@@ -29,6 +29,7 @@ import { OwnerSignupComponent } from './owner-signup/owner-signup.component';
 import { DomainSignupComponent } from './domain-signup/domain-signup.component';
 import { DomainUsersComponent } from './domain-users/domain-users.component';
 import { AppHomeComponent } from './app-home/app-home.component';
+import { AppModelsComponent } from './app-models/app-models.component';
 
 @NgModule({
   declarations: [
@@ -50,6 +51,7 @@ import { AppHomeComponent } from './app-home/app-home.component';
     DomainSignupComponent,
     DomainUsersComponent,
     AppHomeComponent,
+    AppModelsComponent,
   ],
   imports: [
     ReactiveFormsModule,
@@ -63,10 +65,13 @@ import { AppHomeComponent } from './app-home/app-home.component';
       { path: 'login', component: LoginComponent },
       { path: 'owner-login', component: LoginComponent },
       { path: 'owner-signup', component: OwnerSignupComponent },
+      { path: 'domain-login', component: DomainLoginComponent },
+      { path: 'domain-signup', component: DomainSignupComponent },
       { path: '', component: HomePageComponent },
       { path: 'create-domain', component: DomainCreateComponent, canActivate: [AuthGuard] },
       { path: 'domain/:slug', component: DomainHomeComponent },
       { path: 'domain/:slug/app/:appSlug', component: AppHomeComponent },
+      { path: 'domain/:slug/app/:appSlug/models', component: AppModelsComponent },
       { path: '**', component: NotFoundPageComponent },
     ])
   ],

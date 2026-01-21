@@ -1,0 +1,42 @@
+.models-container { padding: 16px; }
+.page-actions { margin-bottom: 12px; }
+.back-btn { background: #f2f2f2; border: 1px solid #ddd; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.header h2 { margin: 0 0 6px 0; }
+.sub { margin: 0 0 16px 0; color: #666; }
+
+.grid { display: grid; grid-template-columns: 320px 1fr; gap: 14px; }
+.panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 12px; }
+.panel-header { display:flex; align-items:center; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
+
+.model-list { display:flex; flex-direction: column; gap: 8px; }
+.model-item { border: 1px solid #eee; border-radius: 8px; padding: 10px; cursor: pointer; }
+.model-item.active { border-color: #2d6cdf; background: #f3f7ff; }
+.title { display:flex; justify-content: space-between; gap: 10px; }
+.slug { color:#666; font-size: 12px; }
+.meta { margin-top: 6px; display:flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #f4f4f4; color:#333; }
+
+.form { display:flex; flex-direction: column; gap: 10px; }
+.row { display:flex; flex-direction: column; gap: 6px; }
+.input { padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
+.hint { color:#777; }
+
+.fields { display:flex; flex-direction: column; gap: 8px; }
+.field { display:grid; grid-template-columns: 1fr 140px 110px 90px 90px; gap: 8px; align-items: center; }
+.chk { display:flex; align-items:center; gap: 6px; font-size: 13px; color:#444; }
+
+.actions { display:flex; gap: 10px; margin-top: 8px; }
+.btn { border: 1px solid #ddd; background: #f7f7f7; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+.btn.primary { background: #2d6cdf; border-color: #2d6cdf; color: #fff; }
+.btn.danger { background: #ffecec; border-color: #ffb7b7; color: #a40000; }
+.btn.btn-sm { padding: 6px 10px; font-size: 13px; }
+
+.error-text { color: #b00020; margin: 8px 0; }
+.success-text { color: #0a7a29; margin: 8px 0; }
+.info-text { color:#555; margin-top: 10px; }
+.empty { color:#777; }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .field { grid-template-columns: 1fr 1fr; }
+}
