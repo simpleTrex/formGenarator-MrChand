@@ -50,8 +50,8 @@
                 [style.top.px]="state.y" [style.background-color]="state.color" (mousedown)="onMouseDown($event, state)"
                 (click)="connectMode ? onStateClickInConnectMode(state) : selectState(state)">
                 <div class="state-header">
-                    <span class="state-badge" *ngIf="state.isInitial">Start</span>
-                    <span class="state-badge" *ngIf="state.isFinal">End</span>
+                    <span class="state-badge" *ngIf="state.initial">Start</span>
+                    <span class="state-badge" *ngIf="state.final">End</span>
                 </div>
                 <div class="state-name">{{ state.name }}</div>
                 <button class="state-delete" (click)="deleteState(state); $event.stopPropagation()">×</button>
@@ -83,14 +83,14 @@
 
                 <div class="form-group">
                     <label>
-                        <input type="checkbox" [(ngModel)]="selectedState.isInitial">
+                        <input type="checkbox" [(ngModel)]="selectedState.initial">
                         Initial State (Start)
                     </label>
                 </div>
 
                 <div class="form-group">
                     <label>
-                        <input type="checkbox" [(ngModel)]="selectedState.isFinal">
+                        <input type="checkbox" [(ngModel)]="selectedState.final">
                         Final State (End)
                     </label>
                 </div>
@@ -114,6 +114,12 @@
                         <option value="COMPLETE">Complete</option>
                         <option value="CANCEL">Cancel</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Allowed Roles (comma separated)</label>
+                    <input type="text" [(ngModel)]="selectedTransition.allowedRoles" class="form-input"
+                        placeholder="USER, MANAGER, ADMIN">
                 </div>
 
                 <button class="btn-danger" (click)="deleteTransition(selectedTransition)">Delete Transition</button>

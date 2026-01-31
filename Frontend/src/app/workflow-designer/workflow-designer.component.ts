@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomainService } from '../services/domain.service';
 import { WorkflowService } from '../services/workflow.service';
 
 interface CanvasState {
     id: string;
     name: string;
     description: string;
-    isInitial: boolean;
-    isFinal: boolean;
+    initial: boolean;
+    final: boolean;
     color: string;
     x: number;
     y: number;
@@ -19,6 +20,7 @@ interface CanvasTransition {
     fromStateId: string;
     toStateId: string;
     actionType: string;
+    allowedRoles: string; // Comma separated string for UI
 }
 
 @Component({
@@ -28,6 +30,9 @@ interface CanvasTransition {
 })
 export class WorkflowDesignerComponent implements OnInit {
     workflowId: string = '';
+    domainSlug: string = '';
+    domainId: string = '';
+
     workflow: any = null;
 
     states: CanvasState[] = [];
@@ -52,48 +57,87 @@ export class WorkflowDesignerComponent implements OnInit {
     constructor(
         private route: ActivatedRoute,
         private router: Router,
+        private domainService: DomainService,
         private workflowService: WorkflowService
     ) { }
 
     ngOnInit(): void {
+        // Get params from parent routes if necessary using pathFromRoot or assuming proper hierarchy
+        // Actually, for a child route, we might need to look at parent params
+        this.domainSlug = this.route.snapshot.paramMap.get('slug') ||
+            this.route.parent?.snapshot.paramMap.get('slug') || '';
+
         this.workflowId = this.route.snapshot.params['workflowId'];
 
-        if (this.workflowId && this.workflowId !== 'new') {
-            this.loadWorkflow();
+        if (this.domainSlug) {
+            this.loadDomainAndWorkflow();
         } else {
-            // New workflow - start with two default states
-            this.states = [
-                {
-                    id: 'draft',
-                    name: 'Draft',
-                    description: 'Initial state',
-                    isInitial: true,
-                    isFinal: false,
-                    color: '#9E9E9E',
-                    x: 100,
-                    y: 100
-                },
-                {
-                    id: 'completed',
-                    name: 'Completed',
-                    description: 'Final state',
-                    isInitial: false,
-                    isFinal: true,
-                    color: '#4CAF50',
-                    x: 400,
-                    y: 100
-                }
-            ];
+            this.error = 'Domain context missing';
         }
     }
 
-    loadWorkflow() {
+    loadDomainAndWorkflow() {
         this.loading = true;
-        this.workflowService.getWorkflow(this.workflowId).subscribe({
+        this.domainService.getBySlug(this.domainSlug).subscribe({
+            next: (domain: any) => {
+                this.domainId = domain.id || domain._id;
+                if (this.workflowId && this.workflowId !== 'new') {
+                    this.loadWorkflow();
+                } else {
+                    this.initializeNewWorkflow();
+                    this.loading = false;
+                }
+            },
+            error: (err) => {
+                this.error = 'Failed to load domain context';
+                this.loading = false;
+            }
+        });
+    }
+
+    initializeNewWorkflow() {
+        this.states = [
+            {
+                id: 'draft',
+                name: 'Draft',
+                description: 'Initial state',
+                initial: true,
+                final: false,
+                color: '#9E9E9E',
+                x: 100,
+                y: 100
+            },
+            {
+                id: 'completed',
+                name: 'Completed',
+                description: 'Final state',
+                initial: false,
+                final: true,
+                color: '#4CAF50',
+                x: 400,
+                y: 100
+            }
+        ];
+    }
+
+    loadWorkflow() {
+        this.workflowService.getWorkflow(this.workflowId, this.domainId).subscribe({
             next: (wf: any) => {
                 this.workflow = wf;
-                this.states = wf.states || [];
-                this.transitions = wf.transitions || [];
+                // Map backend properties (initial/final) to canvas state
+                this.states = (wf.states || []).map((s: any) => ({
+                    ...s,
+                    initial: s.initial !== undefined ? s.initial : s.isInitial,
+                    final: s.final !== undefined ? s.final : s.isFinal,
+                    x: s.positionX || 100, // Map positionX back to x
+                    y: s.positionY || 100  // Map positionY back to y
+                }));
+                this.transitions = (wf.transitions || []).map((t: any) => ({
+                    ...t,
+                    fromStateId: t.fromState, // Map backend fromState to fromStateId
+                    toStateId: t.toState,      // Map backend toState to toStateId
+                    allowedRoles: (t.allowedRoles || ['USER']).join(', ') // Convert to string
+                }));
                 this.loading = false;
             },
             error: (err: any) => {
@@ -109,8 +153,8 @@ export class WorkflowDesignerComponent implements OnInit {
             id: 'state_' + Date.now(),
             name: 'New State',
             description: '',
-            isInitial: false,
-            isFinal: false,
+            initial: false,
+            final: false,
             color: '#2196F3',
             x: 200 + (this.states.length * 50),
             y: 200
@@ -164,7 +208,8 @@ export class WorkflowDesignerComponent implements OnInit {
                     name: 'Transition',
                     fromStateId: this.connectFromState.id,
                     toStateId: state.id,
-                    actionType: 'SUBMIT'
+                    actionType: 'SUBMIT',
+                    allowedRoles: 'USER'
                 };
                 this.transitions.push(transition);
             }
@@ -221,17 +266,22 @@ export class WorkflowDesignerComponent implements OnInit {
 
     // Save workflow
     saveWorkflow() {
+        // Update workflow metadata if dirty (not implemented in UI yet but good practice)
+        // Here we just update structure
+
         const workflowData = {
+            ...this.workflow, // Keep existing metadata
+            domainId: this.domainId, // Ensure domainId is sent for OWNER
             states: this.states.map(s => ({
                 id: s.id,
                 name: s.name,
                 description: s.description,
-                isInitial: s.isInitial,
-                isFinal: s.isFinal,
+                initial: s.initial,
+                final: s.final,
                 color: s.color,
                 positionX: s.x,
-                positionY: s.y,
-                allowedRoles: ['USER']
+                positionY: s.y
+                // No allowedRoles here!
             })),
             transitions: this.transitions.map(t => ({
                 id: t.id,
@@ -239,7 +289,7 @@ export class WorkflowDesignerComponent implements OnInit {
                 fromState: t.fromStateId,
                 toState: t.toStateId,
                 actionType: t.actionType,
-                allowedRoles: ['USER'],
+                allowedRoles: t.allowedRoles.split(',').map(r => r.trim()).filter(r => r.length > 0), // Split string
                 requiredFields: []
             }))
         };
@@ -256,11 +306,23 @@ export class WorkflowDesignerComponent implements OnInit {
                 }
             });
         } else {
-            this.message = 'Use the "Create Workflow" form to save a new workflow';
+            // We generally wouldn't be in designer for 'new' unless we implemented create-first logic
+            // But if we support it:
+            this.workflowService.createWorkflow(workflowData).subscribe({
+                next: (res) => {
+                    this.message = 'Workflow created!';
+                    this.workflowId = res.id;
+                    this.workflow = res;
+                },
+                error: (err) => {
+                    this.error = err?.error?.message || 'Failed to save';
+                }
+            });
         }
     }
 
     goBack() {
+        // Navigate back to workflow list
         this.router.navigate(['../../'], { relativeTo: this.route });
     }
 }
