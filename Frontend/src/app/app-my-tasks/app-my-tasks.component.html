@@ -1,0 +1,32 @@
+<div class="tasks-container">
+    <div class="header">
+        <h2>My Tasks</h2>
+        <button class="btn-back" (click)="goBack()">← Back</button>
+    </div>
+
+    <div *ngIf="loading" class="loading">Loading tasks...</div>
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <div *ngIf="!loading && tasks.length === 0" class="empty-state">
+        <p>No tasks assigned to you currently.</p>
+        <p>Created workflows will appear here when action is required.</p>
+    </div>
+
+    <div *ngIf="!loading && tasks.length > 0" class="task-list">
+        <div *ngFor="let task of tasks" class="task-card" (click)="openTask(task)">
+            <div class="task-header">
+                <span class="task-id">#{{ task.id.substring(0, 8) }}</span>
+                <span class="workflow-name">{{ task.workflowId }}</span> <!-- TODO: Map to Name -->
+                <span class="task-date">{{ task.createdAt | date:'medium' }}</span>
+            </div>
+            <div class="task-body">
+                <div class="status-badge" [style.background-color]="'#2196F3'">
+                    {{ task.currentState }}
+                </div>
+                <div class="task-meta">
+                    Created by: {{ task.createdBy }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

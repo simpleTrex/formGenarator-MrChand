@@ -238,6 +238,33 @@ public class WorkflowDefinitionController {
     }
 
     /**
+     * Seed default workflows for the domain
+     */
+    @PostMapping("/seed")
+    public ResponseEntity<?> seedWorkflows(@RequestParam(required = false) String domainId) {
+        try {
+            AdaptiveUserDetails principal = currentAdaptivePrincipal();
+            if (principal == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            String effectiveDomainId;
+            if (principal.getDomainId() != null) {
+                effectiveDomainId = principal.getDomainId();
+            } else if (domainId != null) {
+                effectiveDomainId = domainId;
+            } else {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: domainId is required"));
+            }
+
+            workflowService.seedDefaultWorkflows(effectiveDomainId, principal.getId());
+            return ResponseEntity.ok(new MessageResponse("Default workflows created successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
      * Get available transitions for a workflow instance
      */
     @GetMapping("/instances/{instanceId}/actions")

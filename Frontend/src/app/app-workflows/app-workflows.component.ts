@@ -124,9 +124,9 @@ export class AppWorkflowsComponent implements OnInit {
         }
     }
 
-    createSimpleWorkflow() {
+    createWorkflow() {
         if (!this.newWorkflow.name || !this.newWorkflow.modelId) {
-            this.error = 'Please fill in name and select a model';
+            alert('Name and Model are required');
             return;
         }
 
@@ -139,64 +139,83 @@ export class AppWorkflowsComponent implements OnInit {
             }
         }
 
-        // Create a simple two-state workflow (Draft -> Completed)
         const workflow = {
             name: this.newWorkflow.name,
             description: this.newWorkflow.description || '',
             modelId: this.newWorkflow.modelId,
-            domainId: this.domain?.id, // Include domainId for OWNER users
+            domainId: this.domain?.id,
             icon: 'workflow',
-            states: [
-                {
-                    id: 'draft',
-                    name: 'Draft',
-                    description: 'Initial draft state',
-                    initial: true,
-                    final: false,
-                    color: '#9E9E9E',
-                    positionX: 100,
-                    positionY: 100
-                },
-                {
-                    id: 'completed',
-                    name: 'Completed',
-                    description: 'Final completed state',
-                    initial: false,
-                    final: true,
-                    color: '#4CAF50',
-                    positionX: 400,
-                    positionY: 100
-                }
-            ],
-            transitions: [
-                {
-                    id: 'complete',
-                    name: 'Complete',
-                    fromState: 'draft',
-                    toState: 'completed',
-                    actionType: 'COMPLETE',
-                    allowedRoles: ['USER'],
-                    requiredFields: []
-                }
-            ]
+            states: [],
+            transitions: []
         };
 
-        console.log('Sending Workflow Payload:', workflow);
-
-        this.loading = true;
         this.workflowService.createWorkflow(workflow).subscribe({
             next: () => {
-                this.message = 'Workflow created successfully!';
-                this.error = '';
-                this.showCreateForm = false;
+                this.showCreateForm = false; // Changed from showCreateModal
+                this.newWorkflow = { name: '', description: '', modelId: '' };
                 this.loadWorkflows();
             },
+            error: (err) => console.error(err)
+        });
+    }
+
+    // seedWorkflows functionality removed
+
+    // Run Dialog
+    showRunDialog = false;
+    selectedWorkflow: any = null;
+    newInstanceData = { recordId: '', note: '' };
+
+    openRunDialog(workflow: any) {
+        this.selectedWorkflow = workflow;
+        this.newInstanceData = {
+            recordId: `${workflow.modelId}-${Math.floor(Math.random() * 10000)}`,
+            note: 'Generated from UI'
+        };
+        this.showRunDialog = true;
+    }
+
+    closeRunDialog() {
+        this.showRunDialog = false;
+        this.selectedWorkflow = null;
+    }
+
+    startInstance() {
+        if (!this.selectedWorkflow) return;
+
+        const data = {
+            recordId: this.newInstanceData.recordId,
+            data: {
+                initialNote: this.newInstanceData.note,
+                requester: this.auth.currentUser?.username || 'User'
+            }
+        };
+
+        this.workflowService.createInstance(this.selectedWorkflow.id, data).subscribe({
+            next: (instance) => {
+                this.showRunDialog = false;
+                // Navigate to instance view
+                this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'tasks', 'instance', instance.id]);
+            },
             error: (err) => {
-                console.error('Create failed:', err);
-                this.error = err?.error?.message || 'Failed to create workflow';
-                this.loading = false;
+                alert('Failed to start instance: ' + (err.error?.message || err.message));
             }
         });
+    }
+
+    // Designer navigation
+    openDesigner(workflow: any) {
+        if (!confirm(`Open workflow "${workflow.name}" in designer?`)) { // Changed confirmation message
+            return;
+        }
+
+        const domainId = this.domain?.id;
+        this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'workflows', 'designer', workflow.id]);
+    }
+
+    editWorkflow(workflow: any) {
+        alert('Edit functionality coming soon! Use Designer for structural changes.');
+        // TODO: logical edit (rename etc)
     }
 
     deleteWorkflow(workflow: any) {
@@ -211,7 +230,7 @@ export class AppWorkflowsComponent implements OnInit {
                 this.loadWorkflows();
             },
             error: (err) => {
-                this.error = err?.error?.message || 'Failed to delete workflow';
+                this.error = 'Failed to delete workflow: ' + (err.error?.message || err.message);
             }
         });
     }

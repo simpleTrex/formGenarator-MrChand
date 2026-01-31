@@ -1,9 +1,13 @@
 <div class="app-container">
     <!-- Header Section -->
-    <div class="page-actions">
+    <div class="workflows-container">
+        <div class="header-actions">
+            <h2>Workflows</h2>
+            <div class="actions">
+                <button class="btn-primary" (click)="showCreateForm = true">+ Create Workflow</button>
+            </div>
+        </div>
         <button class="back-btn" (click)="goBackToApp()">← Back to App</button>
-        <button class="back-btn create-btn" (click)="toggleCreateForm()" *ngIf="!showCreateForm">+ Create
-            Workflow</button>
     </div>
 
     <!-- Info Section -->
@@ -43,7 +47,7 @@
         </div>
 
         <div class="form-actions">
-            <button class="btn-primary" (click)="createSimpleWorkflow()" [disabled]="loading">
+            <button class="btn-primary" (click)="createWorkflow()" [disabled]="loading">
                 {{ loading ? 'Creating...' : 'Create Workflow' }}
             </button>
             <button class="btn-secondary" (click)="toggleCreateForm()">Cancel</button>
@@ -64,10 +68,11 @@
             <div *ngFor="let workflow of workflows" class="workflow-card">
                 <div class="workflow-header">
                     <h4>{{ workflow.name }}</h4>
-                    <div class="workflow-actions">
-                        <button class="btn-edit" [routerLink]="['designer', workflow.id]"
-                            title="Edit in Designer">✏️</button>
-                        <button class="btn-delete" (click)="deleteWorkflow(workflow)" title="Delete">🗑️</button>
+                    <div class="actions">
+
+                        <button class="btn-secondary" (click)="openDesigner(workflow)">Designer</button>
+
+                        <button class="btn-icon delete" (click)="deleteWorkflow(workflow)">🗑</button>
                     </div>
                 </div>
                 <p class="workflow-description">{{ workflow.description }}</p>
@@ -80,3 +85,5 @@
         </div>
     </div>
 </div>
+
+<!-- Run Dialog Modal -->

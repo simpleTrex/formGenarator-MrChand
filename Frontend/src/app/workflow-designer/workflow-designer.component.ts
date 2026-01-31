@@ -221,7 +221,8 @@ export class WorkflowDesignerComponent implements OnInit {
     }
 
     // Delete transition
-    deleteTransition(transition: CanvasTransition) {
+    deleteTransition(transition: CanvasTransition | null) {
+        if (!transition) return;
         this.transitions = this.transitions.filter(t => t.id !== transition.id);
         if (this.selectedTransition?.id === transition.id) {
             this.selectedTransition = null;

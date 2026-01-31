@@ -48,6 +48,19 @@ export class WorkflowService {
         return this.baseService.delete(url, true, {});
     }
 
+    // Seed workflows
+    seedWorkflows(domainId?: string): Observable<any> {
+        let url = `${this.baseUrl}/seed`;
+        if (domainId) {
+            url += `?domainId=${domainId}`;
+        }
+        return this.baseService.post(url, true, {});
+    }
+
+    getMyTasks(): Observable<any[]> {
+        return this.baseService.get(`${this.baseUrl}/instances/my-tasks`, true);
+    }
+
     // Create a workflow instance
     createInstance(workflowId: string, data: any): Observable<any> {
         return this.baseService.post(`${this.baseUrl}/${workflowId}/instances`, true, data);
@@ -73,7 +86,5 @@ export class WorkflowService {
     }
 
     // Get my tasks
-    getMyTasks(): Observable<any[]> {
-        return this.baseService.get(`${this.baseUrl}/instances/my-tasks`, true);
-    }
+
 }
