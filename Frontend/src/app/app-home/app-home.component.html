@@ -2,6 +2,9 @@
   <!-- Header Section -->
   <div class="page-actions">
     <button class="back-btn" (click)="goBackToDomain()">← Back to Domain</button>
+    <button class="back-btn" *ngIf="mode !== 'PREVIEW'" (click)="enterPreviewMode()">Preview Mode</button>
+    <button class="back-btn" *ngIf="canEditMode && mode !== 'EDIT'" (click)="enterEditMode()">Edit Mode</button>
+    <button class="back-btn" *ngIf="canAccessManager && mode !== 'ACCESS'" (click)="enterAccessManagerMode()">Access Manager</button>
   </div>
 
   <!-- App Info Section -->
@@ -15,13 +18,37 @@
     </div>
   </div>
 
-  <div *ngIf="canManageAppGroups" class="manage-panels">
+  <!-- Preview Mode (default for everyone) -->
+  <div *ngIf="mode === 'PREVIEW'" class="card" style="margin-top: 12px;">
+    <h3>Preview</h3>
+    <p class="info-text">
+      Workflows are not implemented yet. This will show the app's runtime preview for normal users.
+    </p>
+    <p class="info-text" *ngIf="canEditMode">
+      You have editor permission. Use <strong>Edit Mode</strong> to manage models/workflows.
+    </p>
+    <p class="info-text" *ngIf="canAccessManager">
+      You can also manage access using <strong>Access Manager</strong>.
+    </p>
+  </div>
+
+  <!-- Edit Mode (editor/admin/owner) -->
+  <div *ngIf="mode === 'EDIT'" class="card" style="margin-top: 12px;">
+    <h3>Edit Mode</h3>
+    <p class="info-text">Builder tools will appear here (models, workflows, pages, etc.).</p>
+    <div class="page-actions" style="padding: 0;">
+      <button class="back-btn" [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']">Models</button>
+    </div>
+  </div>
+
+  <!-- Access Manager (app admin/owner) -->
+  <div *ngIf="mode === 'ACCESS' && canManageAppGroups" class="manage-panels">
     <div class="card">
       <h3>Application Groups & Users</h3>
       <p class="info-text">Drag and drop users between groups to manage access. All users are automatically in "App Viewer" by default.</p>
       <div *ngIf="appGroupsLoading || usersLoading">Loading...</div>
       <div *ngIf="groupError" class="error-text">{{ groupError }}</div>
-      
+
       <div class="groups-grid-only">
         <div *ngFor="let group of appGroups" class="group-card"
              (dragover)="onDragOver($event)"
@@ -37,7 +64,7 @@
             <div *ngIf="getUsersInGroup(group.id).length === 0" class="empty-message">
               Drop users here to add them
             </div>
-            <div *ngFor="let user of getUsersInGroup(group.id)" 
+            <div *ngFor="let user of getUsersInGroup(group.id)"
                  class="user-item"
                  draggable="true"
                  (dragstart)="onDragStart($event, user, group.id)"
