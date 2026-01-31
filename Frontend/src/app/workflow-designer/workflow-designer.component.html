@@ -1,0 +1,135 @@
+<div class="designer-container" (mousemove)="onMouseMove($event)" (mouseup)="onMouseUp()">
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button class="btn-back" (click)="goBack()">← Back</button>
+        <div class="toolbar-title">Workflow Designer</div>
+        <div class="toolbar-actions">
+            <button class="btn-tool" (click)="addState()">+ Add State</button>
+            <button class="btn-tool" [class.active]="connectMode" (click)="startConnect()">
+                {{ connectMode ? '✓ Click states to connect' : '🔗 Connect' }}
+            </button>
+            <button class="btn-save" (click)="saveWorkflow()">💾 Save</button>
+        </div>
+    </div>
+
+    <div *ngIf="error" class="error-msg">{{ error }}</div>
+    <div *ngIf="message" class="success-msg">{{ message }}</div>
+
+    <!-- Main Layout -->
+    <div class="designer-layout">
+
+        <!-- Canvas Area -->
+        <div class="canvas-area">
+            <svg class="connections-layer" width="100%" height="100%">
+                <!-- Draw transitions as arrows -->
+                <g *ngFor="let transition of transitions">
+                    <ng-container *ngIf="getTransitionLine(transition) as line">
+                        <!-- Line -->
+                        <line [attr.x1]="line.x1" [attr.y1]="line.y1" [attr.x2]="line.x2" [attr.y2]="line.y2"
+                            stroke="#2196F3" stroke-width="2" marker-end="url(#arrowhead)" class="transition-line"
+                            (click)="selectedTransition = transition; selectedState = null" />
+                        <!-- Label at midpoint -->
+                        <text [attr.x]="(line.x1 + line.x2) / 2" [attr.y]="(line.y1 + line.y2) / 2 - 5"
+                            text-anchor="middle" fill="#1976D2" font-size="12" class="transition-label">
+                            {{ transition.name }}
+                        </text>
+                    </ng-container>
+                </g>
+
+                <!-- Arrow marker definition -->
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <polygon points="0 0, 10 3, 0 6" fill="#2196F3" />
+                    </marker>
+                </defs>
+            </svg>
+
+            <!-- State nodes -->
+            <div *ngFor="let state of states" class="state-node" [class.selected]="selectedState?.id === state.id"
+                [class.connect-from]="connectFromState?.id === state.id" [style.left.px]="state.x"
+                [style.top.px]="state.y" [style.background-color]="state.color" (mousedown)="onMouseDown($event, state)"
+                (click)="connectMode ? onStateClickInConnectMode(state) : selectState(state)">
+                <div class="state-header">
+                    <span class="state-badge" *ngIf="state.isInitial">Start</span>
+                    <span class="state-badge" *ngIf="state.isFinal">End</span>
+                </div>
+                <div class="state-name">{{ state.name }}</div>
+                <button class="state-delete" (click)="deleteState(state); $event.stopPropagation()">×</button>
+            </div>
+        </div>
+
+        <!-- Properties Panel -->
+        <div class="properties-panel">
+            <h3>Properties</h3>
+
+            <!-- State Properties -->
+            <div *ngIf="selectedState" class="property-section">
+                <h4>State: {{ selectedState.name }}</h4>
+
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" [(ngModel)]="selectedState.name" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea [(ngModel)]="selectedState.description" class="form-input" rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Color</label>
+                    <input type="color" [(ngModel)]="selectedState.color" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" [(ngModel)]="selectedState.isInitial">
+                        Initial State (Start)
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" [(ngModel)]="selectedState.isFinal">
+                        Final State (End)
+                    </label>
+                </div>
+            </div>
+
+            <!-- Transition Properties -->
+            <div *ngIf="selectedTransition" class="property-section">
+                <h4>Transition</h4>
+
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" [(ngModel)]="selectedTransition.name" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label>Action Type</label>
+                    <select [(ngModel)]="selectedTransition.actionType" class="form-input">
+                        <option value="SUBMIT">Submit</option>
+                        <option value="APPROVE">Approve</option>
+                        <option value="REJECT">Reject</option>
+                        <option value="COMPLETE">Complete</option>
+                        <option value="CANCEL">Cancel</option>
+                    </select>
+                </div>
+
+                <button class="btn-danger" (click)="deleteTransition(selectedTransition)">Delete Transition</button>
+            </div>
+
+            <!-- Help -->
+            <div *ngIf="!selectedState && !selectedTransition" class="property-section help-section">
+                <h4>How to Use</h4>
+                <ol>
+                    <li><strong>Add State:</strong> Click "+ Add State"</li>
+                    <li><strong>Move State:</strong> Drag state boxes</li>
+                    <li><strong>Connect States:</strong> Click "Connect", then click two states</li>
+                    <li><strong>Edit:</strong> Click on state/arrow to edit properties</li>
+                    <li><strong>Save:</strong> Click "💾 Save" when done</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>

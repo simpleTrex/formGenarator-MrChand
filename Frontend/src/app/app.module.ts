@@ -30,6 +30,8 @@ import { DomainSignupComponent } from './domain-signup/domain-signup.component';
 import { DomainUsersComponent } from './domain-users/domain-users.component';
 import { AppHomeComponent } from './app-home/app-home.component';
 import { AppModelsComponent } from './app-models/app-models.component';
+import { AppWorkflowsComponent } from './app-workflows/app-workflows.component';
+import { WorkflowDesignerComponent } from './workflow-designer/workflow-designer.component';
 
 @NgModule({
   declarations: [
@@ -52,6 +54,8 @@ import { AppModelsComponent } from './app-models/app-models.component';
     DomainUsersComponent,
     AppHomeComponent,
     AppModelsComponent,
+    AppWorkflowsComponent,
+    WorkflowDesignerComponent,
   ],
   imports: [
     ReactiveFormsModule,
@@ -72,6 +76,8 @@ import { AppModelsComponent } from './app-models/app-models.component';
       { path: 'domain/:slug', component: DomainHomeComponent },
       { path: 'domain/:slug/app/:appSlug', component: AppHomeComponent },
       { path: 'domain/:slug/app/:appSlug/models', component: AppModelsComponent },
+      { path: 'domain/:slug/app/:appSlug/workflows', component: AppWorkflowsComponent },
+      { path: 'domain/:slug/app/:appSlug/workflows/designer/:workflowId', component: WorkflowDesignerComponent },
       { path: '**', component: NotFoundPageComponent },
     ])
   ],

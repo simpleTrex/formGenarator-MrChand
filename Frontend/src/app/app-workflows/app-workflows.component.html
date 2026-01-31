@@ -1,0 +1,82 @@
+<div class="app-container">
+    <!-- Header Section -->
+    <div class="page-actions">
+        <button class="back-btn" (click)="goBackToApp()">← Back to App</button>
+        <button class="back-btn create-btn" (click)="toggleCreateForm()" *ngIf="!showCreateForm">+ Create
+            Workflow</button>
+    </div>
+
+    <!-- Info Section -->
+    <div class="app-info-section">
+        <h2>Workflows: {{ app?.name }}</h2>
+        <div *ngIf="error" class="error-text">{{ error }}</div>
+        <div *ngIf="message" class="success-text">{{ message }}</div>
+        <div *ngIf="app" class="app-details">
+            <p><strong>Application:</strong> {{ app.name }}</p>
+            <p><strong>Domain:</strong> {{ domain?.name }} ({{ domainSlug }})</p>
+        </div>
+    </div>
+
+    <!-- Create Workflow Form -->
+    <div *ngIf="showCreateForm" class="card" style="margin-top: 20px;">
+        <h3>Create Simple Workflow</h3>
+        <p class="info-text">This will create a basic two-state workflow (Draft → Completed)</p>
+
+        <div class="form-group">
+            <label>Workflow Name *</label>
+            <input type="text" [(ngModel)]="newWorkflow.name" placeholder="e.g., Order Approval" class="form-input">
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <textarea [(ngModel)]="newWorkflow.description" placeholder="Brief description" class="form-input"
+                rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Data Model *</label>
+            <select [(ngModel)]="newWorkflow.modelId" class="form-input">
+                <option value="">-- Select a Model --</option>
+                <option *ngFor="let model of models" [value]="model.slug">{{ model.name }}</option>
+            </select>
+            <small *ngIf="models.length === 0" style="color: #999;">No models found. Create a model first!</small>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn-primary" (click)="createSimpleWorkflow()" [disabled]="loading">
+                {{ loading ? 'Creating...' : 'Create Workflow' }}
+            </button>
+            <button class="btn-secondary" (click)="toggleCreateForm()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Workflows List -->
+    <div class="card" style="margin-top: 20px;">
+        <h3>Workflow Definitions</h3>
+        <div *ngIf="loading">Loading workflows...</div>
+
+        <div *ngIf="!loading && workflows.length === 0 && !showCreateForm" class="info-text">
+            <p>No workflows created yet.</p>
+            <p>Click <strong>"+ Create Workflow"</strong> to get started!</p>
+        </div>
+
+        <div *ngIf="!loading && workflows.length > 0" class="workflows-list">
+            <div *ngFor="let workflow of workflows" class="workflow-card">
+                <div class="workflow-header">
+                    <h4>{{ workflow.name }}</h4>
+                    <div class="workflow-actions">
+                        <button class="btn-edit" [routerLink]="['designer', workflow.id]"
+                            title="Edit in Designer">✏️</button>
+                        <button class="btn-delete" (click)="deleteWorkflow(workflow)" title="Delete">🗑️</button>
+                    </div>
+                </div>
+                <p class="workflow-description">{{ workflow.description }}</p>
+                <div class="workflow-meta">
+                    <span class="badge">{{ workflow.states?.length || 0 }} states</span>
+                    <span class="badge">{{ workflow.transitions?.length || 0 }} transitions</span>
+                    <span class="badge-model">Model: {{ workflow.modelId }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
