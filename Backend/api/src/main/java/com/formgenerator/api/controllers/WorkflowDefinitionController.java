@@ -36,6 +36,11 @@ public class WorkflowDefinitionController {
     @PostMapping("")
     public ResponseEntity<?> createWorkflow(@Valid @RequestBody WorkflowDefinition workflow) {
         System.out.println("DEBUG: WorkflowDefinitionController - createWorkflow hit");
+        if (workflow != null) {
+            System.out.println("DEBUG: Name: " + workflow.getName());
+            System.out.println(
+                    "DEBUG: States count: " + (workflow.getStates() != null ? workflow.getStates().size() : "null"));
+        }
         try {
             AdaptiveUserDetails principal = currentAdaptivePrincipal();
             if (principal == null) {

@@ -145,8 +145,42 @@ export class AppWorkflowsComponent implements OnInit {
             modelId: this.newWorkflow.modelId,
             domainId: this.domain?.id,
             icon: 'workflow',
-            states: [],
-            transitions: []
+            states: [
+                {
+                    id: 'draft',
+                    name: 'Draft',
+                    description: 'Initial state',
+                    isInitial: true,
+                    isFinal: false,
+                    color: '#808080',
+                    positionX: 50,
+                    positionY: 100,
+                    permissions: {}
+                },
+                {
+                    id: 'completed',
+                    name: 'Completed',
+                    description: 'Final state',
+                    isInitial: false,
+                    isFinal: true,
+                    color: '#28a745',
+                    positionX: 400,
+                    positionY: 100,
+                    permissions: {}
+                }
+            ],
+            transitions: [
+                {
+                    id: 'submit',
+                    name: 'Submit',
+                    description: 'Submit for completion',
+                    fromState: 'draft',
+                    toState: 'completed',
+                    actionType: 'approve',
+                    requiredRole: '',
+                    allowedRoles: []
+                }
+            ]
         };
 
         this.workflowService.createWorkflow(workflow).subscribe({
