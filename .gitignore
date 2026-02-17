@@ -208,6 +208,10 @@ gradle-app.setting
 **/bin/
 **/lib/
 
+# Root-level files that should not be tracked
+.env
+log
+
 # MongoDB backup files (keep structure, ignore data)
 Backend/DB/dump/
 !Backend/DB/dump/.gitkeep
@@ -227,4 +231,10 @@ Backend/DB/dump/
 # Runtime directories
 **/run/
 **/var/
-C4
+
+# ===== AI/AGENT TOOLS =====
+.qodo/
+.gemini/
+.agent/
+.cursor/
+.copilot/
