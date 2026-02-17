@@ -176,6 +176,7 @@ gradle-app.setting
 **/.env.development.local
 **/.env.test.local
 **/.env.production.local
+.env
 
 # Application configs (uncomment if these contain secrets)
 # **/application-*.properties
@@ -238,3 +239,4 @@ Backend/DB/dump/
 .agent/
 .cursor/
 .copilot/
+C4

@@ -16,6 +16,41 @@ export interface CreateApplicationPayload {
   ownerUserId?: string;
 }
 
+export type DomainFieldType =
+  | 'STRING'
+  | 'NUMBER'
+  | 'BOOLEAN'
+  | 'DATE'
+  | 'DATETIME'
+  | 'REFERENCE'
+  | 'OBJECT'
+  | 'ARRAY';
+
+export interface DomainModelField {
+  key: string;
+  type: DomainFieldType;
+  required?: boolean;
+  unique?: boolean;
+  config?: Record<string, any>;
+}
+
+export interface CreateDomainModelPayload {
+  name: string;
+  slug: string;
+  description?: string;
+  sharedWithAllApps?: boolean;
+  allowedAppIds?: string[];
+  fields?: DomainModelField[];
+}
+
+export interface UpdateDomainModelPayload {
+  name?: string;
+  description?: string;
+  sharedWithAllApps?: boolean;
+  allowedAppIds?: string[];
+  fields?: DomainModelField[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class DomainService {
   private adaptive = environment.adaptiveApi;
@@ -96,6 +131,27 @@ export class DomainService {
 
   removeAppGroupMember(slug: string, appSlug: string, groupId: string, userId: string): Observable<any> {
     return this.baseService.delete(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups/${groupId}/members/${userId}`, true, {});
+  }
+
+  // Domain Models (Domain-level storage; UI is within App Builder)
+  getDomainModels(domainSlug: string, appSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/models?appSlug=${encodeURIComponent(appSlug)}`, true);
+  }
+
+  getDomainModel(domainSlug: string, appSlug: string, modelSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/models/${encodeURIComponent(modelSlug)}?appSlug=${encodeURIComponent(appSlug)}`, true);
+  }
+
+  createDomainModel(domainSlug: string, appSlug: string, payload: CreateDomainModelPayload): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${domainSlug}/models?appSlug=${encodeURIComponent(appSlug)}`, true, payload);
+  }
+
+  updateDomainModel(domainSlug: string, appSlug: string, modelSlug: string, payload: UpdateDomainModelPayload): Observable<any> {
+    return this.baseService.put(`${this.adaptive}/domains/${domainSlug}/models/${encodeURIComponent(modelSlug)}?appSlug=${encodeURIComponent(appSlug)}`, true, payload);
+  }
+
+  deleteDomainModel(domainSlug: string, appSlug: string, modelSlug: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${domainSlug}/models/${encodeURIComponent(modelSlug)}?appSlug=${encodeURIComponent(appSlug)}`, true, {});
   }
 }
 

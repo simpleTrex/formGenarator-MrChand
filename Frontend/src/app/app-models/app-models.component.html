@@ -1,0 +1,110 @@
+<div class="models-container">
+  <div class="page-actions">
+    <button class="back-btn" (click)="goBackToApp()">← Back to Application</button>
+  </div>
+
+  <div class="header">
+    <h2>Models (Domain-level) — App: {{ app?.name }}</h2>
+    <p class="sub">Create reusable data models and choose which apps in this domain can access them.</p>
+  </div>
+
+  <div *ngIf="loading">Loading...</div>
+  <div *ngIf="error" class="error-text">{{ error }}</div>
+  <div *ngIf="message" class="success-text">{{ message }}</div>
+
+  <div class="grid" *ngIf="!loading">
+    <div class="panel">
+      <div class="panel-header">
+        <strong>Models</strong>
+        <button class="btn btn-sm" (click)="newModel()" [disabled]="!canManageModels">+ New</button>
+      </div>
+
+      <div *ngIf="models.length === 0" class="empty">No models yet.</div>
+
+      <div class="model-list">
+        <div class="model-item" *ngFor="let m of models"
+             [class.active]="selectedModel?.id === m.id"
+             (click)="selectModel(m)">
+          <div class="title">
+            <strong>{{ m.name }}</strong>
+            <span class="slug">{{ m.slug }}</span>
+          </div>
+          <div class="meta">
+            <span class="tag" *ngIf="m.sharedWithAllApps">Shared to all apps</span>
+            <span class="tag" *ngIf="!m.sharedWithAllApps">Restricted</span>
+            <span class="tag">v{{ m.version || 1 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <strong>{{ selectedModel ? 'Edit Model' : 'Create Model' }}</strong>
+      </div>
+
+      <form [formGroup]="modelForm" class="form">
+        <div class="row">
+          <label>Name *</label>
+          <input class="input" formControlName="name" placeholder="e.g., Product" />
+        </div>
+
+        <div class="row">
+          <label>Slug *</label>
+          <input class="input" formControlName="slug" placeholder="e.g., product" />
+          <small class="hint" *ngIf="selectedModel">Slug cannot be changed.</small>
+        </div>
+
+        <div class="row">
+          <label>Description</label>
+          <textarea class="input" formControlName="description" rows="2"></textarea>
+        </div>
+
+        <div class="row">
+          <label>Access</label>
+          <select class="input" formControlName="shareMode">
+            <option value="THIS_APP">Only this app</option>
+            <option value="SELECT_APPS">Select apps</option>
+            <option value="ALL_APPS">All apps in domain</option>
+          </select>
+        </div>
+
+        <div class="row" *ngIf="modelForm.get('shareMode')?.value === 'SELECT_APPS'">
+          <label>Allowed Apps</label>
+          <select class="input" formControlName="selectedAppIds" multiple size="5">
+            <option *ngFor="let a of appsInDomain" [value]="a.id">{{ a.name }} ({{ a.slug }})</option>
+          </select>
+          <small class="hint">Hold Ctrl (Windows) / Cmd (Mac) to select multiple.</small>
+        </div>
+
+        <div class="row">
+          <div class="panel-header" style="padding:0; border:none;">
+            <strong>Fields</strong>
+            <button class="btn btn-sm" type="button" (click)="addField()" [disabled]="!canManageModels">+ Add Field</button>
+          </div>
+
+          <div class="fields" formArrayName="fields">
+            <div class="field" *ngFor="let f of fieldsArray.controls; let i = index" [formGroupName]="i">
+              <input class="input" formControlName="key" placeholder="field key (e.g. name)" />
+              <select class="input" formControlName="type">
+                <option *ngFor="let t of fieldTypes" [value]="t">{{ t }}</option>
+              </select>
+              <label class="chk"><input type="checkbox" formControlName="required" /> Required</label>
+              <label class="chk"><input type="checkbox" formControlName="unique" /> Unique</label>
+              <button class="btn danger" type="button" (click)="removeField(i)" [disabled]="fieldsArray.length <= 1 || !canManageModels">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" type="button" (click)="save()" [disabled]="!canManageModels">Save</button>
+          <button class="btn danger" type="button" (click)="deleteSelected()" [disabled]="!selectedModel || !canManageModels">Delete</button>
+        </div>
+
+        <div *ngIf="!canManageModels" class="info-text">
+          You can view models, but you don't have permission to create/edit them.
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
