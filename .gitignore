@@ -229,3 +229,8 @@ Backend/DB/dump/
 **/run/
 **/var/
 C4
+
+# Project-specific junk files
+SecondGitPushCodes.md
+log
+.gemini/
