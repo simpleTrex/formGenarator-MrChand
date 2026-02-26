@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.adaptivebp.modules.identity.model.DomainUser;
-import com.adaptivebp.modules.identity.repository.DomainUserRepository;
+import com.adaptivebp.modules.identity.port.DomainUserLookupPort;
 import com.adaptivebp.modules.organisation.dto.request.AssignMemberRequest;
 import com.adaptivebp.modules.organisation.dto.request.CreateDomainGroupRequest;
 import com.adaptivebp.modules.organisation.dto.response.DomainUserResponse;
@@ -47,7 +47,7 @@ public class DomainGroupController {
     @Autowired
     private DomainGroupMemberRepository domainGroupMemberRepository;
     @Autowired
-    private DomainUserRepository domainUserRepository;
+    private DomainUserLookupPort domainUserLookupPort;
     @Autowired
     private PermissionService permissionService;
 
@@ -67,7 +67,7 @@ public class DomainGroupController {
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
             return ResponseEntity.status(403).build();
         }
-        List<DomainUser> users = domainUserRepository.findByDomainId(domain.getId());
+        List<DomainUser> users = domainUserLookupPort.findByDomainId(domain.getId());
         List<DomainGroup> groups = domainGroupRepository.findByDomainId(domain.getId());
         Map<String, String> groupIdToName = groups.stream()
                 .collect(Collectors.toMap(DomainGroup::getId, DomainGroup::getName));
@@ -99,7 +99,7 @@ public class DomainGroupController {
         }
         List<DomainGroupMember> memberships = domainGroupMemberRepository.findByDomainGroupId(groupId);
         List<GroupMemberResponse> memberResponses = memberships.stream()
-                .map(membership -> domainUserRepository.findById(membership.getUserId())
+                .map(membership -> domainUserLookupPort.findById(membership.getUserId())
                         .map(user -> new GroupMemberResponse(user.getId(), user.getUsername(), user.getEmail(),
                                 user.getStatus(), membership.getAssignedAt(), membership.getAssignedBy()))
                         .orElse(null))
@@ -125,7 +125,7 @@ public class DomainGroupController {
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
             return ResponseEntity.status(403).build();
         }
-        var userOpt = domainUserRepository.findByDomainIdAndUsername(domain.getId(), request.getUsername());
+        var userOpt = domainUserLookupPort.findByDomainIdAndUsername(domain.getId(), request.getUsername());
         if (userOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found in this domain");
         }
@@ -149,7 +149,7 @@ public class DomainGroupController {
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
             return ResponseEntity.status(403).build();
         }
-        var userOpt = domainUserRepository.findById(userId);
+        var userOpt = domainUserLookupPort.findById(userId);
         if (userOpt.isEmpty() || !userOpt.get().getDomainId().equals(domain.getId())) {
             return ResponseEntity.notFound().build();
         }

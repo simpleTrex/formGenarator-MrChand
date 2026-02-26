@@ -30,11 +30,11 @@ import com.adaptivebp.modules.appmanagement.repository.AppGroupMemberRepository;
 import com.adaptivebp.modules.appmanagement.repository.AppGroupRepository;
 import com.adaptivebp.modules.appmanagement.repository.ApplicationRepository;
 import com.adaptivebp.modules.identity.model.DomainUser;
-import com.adaptivebp.modules.identity.repository.DomainUserRepository;
+import com.adaptivebp.modules.identity.port.DomainUserLookupPort;
 import com.adaptivebp.modules.organisation.dto.request.AssignMemberRequest;
 import com.adaptivebp.modules.organisation.model.Organisation;
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
-import com.adaptivebp.modules.organisation.repository.OrganisationRepository;
+import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
 import com.adaptivebp.shared.security.AdaptiveUserDetails;
 
@@ -48,8 +48,8 @@ public class AppGroupController {
     @Autowired private AppGroupRepository appGroupRepository;
     @Autowired private AppGroupMemberRepository appGroupMemberRepository;
     @Autowired private PermissionService permissionService;
-    @Autowired private OrganisationRepository organisationRepository;
-    @Autowired private DomainUserRepository domainUserRepository;
+    @Autowired private OrganisationLookupPort organisationLookupPort;
+    @Autowired private DomainUserLookupPort domainUserLookupPort;
     @Autowired private ApplicationProvisioningService applicationProvisioningService;
 
     @GetMapping
@@ -69,7 +69,7 @@ public class AppGroupController {
             !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
             return ResponseEntity.status(403).build();
         }
-        List<DomainUser> users = domainUserRepository.findByDomainId(awd.org.getId());
+        List<DomainUser> users = domainUserLookupPort.findByDomainId(awd.org.getId());
         List<AppGroup> groups = appGroupRepository.findByAppId(awd.app.getId());
         Map<String, String> groupIdToName = groups.stream()
                 .collect(Collectors.toMap(AppGroup::getId, AppGroup::getName));
@@ -118,7 +118,7 @@ public class AppGroupController {
         }
         List<AppGroupMember> memberships = appGroupMemberRepository.findByGroupId(groupId);
         List<AppGroupMemberResponse> memberResponses = memberships.stream()
-                .map(m -> domainUserRepository.findById(m.getUserId())
+                .map(m -> domainUserLookupPort.findById(m.getUserId())
                         .map(user -> new AppGroupMemberResponse(user.getId(), user.getUsername(), user.getEmail(),
                                 user.getStatus(), m.getAssignedAt(), m.getAssignedBy()))
                         .orElse(null))
@@ -155,7 +155,7 @@ public class AppGroupController {
         if (group == null || !group.getAppId().equals(awd.app.getId())) {
             return ResponseEntity.notFound().build();
         }
-        var userOpt = domainUserRepository.findByDomainIdAndUsername(awd.org.getId(), request.getUsername());
+        var userOpt = domainUserLookupPort.findByDomainIdAndUsername(awd.org.getId(), request.getUsername());
         if (userOpt.isEmpty()) { return ResponseEntity.badRequest().body("User not found in domain"); }
         String userId = userOpt.get().getId();
         boolean exists = appGroupMemberRepository.findByGroupIdAndUserId(groupId, userId).isPresent();
@@ -183,7 +183,7 @@ public class AppGroupController {
             !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
             return ResponseEntity.status(403).build();
         }
-        var userOpt = domainUserRepository.findById(userId);
+        var userOpt = domainUserLookupPort.findById(userId);
         if (userOpt.isEmpty() || !userOpt.get().getDomainId().equals(awd.org.getId())) {
             return ResponseEntity.notFound().build();
         }
@@ -206,7 +206,7 @@ public class AppGroupController {
             !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
             return ResponseEntity.status(403).build();
         }
-        var userOpt = domainUserRepository.findById(userId);
+        var userOpt = domainUserLookupPort.findById(userId);
         if (userOpt.isEmpty() || !userOpt.get().getDomainId().equals(awd.org.getId())) {
             return ResponseEntity.notFound().build();
         }
@@ -238,7 +238,7 @@ public class AppGroupController {
     }
 
     private AppWithDomain requireApplication(String slug, String appSlug) {
-        Organisation org = organisationRepository.findBySlug(slugify(slug))
+        Organisation org = organisationLookupPort.findBySlug(slugify(slug))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Domain not found"));
         Application app = applicationRepository.findByDomainIdAndSlug(org.getId(), appSlug)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));

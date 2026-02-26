@@ -18,13 +18,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.adaptivebp.modules.appmanagement.model.Application;
 import com.adaptivebp.modules.appmanagement.permission.AppPermission;
-import com.adaptivebp.modules.appmanagement.repository.ApplicationRepository;
+import com.adaptivebp.modules.appmanagement.port.ApplicationLookupPort;
 import com.adaptivebp.modules.formbuilder.dto.request.CreateDomainModelRequest;
 import com.adaptivebp.modules.formbuilder.dto.request.UpdateDomainModelRequest;
 import com.adaptivebp.modules.formbuilder.model.DomainModel;
 import com.adaptivebp.modules.formbuilder.repository.DomainModelRepository;
 import com.adaptivebp.modules.organisation.model.Organisation;
-import com.adaptivebp.modules.organisation.repository.OrganisationRepository;
+import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
 
 import jakarta.validation.Valid;
@@ -33,9 +33,9 @@ import jakarta.validation.Valid;
 @RequestMapping("/adaptive/domains/{slug}/models")
 public class DomainModelController {
 
-    @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private OrganisationLookupPort organisationLookupPort;
     @Autowired private DomainModelRepository domainModelRepository;
-    @Autowired private ApplicationRepository applicationRepository;
+    @Autowired private ApplicationLookupPort applicationLookupPort;
     @Autowired private PermissionService permissionService;
 
     @GetMapping
@@ -133,12 +133,12 @@ public class DomainModelController {
         if (appSlug == null || appSlug.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "appSlug is required");
         }
-        return applicationRepository.findByDomainIdAndSlug(domainId, slugify(appSlug))
+        return applicationLookupPort.findByDomainIdAndSlug(domainId, slugify(appSlug))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));
     }
 
     private Organisation requireDomain(String slug) {
-        return organisationRepository.findBySlug(slugify(slug))
+        return organisationLookupPort.findBySlug(slugify(slug))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Domain not found"));
     }
 

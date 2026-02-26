@@ -2,7 +2,6 @@ package com.adaptivebp.modules.organisation.service;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -11,11 +10,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import com.adaptivebp.modules.appmanagement.model.AppGroup;
-import com.adaptivebp.modules.appmanagement.model.AppGroupMember;
 import com.adaptivebp.modules.appmanagement.permission.AppPermission;
-import com.adaptivebp.modules.appmanagement.repository.AppGroupMemberRepository;
-import com.adaptivebp.modules.appmanagement.repository.AppGroupRepository;
+import com.adaptivebp.modules.appmanagement.port.AppGroupQueryPort;
 import com.adaptivebp.modules.organisation.model.DomainGroup;
 import com.adaptivebp.modules.organisation.model.DomainGroupMember;
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
@@ -38,10 +34,7 @@ public class PermissionService {
     private DomainGroupRepository domainGroupRepository;
 
     @Autowired
-    private AppGroupRepository appGroupRepository;
-
-    @Autowired
-    private AppGroupMemberRepository appGroupMemberRepository;
+    private AppGroupQueryPort appGroupQueryPort;
 
     public boolean isOwner() {
         AdaptiveUserDetails principal = currentPrincipal();
@@ -97,14 +90,7 @@ public class PermissionService {
             return true;
         }
         if (principal.getPrincipalType() == PrincipalType.DOMAIN_USER) {
-            return appGroupMemberRepository.findByAppIdAndUserId(appId, principal.getId()).stream()
-                    .map(AppGroupMember::getGroupId)
-                    .map(appGroupRepository::findById)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .map(AppGroup::getPermissions)
-                    .flatMap(Set::stream)
-                    .anyMatch(p -> p == permission);
+            return appGroupQueryPort.getAppPermissions(appId, principal.getId()).contains(permission);
         }
         return false;
     }

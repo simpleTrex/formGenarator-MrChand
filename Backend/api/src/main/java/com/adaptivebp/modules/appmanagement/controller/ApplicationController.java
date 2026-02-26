@@ -19,7 +19,7 @@ import com.adaptivebp.modules.appmanagement.repository.ApplicationRepository;
 import com.adaptivebp.modules.appmanagement.service.ApplicationProvisioningService;
 import com.adaptivebp.modules.organisation.model.Organisation;
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
-import com.adaptivebp.modules.organisation.repository.OrganisationRepository;
+import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
 
 import jakarta.validation.Valid;
@@ -29,7 +29,7 @@ import jakarta.validation.Valid;
 public class ApplicationController {
 
     @Autowired
-    private OrganisationRepository organisationRepository;
+    private OrganisationLookupPort organisationLookupPort;
 
     @Autowired
     private ApplicationRepository applicationRepository;
@@ -81,7 +81,7 @@ public class ApplicationController {
     }
 
     private Organisation requireDomain(String slug) {
-        return organisationRepository.findBySlug(slugify(slug))
+        return organisationLookupPort.findBySlug(slugify(slug))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Domain not found"));
     }
 
