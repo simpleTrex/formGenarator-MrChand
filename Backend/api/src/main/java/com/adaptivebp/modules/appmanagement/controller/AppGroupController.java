@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.adaptivebp.modules.appmanagement.dto.request.CreateAppGroupRequest;
 import com.adaptivebp.modules.appmanagement.dto.response.AppGroupMemberResponse;
 import com.adaptivebp.modules.appmanagement.dto.response.AppUserResponse;
+import com.adaptivebp.modules.appmanagement.service.ApplicationProvisioningService;
 import com.adaptivebp.modules.appmanagement.model.AppGroup;
 import com.adaptivebp.modules.appmanagement.model.AppGroupMember;
 import com.adaptivebp.modules.appmanagement.model.Application;
@@ -49,6 +50,7 @@ public class AppGroupController {
     @Autowired private PermissionService permissionService;
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private DomainUserRepository domainUserRepository;
+    @Autowired private ApplicationProvisioningService applicationProvisioningService;
 
     @GetMapping
     public ResponseEntity<?> list(@PathVariable String slug, @PathVariable String appSlug) {
@@ -78,21 +80,24 @@ public class AppGroupController {
             AppUserResponse response = new AppUserResponse(user);
             List<AppGroupMember> memberships = appGroupMemberRepository
                     .findByAppIdAndUserId(awd.app.getId(), user.getId());
+            // If user has no groups and default viewer group exists, return a virtual/computed
+            // membership in-memory. No persistence here — GET must remain read-only.
+            // To persist the assignment explicitly, call POST /users/{userId}/ensure-default-viewer.
+            List<AppUserResponse.AppGroupMembershipInfo> groupInfos;
             if (memberships.isEmpty() && defaultViewerGroup != null) {
-                AppGroupMember viewerMembership = new AppGroupMember();
-                viewerMembership.setGroupId(defaultViewerGroup.getId());
-                viewerMembership.setAppId(awd.app.getId());
-                viewerMembership.setUserId(user.getId());
-                viewerMembership.setAssignedBy("system");
-                appGroupMemberRepository.save(viewerMembership);
-                memberships = List.of(viewerMembership);
+                groupInfos = List.of(new AppUserResponse.AppGroupMembershipInfo(
+                        defaultViewerGroup.getId(),
+                        defaultViewerGroup.getName(),
+                        null  // null assignedAt = virtual, not persisted
+                ));
+            } else {
+                groupInfos = memberships.stream()
+                        .map(m -> new AppUserResponse.AppGroupMembershipInfo(
+                                m.getGroupId(),
+                                groupIdToName.getOrDefault(m.getGroupId(), "Unknown"),
+                                m.getAssignedAt()))
+                        .collect(Collectors.toList());
             }
-            List<AppUserResponse.AppGroupMembershipInfo> groupInfos = memberships.stream()
-                    .map(m -> new AppUserResponse.AppGroupMembershipInfo(
-                            m.getGroupId(),
-                            groupIdToName.getOrDefault(m.getGroupId(), "Unknown"),
-                            m.getAssignedAt()))
-                    .collect(Collectors.toList());
             response.setAppGroups(groupInfos);
             return response;
         }).collect(Collectors.toList());
@@ -164,6 +169,33 @@ public class AppGroupController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Explicitly persists the default "App Viewer" group assignment for a user who has
+     * no group memberships. This is the correct place to trigger the write that the
+     * GET handler must never perform.
+     * Returns 201 with the created membership, or 200 if the user already has groups.
+     */
+    @PostMapping("/users/{userId}/ensure-default-viewer")
+    public ResponseEntity<?> ensureDefaultViewerMembership(@PathVariable String slug,
+            @PathVariable String appSlug, @PathVariable String userId) {
+        AppWithDomain awd = requireApplication(slug, appSlug);
+        if (!permissionService.hasAppPermission(awd.app.getId(), AppPermission.APP_WRITE) &&
+            !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+            return ResponseEntity.status(403).build();
+        }
+        var userOpt = domainUserRepository.findById(userId);
+        if (userOpt.isEmpty() || !userOpt.get().getDomainId().equals(awd.org.getId())) {
+            return ResponseEntity.notFound().build();
+        }
+        AppGroupMember created = applicationProvisioningService
+                .ensureDefaultViewerMembership(awd.app.getId(), userId);
+        if (created == null) {
+            // User already has group memberships, or no default viewer group exists
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.status(201).body(created);
+    }
+
     @GetMapping("/users/{userId}")
     public ResponseEntity<?> listUserGroups(@PathVariable String slug, @PathVariable String appSlug,
             @PathVariable String userId) {
@@ -199,21 +231,9 @@ public class AppGroupController {
             return ResponseEntity.notFound().build();
         }
         appGroupMemberRepository.findByGroupIdAndUserId(groupId, userId).ifPresent(appGroupMemberRepository::delete);
-        List<AppGroupMember> remaining = appGroupMemberRepository.findByAppIdAndUserId(awd.app.getId(), userId);
-        if (remaining.isEmpty()) {
-            List<AppGroup> groups = appGroupRepository.findByAppId(awd.app.getId());
-            AppGroup defaultViewer = groups.stream()
-                    .filter(g -> g.isDefaultGroup() && "App Viewer".equalsIgnoreCase(g.getName()))
-                    .findFirst().orElse(null);
-            if (defaultViewer != null) {
-                AppGroupMember viewerM = new AppGroupMember();
-                viewerM.setGroupId(defaultViewer.getId());
-                viewerM.setAppId(awd.app.getId());
-                viewerM.setUserId(userId);
-                viewerM.setAssignedBy("system");
-                appGroupMemberRepository.save(viewerM);
-            }
-        }
+        // After removal, fall back to default viewer if user has no remaining groups.
+        // Delegates to the service so persistence logic lives in one place.
+        applicationProvisioningService.ensureDefaultViewerMembership(awd.app.getId(), userId);
         return ResponseEntity.ok().build();
     }
 
