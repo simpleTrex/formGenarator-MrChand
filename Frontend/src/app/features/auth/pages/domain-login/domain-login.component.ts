@@ -43,14 +43,23 @@ export class DomainLoginComponent {
       return;
     }
     this.loading = true;
+    const slug = (this.f['domainSlug'].value || '').trim().toLowerCase();
+
     this.authService.loginDomain(
-      this.f['domainSlug'].value,
+      slug,
       this.f['username'].value,
       this.f['password'].value
     ).subscribe({
       next: () => {
-        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
-        this.router.navigate([returnUrl]);
+        this.loading = false;
+        const returnUrl: string | undefined = this.route.snapshot.queryParams['returnUrl'];
+
+        if (returnUrl && returnUrl !== '/') {
+          this.router.navigateByUrl(returnUrl);
+          return;
+        }
+
+        this.router.navigate(['/domain', slug]);
       },
       error: (err: any) => {
         this.error = err?.error ?? 'Login failed';

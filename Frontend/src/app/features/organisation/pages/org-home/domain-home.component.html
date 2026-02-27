@@ -5,8 +5,21 @@
     <button class="back-btn" *ngIf="(isDomainUser() || isOwnerContext()) && mode !== 'PREVIEW'" (click)="enterPreviewMode()">Preview Mode</button>
     <button class="back-btn" *ngIf="(isDomainUser() || isOwnerContext()) && canEditMode && mode !== 'EDIT'" (click)="enterEditMode()">Edit Mode</button>
     <button class="back-btn" *ngIf="(isDomainUser() || isOwnerContext()) && canAccessManager && mode !== 'ACCESS'" (click)="enterAccessManagerMode()">Access Manager</button>
-    <button class="back-btn" *ngIf="auth.isLoggedIn()" (click)="logout()">Logout</button>
+    <button class="back-btn" *ngIf="auth.isLoggedIn()" (click)="requestLogout()">Logout</button>
   </div>
+
+  <app-confirm-dialog
+    *ngIf="showLogoutConfirm"
+    theme="light"
+    title="Logout"
+    message="Are you sure you want to logout?"
+    confirmText="Yes"
+    cancelText="No"
+    confirmVariant="primary"
+    cancelVariant="outline"
+    (confirm)="confirmLogout()"
+    (cancel)="cancelLogout()"
+  />
 
   <!-- Domain Info Section -->
   <div class="domain-info-section">

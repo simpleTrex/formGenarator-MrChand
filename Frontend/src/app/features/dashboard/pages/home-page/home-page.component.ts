@@ -6,13 +6,14 @@ import { DomainService } from '../../../../core/services/domain.service';
 import { HeroSectionComponent } from '../../../../shared/components/hero-section/hero-section.component';
 import { ModernButtonComponent } from '../../../../shared/components/modern-button/modern-button.component';
 import { ModernCardComponent } from '../../../../shared/components/modern-card/modern-card.component';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 declare var lucide: any;
 
 @Component({
   selector: 'home-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, HeroSectionComponent, ModernButtonComponent, ModernCardComponent],
+  imports: [CommonModule, RouterModule, HeroSectionComponent, ModernButtonComponent, ModernCardComponent, ConfirmDialogComponent],
   templateUrl: './home-page.component.html',
   styleUrls: ['./home-page.component.css']
 })
@@ -23,6 +24,8 @@ export class HomePageComponent implements OnInit, AfterViewInit {
   loadingDomains = false;
   ownerContext = false;
   notice = '';
+
+  showLogoutConfirm = false;
 
   constructor(
     private authService: AuthService,
@@ -51,6 +54,24 @@ export class HomePageComponent implements OnInit, AfterViewInit {
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
+  }
+
+  requestLogout(): void {
+    this.showLogoutConfirm = true;
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirm = false;
+  }
+
+  confirmLogout(): void {
+    this._authService.logout();
+    this.ownerContext = false;
+    this.domains = [];
+    this.loadingDomains = false;
+    this.notice = '';
+    this.showLogoutConfirm = false;
+    this.router.navigate(['/']);
   }
 
   loadUserDomains(): void {

@@ -23,10 +23,23 @@
         <a routerLink="/create-domain">
           <app-modern-button variant="primary" size="lg">Create Domain</app-modern-button>
         </a>
-        <app-modern-button variant="outline-light" size="lg" (click)="_authService.logout()">Logout</app-modern-button>
+        <app-modern-button variant="outline-light" size="lg" (click)="requestLogout()">Logout</app-modern-button>
       </div>
     </ng-template>
   </app-hero-section>
+
+  <app-confirm-dialog
+    *ngIf="showLogoutConfirm"
+    theme="dark"
+    title="Logout"
+    message="Are you sure you want to logout?"
+    confirmText="Yes"
+    cancelText="No"
+    confirmVariant="primary"
+    cancelVariant="outline-light"
+    (confirm)="confirmLogout()"
+    (cancel)="cancelLogout()"
+  />
 
   <div class="content-section">
     <!-- Landing Page Content for non-owners -->

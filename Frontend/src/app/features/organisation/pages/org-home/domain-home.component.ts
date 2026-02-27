@@ -7,11 +7,12 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { ModernCardComponent } from '../../../../shared/components/modern-card/modern-card.component';
 import { ModernButtonComponent } from '../../../../shared/components/modern-button/modern-button.component';
 import { ModernInputComponent } from '../../../../shared/components/modern-input/modern-input.component';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-domain-home',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, ModernCardComponent, ModernButtonComponent, ModernInputComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, ModernCardComponent, ModernButtonComponent, ModernInputComponent, ConfirmDialogComponent],
   templateUrl: './domain-home.component.html',
   styleUrls: ['./domain-home.component.css']
 })
@@ -51,6 +52,8 @@ export class DomainHomeComponent implements OnInit {
   mode: 'PREVIEW' | 'EDIT' | 'ACCESS' = 'PREVIEW';
   showCreateAppForm = false;
 
+  showLogoutConfirm = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -69,9 +72,22 @@ export class DomainHomeComponent implements OnInit {
     });
   }
 
-  logout() {
+  requestLogout(): void {
+    this.showLogoutConfirm = true;
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirm = false;
+  }
+
+  confirmLogout(): void {
     this.auth.logout();
-    this.initializeAccess();
+    this.showLogoutConfirm = false;
+    if (this.slug) {
+      this.router.navigate(['/domain', this.slug]);
+      return;
+    }
+    this.router.navigate(['/']);
   }
 
   ngOnInit(): void {
