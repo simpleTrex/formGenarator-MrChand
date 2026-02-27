@@ -14,12 +14,12 @@ const routes: Routes = [
 @NgModule({
     declarations: [
         DomainCreateComponent,
-        DomainHomeComponent,
         DomainUsersComponent,
     ],
     imports: [
         SharedModule,
         RouterModule.forChild(routes),
+        DomainHomeComponent,
     ],
 })
 export class OrganisationModule { }

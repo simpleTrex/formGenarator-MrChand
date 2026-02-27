@@ -1,10 +1,16 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ModernInputComponent } from '../../../../shared/components/modern-input/modern-input.component';
+import { ModernButtonComponent } from '../../../../shared/components/modern-button/modern-button.component';
+import { ModernCardComponent } from '../../../../shared/components/modern-card/modern-card.component';
 
 @Component({
   selector: 'app-domain-login',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, ModernInputComponent, ModernButtonComponent, ModernCardComponent],
   templateUrl: './domain-login.component.html',
   styleUrls: ['./domain-login.component.css']
 })

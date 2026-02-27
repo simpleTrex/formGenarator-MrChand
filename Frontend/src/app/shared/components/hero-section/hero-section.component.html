@@ -1,0 +1,16 @@
+<section class="hero-container" [ngClass]="'align-' + alignment">
+  <div class="hero-content">
+    <h1 *ngIf="title" class="hero-title" [innerHTML]="title"></h1>
+    <p *ngIf="subtitle" class="hero-subtitle">{{ subtitle }}</p>
+    
+    <div class="hero-actions">
+      <ng-content></ng-content>
+    </div>
+  </div>
+  
+  <!-- Optional abstract background graphic for the fintech vibe -->
+  <div class="hero-graphic">
+    <div class="graphic-shape shape-1"></div>
+    <div class="graphic-shape shape-2"></div>
+  </div>
+</section>

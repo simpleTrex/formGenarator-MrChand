@@ -1,0 +1,51 @@
+.modern-card {
+  border-radius: var(--radius-card);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Light theme for cards usually matches standard Bootstrap cards but softer */
+.theme-light {
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  box-shadow: var(--shadow-subtle);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Dark theme for high contrast sections */
+.theme-dark {
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Glassmorphism theme */
+.theme-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  color: var(--text-dark);
+}
+
+/* Optional subtle scale on hover if needed */
+.modern-card.hoverable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Neon glow effect for featured cards */
+.glow-effect {
+  box-shadow: 0 0 20px rgba(186, 255, 41, 0.1);
+  border-color: rgba(186, 255, 41, 0.3);
+}
+
+.p-4 {
+  padding: 2rem;
+}
+
+.p-0 {
+  padding: 0;
+}

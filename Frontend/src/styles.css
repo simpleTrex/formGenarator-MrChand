@@ -1,4 +1,59 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;600;700;800;900&display=swap');
+
+:root {
+  --bg-dark: #000000;
+  --bg-light: #FFFFFF;
+  --bg-offwhite: #F5F5F7;
+  --accent-neon: #BAFF29;
+  --text-dark: #111111;
+  --text-light: #FFFFFF;
+  --text-muted: #666666;
+  --text-muted-light: #A1A1AA;
+  
+  --radius-pill: 50rem;
+  --radius-card: 32px;
+  --radius-input: 16px;
+  
+  --transition-fast: 0.2s ease;
+  
+  --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text-dark);
+  background-color: var(--bg-offwhite);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 0;
+  color: inherit;
+}
+
+/* Global utility for hiding scrolling on body when needed */
+.no-scroll {
+  overflow: hidden;
+}
+
+/* Base link styling */
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+a:hover {
+  opacity: 0.8;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Override existing weird global styles (from previous implementation) */
 .form-group {
     margin-bottom: 5px;
     margin-top: 5px;
@@ -10,7 +65,7 @@
 
 .template-card {
     padding: 10px;
-    background-color: blue;
+    background-color: blue; /* Consider removing this later */
     color: aqua;
     margin: 10px;
     display: flex;

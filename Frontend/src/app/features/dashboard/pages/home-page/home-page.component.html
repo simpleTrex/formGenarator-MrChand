@@ -1,41 +1,101 @@
-
 <div class="home-container fade-in">
-    <div class="hero">
-        <div>
-            <h1 class="hero-title">AdaptiveBP</h1>
-            <p class="hero-subtitle" *ngIf="ownerContext">
-                Welcome {{ displayName }}
-            </p>
-            <p class="hero-subtitle" *ngIf="!ownerContext">
-                Manage your domains and applications from one place.
-            </p>
-            <p class="notice" *ngIf="notice">{{ notice }}</p>
+  
+  <app-hero-section
+    [title]="'AdaptiveBP'"
+    [subtitle]="ownerContext ? 'Welcome ' + displayName : 'The Modern Platform for Adaptive Business Processes.'"
+    alignment="left"
+  >
+    <p class="notice" *ngIf="notice">{{ notice }}</p>
+
+    <ng-container *ngIf="!ownerContext; else ownerActions">
+      <div class="hero-actions">
+        <a routerLink="/owner-login">
+          <app-modern-button variant="primary" size="lg">Owner Login</app-modern-button>
+        </a>
+        <a routerLink="/owner-signup">
+          <app-modern-button variant="outline-light" size="lg">Create Workspace</app-modern-button>
+        </a>
+      </div>
+    </ng-container>
+
+    <ng-template #ownerActions>
+      <div class="hero-actions">
+        <a routerLink="/create-domain">
+          <app-modern-button variant="primary" size="lg">Create Domain</app-modern-button>
+        </a>
+        <app-modern-button variant="outline-light" size="lg" (click)="_authService.logout()">Logout</app-modern-button>
+      </div>
+    </ng-template>
+  </app-hero-section>
+
+  <div class="content-section">
+    <!-- Landing Page Content for non-owners -->
+    <div *ngIf="!ownerContext" class="landing-content">
+      <section class="features-section">
+        <h2 class="section-title text-center">Built for Scale and Speed</h2>
+        <div class="features-grid">
+          <app-modern-card theme="light">
+            <div class="feature-icon mb-3"><i data-lucide="rocket" width="48" height="48" stroke-width="1.5"></i></div>
+            <h3 class="feature-title">Rapid Deployment</h3>
+            <p class="feature-desc text-muted">Spin up new domains and applications in minutes. Our infrastructure handles the heavy lifting.</p>
+          </app-modern-card>
+
+          <app-modern-card theme="light">
+            <div class="feature-icon mb-3"><i data-lucide="shield-check" width="48" height="48" stroke-width="1.5"></i></div>
+            <h3 class="feature-title">Enterprise Security</h3>
+            <p class="feature-desc text-muted">Role-based access control out of the box. Secure your data with industry-leading encryption.</p>
+          </app-modern-card>
+
+          <app-modern-card theme="light">
+            <div class="feature-icon mb-3"><i data-lucide="zap" width="48" height="48" stroke-width="1.5" class="neon-icon"></i></div>
+            <h3 class="feature-title">Dynamic Forms</h3>
+            <p class="feature-desc text-muted">Create complex data schemas and UI forms without writing a single line of frontend code.</p>
+          </app-modern-card>
         </div>
-        <div class="cta-group">
-            <ng-container *ngIf="!ownerContext; else ownerActions">
-                <button class="btn btn-primary" routerLink="/owner-login">Owner Login</button>
-                <button class="btn" routerLink="/owner-signup">Owner Signup</button>
-            </ng-container>
-            <ng-template #ownerActions>
-                <button class="btn" routerLink="/create-domain">Create Domain</button>
-                <button class="btn" (click)="_authService.logout()">Logout</button>
-            </ng-template>
-        </div>
+      </section>
+
+      <section class="cta-section">
+        <app-modern-card theme="dark" class="text-center">
+          <div class="cta-wrapper">
+            <h2 class="cta-title">Ready to transform your business?</h2>
+            <p class="cta-subtitle">Join thousands of organizations building on AdaptiveBP.</p>
+            <a routerLink="/owner-signup">
+              <app-modern-button variant="primary" size="lg">Start Building Free</app-modern-button>
+            </a>
+          </div>
+        </app-modern-card>
+      </section>
     </div>
 
+    <!-- Owner Dashboard Content (unchanged structure, just CSS context) -->
     <div *ngIf="ownerContext && !loadingDomains && domains.length > 0" class="domains-section">
-        <h2 class="section-title">Your Domains</h2>
-        <div class="domains-grid">
-            <div *ngFor="let domain of domains" class="domain-card" (click)="navigateToDomain(domain.slug)">
-                <div class="domain-name">{{ domain.name }}</div>
-                <div class="domain-slug">{{ domain.slug }}</div>
-                <div class="domain-description" *ngIf="domain.description">{{ domain.description }}</div>
-                <div class="domain-industry" *ngIf="domain.industry">{{ domain.industry }}</div>
+      <h2 class="section-title">Your Domains</h2>
+      
+      <div class="domains-grid">
+        <app-modern-card 
+          *ngFor="let domain of domains" 
+          (click)="navigateToDomain(domain.slug)"
+          theme="light"
+          class="clickable-card"
+        >
+          <div class="domain-card-content">
+            <h3 class="domain-name">{{ domain.name }}</h3>
+            <div class="domain-badge">{{ domain.slug }}</div>
+            <p class="domain-description" *ngIf="domain.description">{{ domain.description }}</p>
+            <div class="domain-industry" *ngIf="domain.industry">
+              <span class="industry-dot"></span> {{ domain.industry }}
             </div>
-        </div>
+          </div>
+        </app-modern-card>
+      </div>
     </div>
 
     <div *ngIf="ownerContext && loadingDomains" class="loading-section">
-        <p>Loading your domains...</p>
+      <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <p class="mt-3 text-muted">Loading your domains...</p>
     </div>
+  </div>
+
 </div>

@@ -10,7 +10,6 @@ import { ModelRenderComponent } from '../features/form-builder/components/field-
 
 @NgModule({
     declarations: [
-        NaviBarComponent,
         NaviDataComponent,
         NotFoundPageComponent,
         RenderFormComponent,
@@ -21,6 +20,7 @@ import { ModelRenderComponent } from '../features/form-builder/components/field-
         FormsModule,
         ReactiveFormsModule,
         RouterModule,
+        NaviBarComponent,
     ],
     exports: [
         CommonModule,

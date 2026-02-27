@@ -9,11 +9,11 @@ const routes: Routes = [
 
 @NgModule({
     declarations: [
-        HomePageComponent,
     ],
     imports: [
         SharedModule,
         RouterModule.forChild(routes),
+        HomePageComponent,
     ],
 })
 export class DashboardModule { }
