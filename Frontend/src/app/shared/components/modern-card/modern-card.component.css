@@ -32,8 +32,9 @@
 
 /* Optional subtle scale on hover if needed */
 .modern-card.hoverable:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  border-color: rgba(186, 255, 41, 0.5); /* Neon border on hover */
 }
 
 /* Neon glow effect for featured cards */

@@ -10,9 +10,9 @@
   --text-muted: #666666;
   --text-muted-light: #A1A1AA;
   
-  --radius-pill: 50rem;
   --radius-card: 32px;
-  --radius-input: 16px;
+  --radius-btn: 8px;
+  --radius-input: 8px;
   
   --transition-fast: 0.2s ease;
   
