@@ -1,94 +1,113 @@
 # Next Steps — AdaptiveBP Roadmap
 
-Post-refactoring roadmap organised into phases. Each phase builds on the previous.
+Post-refactoring roadmap. Each phase builds on the previous.
+
+> **What's done:** Modular monolith architecture, frontend restructure, dependency cleanup, documentation (`README.md`, `PROJECT_ARCHITECTURE.md`, `DEVELOPER_GUIDE.md`).
 
 ---
 
-## Phase 1 — Stabilisation _(Immediate)_
+## Phase 1 — Stabilisation & Legacy Cleanup _(Now)_
 
-> Get the refactored app into a reliable, testable state.
+> Make the refactored app reliable and remove dead code.
 
-- [ ] **End-to-end smoke test** — Manually test all critical user flows:
+- [ ] **End-to-end smoke test** — Test all critical flows:
   - Owner signup → login → create domain
   - Domain user signup → domain login → dashboard
   - Create application → open app → manage models
-  - Form builder → add fields → preview form → submit data
-- [ ] **Fix CORS `cors()` deprecation** — Replace `HttpSecurity.cors()` in `WebSecurityConfig.java` with the new `cors(Customizer.withDefaults())` API
-- [ ] **Set logging to INFO** — Change `logging.level.root=DEBUG` to `INFO` in `application.properties` (DEBUG floods the console)
-- [ ] **Git commit** — Commit all changes on `feature/modular-monolith` branch with a clear message
-- [ ] **Create PR** — Open a pull request to merge into `main`
+  - Form builder → add fields → preview → submit data
+- [ ] **Fix deprecation warnings** — Replace `HttpSecurity.cors()` with `cors(Customizer.withDefaults())` in `WebSecurityConfig.java`
+- [ ] **Set logging to INFO** — Change `logging.level.root=DEBUG` to `INFO` in `application.properties`
+- [ ] **Remove legacy `/custom_form` API** — Currently two APIs exist side-by-side:
+  - Migrate any frontend calls still using `/custom_form/**` to `/adaptive/**`
+  - Delete `AuthController.java`, `UserController.java` (identity module)
+  - Delete `CustomFormController.java` (formbuilder module)
+  - Delete `UserDetailsImpl.java`, `UserDetailsServiceImpl.java` (shared/security)
+  - Delete `User.java`, `Role.java`, `ERole.java` (identity/model)
+  - Delete all files in `formbuilder/model/legacy/`
+  - Delete legacy repositories (`CustomFormRepository`, `FormFieldRepository`, etc.)
+  - Update `JwtAuthFilter` to only handle `AdaptiveUserDetails` tokens
+- [ ] **Pin Angular versions** — Replace `"*"` wildcard versions with `"^17.3.9"` for `@angular/animations`, `@angular/common`, `@angular/compiler`, `@angular/core`, `rxjs`, `tslib`
+- [ ] **Merge to main** — Create PR from `feature/modular-monolith` → `main`
 
 ---
 
-## Phase 2 — Code Quality _(1–2 weeks)_
+## Phase 2 — Testing & Code Quality _(1–2 weeks)_
 
-> Improve maintainability, testability, and developer experience.
+> Add tests, documentation, and developer tooling.
 
-- [ ] **Add unit tests** — Old tests were deleted (referenced legacy packages). Write new tests for:
-  - `JwtTokenProvider` — token generation, parsing, validation
-  - `AuthController` / `OwnerAuthController` — signup, login, error cases
-  - `DomainProvisioningService` — domain creation, user linking
-  - `ApplicationProvisioningService` — app creation, permissions
-- [ ] **Add integration tests** — Use `@SpringBootTest` + embedded MongoDB for repository tests
-- [ ] **Environment-based config** — Move sensitive values (JWT secret, MongoDB URI) to environment variables; use Spring profiles (`dev`, `prod`)
-- [ ] **API documentation** — Add Swagger/OpenAPI with `springdoc-openapi` for auto-generated API docs
-- [ ] **Frontend linting** — Run `ng lint` and fix remaining issues; add ESLint rules to CI
-- [ ] **Optimise bundle size** — The initial bundle is 2.70 MB. Consider:
-  - Lazy-load Bootstrap/jQuery only where needed
-  - Replace IDS Enterprise with lighter components
-  - Tree-shake unused D3.js modules
+- [ ] **Unit tests** — Priority targets:
+  - `JwtTokenProvider` — token generation, parsing, expiry, invalid tokens
+  - `OwnerAuthController` — signup, login, duplicate email, wrong password
+  - `DomainAuthController` — signup, login, domain not found
+  - `DomainProvisioningService` — default groups created, idempotency
+  - `ApplicationProvisioningService` — default groups, owner auto-assigned
+  - `PermissionService` — owner gets all permissions, group-based checks
+- [ ] **Integration tests** — `@SpringBootTest` + embedded MongoDB (`de.flapdoodle.embed.mongo`) for repository layer
+- [ ] **API documentation** — Add `springdoc-openapi-starter-webmvc-ui` for auto-generated Swagger docs at `/swagger-ui.html`
+- [ ] **Spring profiles** — Create `application-dev.properties` and `application-prod.properties` for environment-specific config
+- [ ] **Frontend linting** — Set up ESLint via `ng lint`, fix issues, enforce in CI
+- [ ] **Error handling** — Standardise all API errors to a consistent JSON format via `GlobalExceptionHandler`
 
 ---
 
-## Phase 3 — Feature Enhancements _(2–4 weeks)_
+## Phase 3 — Feature Development _(2–4 weeks)_
 
-> Add capabilities that improve the user experience.
+> Build out user-facing features following the patterns in `DEVELOPER_GUIDE.md`.
 
-- [ ] **User profile management** — Settings page for bio, full name, profile picture (backend endpoints exist, frontend needs pages)
-- [ ] **Role-based UI** — Show/hide features based on user roles (OWNER vs DOMAIN_USER vs ADMIN)
-- [ ] **Form data export** — Export submitted form data to CSV/Excel
-- [ ] **Real-time form validation** — Add client-side validation rules (required, min/max, regex) in the form builder
-- [ ] **Notifications system** — In-app notifications for domain invites, form submissions
-- [ ] **Search & filter** — Add search across domains, applications, and forms
-- [ ] **Dark mode** — Implement dark theme toggle using CSS variables
+- [ ] **User profile management** — `/adaptive/profile` endpoints + frontend settings page (bio, full name, avatar)
+- [ ] **Domain settings page** — Edit domain name, description, industry; transfer ownership
+- [ ] **Role-based UI** — Show/hide navbar items, buttons, and pages based on `PermissionService` responses via `/access/me` endpoint
+- [ ] **Form builder improvements:**
+  - Client-side validation rules (required, min/max, regex) on form fields
+  - Field reordering (drag & drop)
+  - Form data export to CSV
+- [ ] **Search & filter** — Search across domains, apps, and models with debounced input
+- [ ] **Notifications** — In-app notification system for domain invites, form submissions
+- [ ] **Dark mode** — CSS variable-based theme toggle
 
 ---
 
 ## Phase 4 — Production Readiness _(4–6 weeks)_
 
-> Prepare for deployment and scaling.
+> Prepare for deployment.
 
-- [ ] **CI/CD pipeline** — GitHub Actions for:
+- [ ] **CI/CD pipeline** — GitHub Actions:
   - Backend: `mvn test` → `mvn package` → Docker build → deploy
-  - Frontend: `npm test` → `ng build --prod` → deploy to CDN
-- [ ] **Dockerise** — Create `Dockerfile` for backend and `docker-compose.yml` for local dev (backend + MongoDB)
-- [ ] **Rate limiting** — Add API rate limiting for auth endpoints to prevent brute-force attacks
-- [ ] **Audit logging** — Log all security events (login/logout, role changes, data access) to a dedicated audit collection
-- [ ] **HTTPS configuration** — Enable SSL/TLS with proper certificates (the `ssl-server.jks` placeholder exists)
-- [ ] **Monitoring** — Add Spring Boot Actuator + health checks for production monitoring
-- [ ] **Error tracking** — Integrate Sentry or similar for frontend and backend error reporting
+  - Frontend: `ng lint` → `ng build --configuration production` → deploy to CDN/S3
+- [ ] **Docker** — `Dockerfile` for backend, `docker-compose.yml` for local dev (backend + MongoDB)
+- [ ] **Security hardening:**
+  - Rate limiting on `/auth/**` endpoints (prevent brute-force)
+  - HTTPS with proper certificates (replace `ssl-server.jks` placeholder)
+  - CSRF protection for cookie-based JWT
+- [ ] **Observability:**
+  - Spring Boot Actuator + health checks
+  - Structured JSON logging
+  - Error tracking (Sentry or similar)
+- [ ] **Audit logging** — Log security events (login, logout, role changes) to dedicated `audit_log` collection
 
 ---
 
 ## Phase 5 — Scale & Extend _(6+ weeks)_
 
-> Evolve the architecture for growth.
+> Evolve the platform.
 
-- [ ] **Process engine module** — Re-introduce the deferred process/workflow engine as a new module in `modules/processengine/`
-- [ ] **Multi-tenancy** — Isolate data per domain at the database level (currently shared collections)
-- [ ] **WebSocket support** — Real-time updates for collaborative form editing
-- [ ] **Plugin system** — Allow third-party field types in the form builder
-- [ ] **Mobile-responsive UI** — Full responsive redesign for tablets and phones
-- [ ] **Internationalisation (i18n)** — Multi-language support for UI and form labels
+- [ ] **Process engine module** — Workflow/BPM engine as `modules/processengine/` (deferred from initial refactoring)
+- [ ] **Multi-tenancy at DB level** — Database-per-domain or collection prefixing for strict data isolation
+- [ ] **WebSocket** — Real-time collaborative form editing
+- [ ] **Plugin system** — Third-party field types in the form builder
+- [ ] **Mobile-responsive redesign** — Full responsive UI for tablets and phones
+- [ ] **i18n** — Multi-language support for UI and form labels
+- [ ] **Angular standalone migration** — Migrate from NgModules to standalone components (Angular 18+)
 
 ---
 
 ## Architecture Decisions to Revisit
 
-| Decision | Current | Consider Changing When... |
+| Decision | Current | Revisit When... |
 |---|---|---|
-| Modular Monolith | Single deployable JAR | > 5 teams working on different modules |
-| MongoDB | Shared collections per domain | Need strict data isolation per tenant |
-| JWT in cookies | `HttpOnly` cookie | Need OAuth2/SSO integration |
-| Angular 17 | Module-based lazy loading | Migrate to standalone components (Angular 18+) |
-| Bootstrap + jQuery | Global scripts | Bundle size > 3 MB or need SSR |
+| Modular Monolith | Single JAR | > 5 developers on different modules |
+| Flat module folders | `controller/`, `service/`, `model/` | Modules grow past 20+ files per folder → switch to DDD 4-layer (`domain/`, `application/`, `infrastructure/`, `api/`) |
+| MongoDB | Shared collections | Need strict per-tenant data isolation |
+| JWT in cookies | `HttpOnly` cookie | Need OAuth2 / SSO / third-party auth |
+| Angular 17 modules | `NgModule` + lazy loading | Angular 19+ drops NgModule support |
+| Bootstrap CSS | Global stylesheet | Bundle > 1 MB or need SSR → switch to Tailwind or CSS modules |
