@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.adaptivebp.modules.identity.dto.response.MessageResponse;
 import com.adaptivebp.shared.security.AdaptiveUserDetails;
-import com.formgenerator.platform.workflow.*;
+import com.adaptivebp.platform.workflow.*;
 
 import jakarta.validation.Valid;
 

@@ -158,6 +158,13 @@ Make sure you've created a `.env` file from `.env.example` and your terminal loa
 $env:SPRING_DATA_MONGODB_URI = "mongodb+srv://..."
 ```
 
+On WSL / bash, note that MongoDB Atlas URIs often contain `&` (e.g. `...retryWrites=true&w=majority`).
+If you `source .env` without quoting, bash will treat `&` as a background operator and the variable will not be set.
+Use quotes in `.env` or export it explicitly:
+```bash
+export SPRING_DATA_MONGODB_URI='mongodb+srv://...'
+```
+
 ### Frontend `ng serve` fails
 Run `npm install` in the `Frontend/` directory first to install dependencies.
 

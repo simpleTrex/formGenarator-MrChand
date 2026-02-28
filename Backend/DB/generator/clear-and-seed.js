@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const dbConfig = require("./app/config/db.config");
 const db = require("./app/models");
 const Role = db.role;
@@ -5,7 +7,10 @@ const User = db.user;
 const Domain = db.domain;
 
 // Use MongoDB Atlas connection string
-const mongoUri = process.env.MONGODB_ATLAS_URI || dbConfig.ATLAS_URI;
+const mongoUri =
+  process.env.MONGODB_ATLAS_URI ||
+  dbConfig.ATLAS_URI ||
+  `mongodb://${dbConfig.HOST}:${dbConfig.PORT}/${dbConfig.DB}`;
 
 async function clearAndSeed() {
   try {

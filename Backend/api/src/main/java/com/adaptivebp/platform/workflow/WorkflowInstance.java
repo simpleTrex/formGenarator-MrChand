@@ -1,4 +1,4 @@
-package com.formgenerator.platform.workflow;
+package com.adaptivebp.platform.workflow;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * WorkflowInstance represents a running instance of a workflow for a specific

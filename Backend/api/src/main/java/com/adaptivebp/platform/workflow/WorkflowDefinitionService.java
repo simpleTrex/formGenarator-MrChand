@@ -1,4 +1,4 @@
-package com.formgenerator.platform.workflow;
+package com.adaptivebp.platform.workflow;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -6,11 +6,6 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-
-import com.formgenerator.platform.workflow.WorkflowDefinitionRepository;
-import com.formgenerator.platform.workflow.WorkflowDefinition;
-import com.formgenerator.platform.workflow.WorkflowState;
-import com.formgenerator.platform.workflow.WorkflowTransition;
 
 /**
  * Service for managing workflow definitions
@@ -143,16 +138,18 @@ public class WorkflowDefinitionService {
 
         java.util.List<WorkflowState> prStates = new java.util.ArrayList<>();
         prStates.add(createState("draft", "Draft", "Initial draft", true, false, "#9E9E9E", 100, 100));
-        prStates.add(createState("pending_approval", "Pending Approval", "Waiting for manager", false, false, "#FF9800",
-                400, 100));
+        prStates.add(createState("pending_approval", "Pending Approval", "Waiting for manager", false, false,
+                "#FF9800", 400, 100));
         prStates.add(createState("approved", "Approved", "Request approved", false, true, "#4CAF50", 700, 50));
         prStates.add(createState("rejected", "Rejected", "Request rejected", false, true, "#F44336", 700, 200));
         prWorkflow.setStates(prStates);
 
         java.util.List<WorkflowTransition> prTransitions = new java.util.ArrayList<>();
         prTransitions.add(createTransition("submit", "Submit", "draft", "pending_approval", "SUBMIT", "USER"));
-        prTransitions.add(createTransition("approve", "Approve", "pending_approval", "approved", "APPROVE", "MANAGER"));
-        prTransitions.add(createTransition("reject", "Reject", "pending_approval", "rejected", "REJECT", "MANAGER"));
+        prTransitions
+                .add(createTransition("approve", "Approve", "pending_approval", "approved", "APPROVE", "MANAGER"));
+        prTransitions
+                .add(createTransition("reject", "Reject", "pending_approval", "rejected", "REJECT", "MANAGER"));
         prWorkflow.setTransitions(prTransitions);
 
         repository.save(prWorkflow);
@@ -165,8 +162,8 @@ public class WorkflowDefinitionService {
 
         java.util.List<WorkflowState> poStates = new java.util.ArrayList<>();
         poStates.add(createState("new", "New", "New PO", true, false, "#9E9E9E", 100, 100));
-        poStates.add(
-                createState("sent_to_supplier", "Sent to Supplier", "PO emitted", false, false, "#2196F3", 400, 100));
+        poStates.add(createState("sent_to_supplier", "Sent to Supplier", "PO emitted", false, false, "#2196F3", 400,
+                100));
         poStates.add(createState("in_progress", "In Progress", "Supplier working", false, false, "#FF9800", 700, 100));
         poStates.add(createState("completed", "Completed", "Goods received", false, true, "#4CAF50", 1000, 100));
         poWorkflow.setStates(poStates);
@@ -175,7 +172,8 @@ public class WorkflowDefinitionService {
         poTransitions.add(createTransition("send", "Send to Supplier", "new", "sent_to_supplier", "SUBMIT", "BUYER"));
         poTransitions.add(createTransition("confirm", "Supplier Confirm", "sent_to_supplier", "in_progress", "PROGRESS",
                 "BUYER"));
-        poTransitions.add(createTransition("complete", "Complete", "in_progress", "completed", "COMPLETE", "SYSTEM"));
+        poTransitions
+                .add(createTransition("complete", "Complete", "in_progress", "completed", "COMPLETE", "SYSTEM"));
         poWorkflow.setTransitions(poTransitions);
 
         repository.save(poWorkflow);
@@ -188,15 +186,15 @@ public class WorkflowDefinitionService {
 
         java.util.List<WorkflowState> grStates = new java.util.ArrayList<>();
         grStates.add(createState("received", "Received", "Goods at dock", true, false, "#9E9E9E", 100, 100));
-        grStates.add(
-                createState("quality_check", "Quality Check", "Inspecting items", false, false, "#FF9800", 400, 100));
+        grStates.add(createState("quality_check", "Quality Check", "Inspecting items", false, false, "#FF9800", 400,
+                100));
         grStates.add(createState("approved", "Approved", "Items verified", false, true, "#4CAF50", 700, 50));
         grStates.add(createState("rejected", "Rejected", "Items damaged", false, true, "#F44336", 700, 200));
         grWorkflow.setStates(grStates);
 
         java.util.List<WorkflowTransition> grTransitions = new java.util.ArrayList<>();
-        grTransitions.add(
-                createTransition("inspect", "Start Inspection", "received", "quality_check", "PROGRESS", "QC_TEAM"));
+        grTransitions.add(createTransition("inspect", "Start Inspection", "received", "quality_check", "PROGRESS",
+                "QC_TEAM"));
         grTransitions.add(createTransition("pass", "Pass QC", "quality_check", "approved", "APPROVE", "QC_TEAM"));
         grTransitions.add(createTransition("fail", "Fail QC", "quality_check", "rejected", "REJECT", "QC_TEAM"));
         grWorkflow.setTransitions(grTransitions);

@@ -9,7 +9,7 @@ jobs:
   build-backend:
     runs-on: ubuntu-latest
     env:
-      SPRING_DATA_MONGODB_URI: mongodb+srv://Sulitha:DevSuli1423@cluster0.f1si0uz.mongodb.net/app?retryWrites=true&w=majority
+      SPRING_DATA_MONGODB_URI: ${{ secrets.SPRING_DATA_MONGODB_URI }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

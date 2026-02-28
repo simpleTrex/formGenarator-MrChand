@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const cookieSession = require("cookie-session");
@@ -7,7 +9,7 @@ const dbConfig = require("./app/config/db.config");
 const app = express();
 
 var corsOptions = {
-  origin: "http://localhost:4200"
+  origin: process.env.CORS_ORIGIN || "http://localhost:4200"
 };
 
 app.use(cors(corsOptions));
@@ -21,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cookieSession({
     name: "bezkoder-session",
-    secret: "COOKIE_SECRET", // should use as secret environment variable
+    secret: process.env.COOKIE_SECRET || "CHANGE_ME", // should use as secret environment variable
     httpOnly: true
   })
 );
@@ -32,7 +34,10 @@ const User = db.user;
 const Domain = db.domain; // Assuming Domain model exists
 
 // Use MongoDB Atlas connection string
-const mongoUri = process.env.MONGODB_ATLAS_URI || dbConfig.ATLAS_URI;
+const mongoUri =
+  process.env.MONGODB_ATLAS_URI ||
+  dbConfig.ATLAS_URI ||
+  `mongodb://${dbConfig.HOST}:${dbConfig.PORT}/${dbConfig.DB}`;
 
 db.mongoose
   .connect(mongoUri, {

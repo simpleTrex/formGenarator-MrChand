@@ -1,4 +1,4 @@
-package com.formgenerator.platform.workflow;
+package com.adaptivebp.platform.workflow;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

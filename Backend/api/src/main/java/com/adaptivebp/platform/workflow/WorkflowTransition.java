@@ -1,4 +1,4 @@
-package com.formgenerator.platform.workflow;
+package com.adaptivebp.platform.workflow;
 
 import java.util.ArrayList;
 import java.util.List;

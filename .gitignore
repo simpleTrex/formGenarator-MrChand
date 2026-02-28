@@ -98,6 +98,11 @@ gradle-app.setting
 **/Dockerfile.dockerignore
 
 # ===== IDE/EDITORS =====
+# Local env files (secrets)
+.env
+.env.*
+!.env.example
+
 # IntelliJ IDEA
 **/.idea/
 **/*.iws
