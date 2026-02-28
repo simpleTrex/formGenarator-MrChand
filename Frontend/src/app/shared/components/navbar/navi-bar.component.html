@@ -1,7 +1,19 @@
-<div class="container">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="/">Home</a>
-        <a class="navbar-brand" href="/model">Models</a>
-        <a class="navbar-brand" href="/data">Data</a>
-    </nav>
-</div>
+<nav class="modern-navbar">
+  <div class="nav-container">
+    <div class="nav-brand">
+      <a href="/" class="brand-text">PayJustNow <span class="brand-accent">Clone</span></a>
+    </div>
+    
+    <div class="nav-links">
+      <a href="/model" class="nav-link">Models</a>
+      <a href="/data" class="nav-link">Data</a>
+    </div>
+    
+    <div class="nav-actions">
+      <!-- We don't have routing set up perfectly yet for the clone, but mapping to login -->
+      <a href="/login">
+        <app-modern-button variant="primary" size="sm">Log In</app-modern-button>
+      </a>
+    </div>
+  </div>
+</nav>

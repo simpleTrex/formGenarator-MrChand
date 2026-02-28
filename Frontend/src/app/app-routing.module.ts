@@ -26,11 +26,13 @@ const routes: Routes = [
     path: 'domain',
     loadChildren: () => import('./features/organisation/organisation.module').then(m => m.OrganisationModule),
     canActivate: [AuthGuard],
+    data: { principalTypes: ['OWNER', 'DOMAIN_USER'] },
   },
   {
     path: 'domain/:slug/app',
     loadChildren: () => import('./features/application/application.module').then(m => m.ApplicationModule),
     canActivate: [AuthGuard],
+    data: { principalTypes: ['OWNER', 'DOMAIN_USER'] },
   },
   {
     path: 'form-builder',

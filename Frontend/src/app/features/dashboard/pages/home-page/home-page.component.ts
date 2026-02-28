@@ -1,20 +1,31 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../../core/services/auth.service';
 import { DomainService } from '../../../../core/services/domain.service';
+import { HeroSectionComponent } from '../../../../shared/components/hero-section/hero-section.component';
+import { ModernButtonComponent } from '../../../../shared/components/modern-button/modern-button.component';
+import { ModernCardComponent } from '../../../../shared/components/modern-card/modern-card.component';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+
+declare var lucide: any;
 
 @Component({
   selector: 'home-page',
+  standalone: true,
+  imports: [CommonModule, RouterModule, HeroSectionComponent, ModernButtonComponent, ModernCardComponent, ConfirmDialogComponent],
   templateUrl: './home-page.component.html',
   styleUrls: ['./home-page.component.css']
 })
 
-export class HomePageComponent implements OnInit {
+export class HomePageComponent implements OnInit, AfterViewInit {
   _authService: AuthService;
   domains: any[] = [];
   loadingDomains = false;
   ownerContext = false;
   notice = '';
+
+  showLogoutConfirm = false;
 
   constructor(
     private authService: AuthService,
@@ -37,6 +48,30 @@ export class HomePageComponent implements OnInit {
     this._authService.logout();
     this.ownerContext = false;
     this.notice = 'AdaptiveBP owner portal is restricted to owners. Please login as an owner.';
+  }
+
+  ngAfterViewInit(): void {
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  }
+
+  requestLogout(): void {
+    this.showLogoutConfirm = true;
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirm = false;
+  }
+
+  confirmLogout(): void {
+    this._authService.logout();
+    this.ownerContext = false;
+    this.domains = [];
+    this.loadingDomains = false;
+    this.notice = '';
+    this.showLogoutConfirm = false;
+    this.router.navigate(['/']);
   }
 
   loadUserDomains(): void {
