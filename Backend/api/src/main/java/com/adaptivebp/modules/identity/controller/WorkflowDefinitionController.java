@@ -1,4 +1,4 @@
-package com.formgenerator.api.controllers;
+package com.adaptivebp.modules.identity.controller;
 
 import java.util.List;
 import java.util.Map;
@@ -11,8 +11,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import com.formgenerator.platform.auth.AdaptiveUserDetails;
-import com.formgenerator.platform.auth.MessageResponse;
+import com.adaptivebp.modules.identity.dto.response.MessageResponse;
+import com.adaptivebp.shared.security.AdaptiveUserDetails;
 import com.formgenerator.platform.workflow.*;
 
 import jakarta.validation.Valid;
