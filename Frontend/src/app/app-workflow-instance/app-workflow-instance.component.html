@@ -1,0 +1,94 @@
+<div class="instance-container" *ngIf="instance">
+    <!-- Header -->
+    <div class="header">
+        <div class="title-section">
+            <button class="btn-back" (click)="goBack()">← Back</button>
+            <h2>{{ instance.workflowId }} <span class="instance-id">#{{ instance.id.substring(0,8) }}</span></h2>
+        </div>
+        <div class="status-badge" [style.background-color]="'#2196F3'">
+            {{ instance.currentState }}
+        </div>
+    </div>
+
+    <div *ngIf="error" class="error">{{ error }}</div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+        <!-- Left Column: Data -->
+        <div class="data-section card">
+            <h3>Request Details</h3>
+            <div class="data-grid">
+                <div *ngFor="let key of getKeys(instance.data)" class="data-item">
+                    <label>{{ formatKey(key) }}</label>
+                    <div class="value">{{ instance.data[key] }}</div>
+                </div>
+            </div>
+            <div *ngIf="getKeys(instance.data).length === 0" class="empty-text">
+                No data associated with this request.
+            </div>
+        </div>
+
+        <!-- Right Column: Actions & History -->
+        <div class="sidebar">
+            <!-- Actions Card -->
+            <div class="actions-card card">
+                <h3>Actions</h3>
+                <div *ngIf="availableTransitions.length === 0" class="info-text">
+                    No actions available for you in this state.
+                </div>
+                <div class="action-buttons">
+                    <button *ngFor="let t of availableTransitions" class="btn-action"
+                        [class.btn-approve]="t.name.toLowerCase().includes('approve') || t.name.toLowerCase().includes('pass')"
+                        [class.btn-reject]="t.name.toLowerCase().includes('reject') || t.name.toLowerCase().includes('fail')"
+                        (click)="initiateAction(t)">
+                        {{ t.name }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- History Card -->
+            <div class="history-card card">
+                <h3>History</h3>
+                <div class="history-list">
+                    <div *ngFor="let entry of instance.history?.slice().reverse()" class="history-item">
+                        <div class="history-header">
+                            <span class="user">{{ entry.userId }}</span>
+                            <span class="date">{{ entry.timestamp | date:'short' }}</span>
+                        </div>
+                        <div class="history-action">
+                            Performed <strong>{{ entry.transitionId || 'Action' }}</strong>
+                        </div>
+                        <div *ngIf="entry.comment" class="history-comment">
+                            "{{ entry.comment }}"
+                        </div>
+                    </div>
+                    <div *ngIf="!instance.history || instance.history.length === 0" class="info-text">
+                        No history yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Dialog Overlay -->
+    <div *ngIf="showActionDialog" class="dialog-overlay">
+        <div class="dialog">
+            <h3>Confirm Action: {{ selectedTransition?.name }}</h3>
+            <div class="form-group">
+                <label>Comment (Optional)</label>
+                <textarea [(ngModel)]="actionComment" rows="3" class="form-input"
+                    placeholder="Add a note..."></textarea>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-secondary" (click)="cancelAction()" [disabled]="processing">Cancel</button>
+                <button class="btn-primary" (click)="confirmAction()" [disabled]="processing">
+                    {{ processing ? 'Processing...' : 'Confirm' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="loading" class="loading-screen">
+    Loading instance...
+</div>

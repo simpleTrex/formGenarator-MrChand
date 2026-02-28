@@ -213,6 +213,10 @@ gradle-app.setting
 # Gemini agent files
 .gemini/
 
+# Root-level files that should not be tracked
+.env
+log
+
 # MongoDB backup files (keep structure, ignore data)
 Backend/DB/dump/
 !Backend/DB/dump/.gitkeep
@@ -236,6 +240,13 @@ Frontend/run.sh
 # Runtime directories
 **/run/
 **/var/
+
+# ===== AI/AGENT TOOLS =====
+.qodo/
+.gemini/
+.agent/
+.cursor/
+.copilot/
 C4
 
 # Project-specific junk files
