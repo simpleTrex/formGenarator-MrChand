@@ -18,9 +18,9 @@ import com.adaptivebp.modules.formbuilder.dto.request.CreateDomainModelRequest;
 import com.adaptivebp.modules.appmanagement.model.Application;
 import com.adaptivebp.modules.formbuilder.model.DomainModel;
 import com.adaptivebp.modules.appmanagement.permission.AppPermission;
-import com.adaptivebp.modules.appmanagement.repository.ApplicationRepository;
 import com.adaptivebp.modules.formbuilder.repository.DomainModelRepository;
-import com.adaptivebp.modules.organisation.repository.OrganisationRepository;
+import com.adaptivebp.modules.appmanagement.port.ApplicationLookupPort;
+import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
 import com.adaptivebp.modules.organisation.model.Organisation;
 
@@ -28,13 +28,13 @@ import com.adaptivebp.modules.organisation.model.Organisation;
 class DomainModelControllerTest {
 
     @Mock
-    private OrganisationRepository organisationRepository;
+    private OrganisationLookupPort organisationLookupPort;
 
     @Mock
     private DomainModelRepository domainModelRepository;
 
     @Mock
-    private ApplicationRepository applicationRepository;
+    private ApplicationLookupPort applicationLookupPort;
 
     @Mock
     private PermissionService permissionService;
@@ -52,8 +52,8 @@ class DomainModelControllerTest {
         app.setDomainId("d1");
         app.setSlug("app1");
 
-        when(organisationRepository.findBySlug("acme")).thenReturn(Optional.of(org));
-        when(applicationRepository.findByDomainIdAndSlug("d1", "app1")).thenReturn(Optional.of(app));
+        when(organisationLookupPort.findBySlug("acme")).thenReturn(Optional.of(org));
+        when(applicationLookupPort.findByDomainIdAndSlug("d1", "app1")).thenReturn(Optional.of(app));
         when(permissionService.hasAppPermission("a1", AppPermission.APP_WRITE)).thenReturn(false);
 
         ResponseEntity<?> res = controller.list("acme", "app1");
@@ -70,8 +70,8 @@ class DomainModelControllerTest {
         app.setDomainId("d1");
         app.setSlug("app1");
 
-        when(organisationRepository.findBySlug("acme")).thenReturn(Optional.of(org));
-        when(applicationRepository.findByDomainIdAndSlug("d1", "app1")).thenReturn(Optional.of(app));
+        when(organisationLookupPort.findBySlug("acme")).thenReturn(Optional.of(org));
+        when(applicationLookupPort.findByDomainIdAndSlug("d1", "app1")).thenReturn(Optional.of(app));
         when(permissionService.hasAppPermission("a1", AppPermission.APP_WRITE)).thenReturn(false);
 
         CreateDomainModelRequest req = new CreateDomainModelRequest();
@@ -92,8 +92,8 @@ class DomainModelControllerTest {
         app.setDomainId("d1");
         app.setSlug("app1");
 
-        when(organisationRepository.findBySlug("acme")).thenReturn(Optional.of(org));
-        when(applicationRepository.findByDomainIdAndSlug("d1", "app1")).thenReturn(Optional.of(app));
+        when(organisationLookupPort.findBySlug("acme")).thenReturn(Optional.of(org));
+        when(applicationLookupPort.findByDomainIdAndSlug("d1", "app1")).thenReturn(Optional.of(app));
         when(permissionService.hasAppPermission("a1", AppPermission.APP_WRITE)).thenReturn(true);
         when(domainModelRepository.existsByDomainIdAndSlug("d1", "product")).thenReturn(false);
 

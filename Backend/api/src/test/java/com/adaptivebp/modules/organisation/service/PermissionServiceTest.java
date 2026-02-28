@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
@@ -17,18 +16,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.adaptivebp.modules.appmanagement.model.AppGroup;
-import com.adaptivebp.modules.appmanagement.model.AppGroupMember;
 import com.adaptivebp.modules.organisation.model.DomainGroup;
 import com.adaptivebp.modules.organisation.model.DomainGroupMember;
 import com.adaptivebp.modules.appmanagement.permission.AppPermission;
+import com.adaptivebp.modules.appmanagement.port.AppGroupQueryPort;
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
-import com.adaptivebp.modules.appmanagement.repository.AppGroupMemberRepository;
-import com.adaptivebp.modules.appmanagement.repository.AppGroupRepository;
 import com.adaptivebp.modules.organisation.repository.DomainGroupMemberRepository;
 import com.adaptivebp.modules.organisation.repository.DomainGroupRepository;
 import com.adaptivebp.shared.security.AdaptiveUserDetails;
-import com.adaptivebp.shared.security.PrincipalType;
 
 @ExtendWith(MockitoExtension.class)
 class PermissionServiceTest {
@@ -40,10 +35,7 @@ class PermissionServiceTest {
     private DomainGroupRepository domainGroupRepository;
 
     @Mock
-    private AppGroupRepository appGroupRepository;
-
-    @Mock
-    private AppGroupMemberRepository appGroupMemberRepository;
+    private AppGroupQueryPort appGroupQueryPort;
 
     @InjectMocks
     private PermissionService permissionService;
@@ -89,18 +81,8 @@ class PermissionServiceTest {
         AdaptiveUserDetails user = AdaptiveUserDetails.domainUser("user-2", "domain-2", "bob", "b@example.com", "hash");
         authenticate(user);
 
-        AppGroupMember membership = new AppGroupMember();
-        membership.setGroupId("app-group-1");
-        membership.setAppId("app-123");
-
-        AppGroup adminGroup = new AppGroup();
-        adminGroup.setId("app-group-1");
-        adminGroup.setAppId("app-123");
-        adminGroup.setPermissions(Set.of(AppPermission.APP_READ, AppPermission.APP_WRITE));
-
-        when(appGroupMemberRepository.findByAppIdAndUserId("app-123", "user-2"))
-                .thenReturn(List.of(membership));
-        when(appGroupRepository.findById("app-group-1")).thenReturn(Optional.of(adminGroup));
+        when(appGroupQueryPort.getAppPermissions("app-123", "user-2"))
+            .thenReturn(Set.of(AppPermission.APP_READ, AppPermission.APP_WRITE));
 
         assertTrue(permissionService.hasAppPermission("app-123", AppPermission.APP_WRITE));
         assertFalse(permissionService.hasAppPermission("app-123", AppPermission.APP_EXECUTE));

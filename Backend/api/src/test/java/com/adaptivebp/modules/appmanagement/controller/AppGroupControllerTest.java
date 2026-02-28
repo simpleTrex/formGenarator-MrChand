@@ -6,13 +6,14 @@ import com.adaptivebp.modules.organisation.dto.request.AssignMemberRequest;
 import com.adaptivebp.modules.appmanagement.model.Application;
 import com.adaptivebp.modules.appmanagement.model.AppGroup;
 import com.adaptivebp.modules.appmanagement.model.AppGroupMember;
+import com.adaptivebp.modules.appmanagement.service.ApplicationProvisioningService;
 import com.adaptivebp.modules.identity.model.DomainUser;
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
 import com.adaptivebp.modules.appmanagement.repository.AppGroupMemberRepository;
 import com.adaptivebp.modules.appmanagement.repository.AppGroupRepository;
 import com.adaptivebp.modules.appmanagement.repository.ApplicationRepository;
-import com.adaptivebp.modules.organisation.repository.OrganisationRepository;
-import com.adaptivebp.modules.identity.repository.DomainUserRepository;
+import com.adaptivebp.modules.identity.port.DomainUserLookupPort;
+import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
 import com.adaptivebp.modules.organisation.model.Organisation;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,10 +46,13 @@ class AppGroupControllerTest {
     private ApplicationRepository applicationRepository;
 
     @Mock
-    private OrganisationRepository organisationRepository;
+        private OrganisationLookupPort organisationLookupPort;
 
     @Mock
-    private DomainUserRepository domainUserRepository;
+        private DomainUserLookupPort domainUserLookupPort;
+
+        @Mock
+        private ApplicationProvisioningService applicationProvisioningService;
 
     @Mock
     private PermissionService permissionService;
@@ -93,14 +97,14 @@ class AppGroupControllerTest {
     @Test
     void testListUsersWithGroups_Success() {
         // Arrange
-        when(organisationRepository.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
+        when(organisationLookupPort.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
         when(applicationRepository.findByDomainIdAndSlug(domainId, appSlug))
                 .thenReturn(Optional.of(testApp));
         when(permissionService.hasDomainPermission(domainId, DomainPermission.DOMAIN_MANAGE_APPS))
                 .thenReturn(true);
         
         List<DomainUser> users = Arrays.asList(testUser);
-        when(domainUserRepository.findByDomainId(domainId)).thenReturn(users);
+        when(domainUserLookupPort.findByDomainId(domainId)).thenReturn(users);
 
         List<AppGroup> groups = Arrays.asList(testGroup);
         when(appGroupRepository.findByAppId(appId)).thenReturn(groups);
@@ -132,7 +136,7 @@ class AppGroupControllerTest {
     @Test
     void testListUsersWithGroups_NoPermission() {
         // Arrange
-        when(organisationRepository.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
+        when(organisationLookupPort.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
         when(applicationRepository.findByDomainIdAndSlug(domainId, appSlug))
                 .thenReturn(Optional.of(testApp));
         when(permissionService.hasDomainPermission(domainId, DomainPermission.DOMAIN_MANAGE_APPS))
@@ -148,7 +152,7 @@ class AppGroupControllerTest {
     @Test
     void testListUsersWithGroups_AppNotFound() {
         // Arrange
-        when(organisationRepository.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
+                when(organisationLookupPort.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
         when(applicationRepository.findByDomainIdAndSlug(domainId, appSlug))
                 .thenReturn(Optional.empty());
 
@@ -161,7 +165,7 @@ class AppGroupControllerTest {
     @Test
     void testListGroupMembers_Success() {
         // Arrange
-        when(organisationRepository.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
+        when(organisationLookupPort.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
         when(applicationRepository.findByDomainIdAndSlug(domainId, appSlug))
                 .thenReturn(Optional.of(testApp));
         when(permissionService.hasDomainPermission(domainId, DomainPermission.DOMAIN_MANAGE_APPS))
@@ -178,7 +182,7 @@ class AppGroupControllerTest {
 
         when(appGroupMemberRepository.findByGroupId(testGroup.getId()))
                 .thenReturn(Arrays.asList(member));
-        when(domainUserRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        when(domainUserLookupPort.findById(testUser.getId())).thenReturn(Optional.of(testUser));
 
         // Act
         ResponseEntity<?> response = appGroupController.listGroupMembers(
@@ -196,7 +200,7 @@ class AppGroupControllerTest {
     @Test
     void testListGroupMembers_GroupNotFound() {
         // Arrange
-        when(organisationRepository.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
+        when(organisationLookupPort.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
         when(applicationRepository.findByDomainIdAndSlug(domainId, appSlug))
                 .thenReturn(Optional.of(testApp));
         when(appGroupRepository.findById(testGroup.getId())).thenReturn(Optional.empty());
@@ -212,12 +216,12 @@ class AppGroupControllerTest {
     @Test
     void testListUserGroups_Success() {
         // Arrange
-        when(organisationRepository.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
+        when(organisationLookupPort.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
         when(applicationRepository.findByDomainIdAndSlug(domainId, appSlug))
                 .thenReturn(Optional.of(testApp));
         when(permissionService.hasDomainPermission(domainId, DomainPermission.DOMAIN_MANAGE_APPS))
                 .thenReturn(true);
-        when(domainUserRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        when(domainUserLookupPort.findById(testUser.getId())).thenReturn(Optional.of(testUser));
 
         AppGroupMember member = new AppGroupMember();
         member.setId("member-123");
@@ -245,12 +249,12 @@ class AppGroupControllerTest {
     @Test
     void testListUserGroups_UserNotFound() {
         // Arrange
-        when(organisationRepository.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
+        when(organisationLookupPort.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
         when(applicationRepository.findByDomainIdAndSlug(domainId, appSlug))
                 .thenReturn(Optional.of(testApp));
         when(permissionService.hasDomainPermission(domainId, DomainPermission.DOMAIN_MANAGE_APPS))
                 .thenReturn(true);
-        when(domainUserRepository.findById(testUser.getId())).thenReturn(Optional.empty());
+        when(domainUserLookupPort.findById(testUser.getId())).thenReturn(Optional.empty());
 
         // Act
         ResponseEntity<?> response = appGroupController.listUserGroups(
@@ -263,13 +267,13 @@ class AppGroupControllerTest {
     @Test
     void testAddMember_Success() {
         // Arrange
-        when(organisationRepository.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
+        when(organisationLookupPort.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
         when(applicationRepository.findByDomainIdAndSlug(domainId, appSlug))
                 .thenReturn(Optional.of(testApp));
         when(permissionService.hasDomainPermission(domainId, DomainPermission.DOMAIN_MANAGE_APPS))
                 .thenReturn(true);
         when(appGroupRepository.findById(testGroup.getId())).thenReturn(Optional.of(testGroup));
-        when(domainUserRepository.findByDomainIdAndUsername(domainId, testUser.getUsername()))
+        when(domainUserLookupPort.findByDomainIdAndUsername(domainId, testUser.getUsername()))
                 .thenReturn(Optional.of(testUser));
         when(appGroupMemberRepository.findByGroupIdAndUserId(testGroup.getId(), testUser.getId()))
                 .thenReturn(Optional.empty());
@@ -296,7 +300,7 @@ class AppGroupControllerTest {
     @Test
     void testRemoveMember_Success() {
         // Arrange
-        when(organisationRepository.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
+        when(organisationLookupPort.findBySlug(domainSlug)).thenReturn(Optional.of(testOrganisation));
         when(applicationRepository.findByDomainIdAndSlug(domainId, appSlug))
                 .thenReturn(Optional.of(testApp));
         when(permissionService.hasDomainPermission(domainId, DomainPermission.DOMAIN_MANAGE_APPS))
@@ -310,6 +314,9 @@ class AppGroupControllerTest {
         member.setAppId(appId);
         when(appGroupMemberRepository.findByGroupIdAndUserId(testGroup.getId(), testUser.getId()))
                 .thenReturn(Optional.of(member));
+
+        when(applicationProvisioningService.ensureDefaultViewerMembership(appId, testUser.getId()))
+                .thenReturn(null);
 
         // Act
         ResponseEntity<?> response = appGroupController.removeMember(

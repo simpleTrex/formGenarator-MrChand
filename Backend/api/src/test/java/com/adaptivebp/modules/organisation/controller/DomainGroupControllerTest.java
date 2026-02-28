@@ -33,7 +33,7 @@ import com.adaptivebp.modules.organisation.permission.DomainPermission;
 import com.adaptivebp.modules.organisation.repository.DomainGroupMemberRepository;
 import com.adaptivebp.modules.organisation.repository.DomainGroupRepository;
 import com.adaptivebp.modules.organisation.repository.OrganisationRepository;
-import com.adaptivebp.modules.identity.repository.DomainUserRepository;
+import com.adaptivebp.modules.identity.port.DomainUserLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
 import com.adaptivebp.modules.organisation.model.Organisation;
 
@@ -50,7 +50,7 @@ class DomainGroupControllerTest {
     private DomainGroupMemberRepository domainGroupMemberRepository;
 
     @Mock
-    private DomainUserRepository domainUserRepository;
+        private DomainUserLookupPort domainUserLookupPort;
 
     @Mock
     private PermissionService permissionService;
@@ -112,7 +112,7 @@ class DomainGroupControllerTest {
         when(organisationRepository.findBySlug(slug)).thenReturn(Optional.of(org));
         when(permissionService.hasDomainPermission("domain-1", DomainPermission.DOMAIN_MANAGE_USERS))
                 .thenReturn(true);
-        when(domainUserRepository.findByDomainId("domain-1")).thenReturn(Arrays.asList(user1, user2));
+        when(domainUserLookupPort.findByDomainId("domain-1")).thenReturn(Arrays.asList(user1, user2));
         when(domainGroupRepository.findByDomainId("domain-1"))
                 .thenReturn(Arrays.asList(adminGroup, contributorGroup));
         when(domainGroupMemberRepository.findByDomainIdAndUserId("domain-1", "user-1"))
@@ -142,7 +142,7 @@ class DomainGroupControllerTest {
         assertEquals(1, userResponse2.getGroups().size());
         assertEquals("Domain Contributor", userResponse2.getGroups().get(0).getGroupName());
 
-        verify(domainUserRepository).findByDomainId("domain-1");
+        verify(domainUserLookupPort).findByDomainId("domain-1");
         verify(domainGroupRepository).findByDomainId("domain-1");
     }
 
@@ -208,8 +208,8 @@ class DomainGroupControllerTest {
                 .thenReturn(true);
         when(domainGroupMemberRepository.findByDomainGroupId(groupId))
                 .thenReturn(Arrays.asList(member1, member2));
-        when(domainUserRepository.findById("user-1")).thenReturn(Optional.of(user1));
-        when(domainUserRepository.findById("user-2")).thenReturn(Optional.of(user2));
+        when(domainUserLookupPort.findById("user-1")).thenReturn(Optional.of(user1));
+        when(domainUserLookupPort.findById("user-2")).thenReturn(Optional.of(user2));
 
         // Act
         ResponseEntity<?> response = domainGroupController.listGroupMembers(slug, groupId);
@@ -283,7 +283,7 @@ class DomainGroupControllerTest {
         when(organisationRepository.findBySlug(slug)).thenReturn(Optional.of(org));
         when(permissionService.hasDomainPermission("domain-1", DomainPermission.DOMAIN_MANAGE_USERS))
                 .thenReturn(true);
-        when(domainUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(domainUserLookupPort.findById(userId)).thenReturn(Optional.of(user));
         when(domainGroupMemberRepository.findByDomainIdAndUserId("domain-1", userId))
                 .thenReturn(Arrays.asList(membership1, membership2));
         when(domainGroupRepository.findById("group-1")).thenReturn(Optional.of(adminGroup));
@@ -317,7 +317,7 @@ class DomainGroupControllerTest {
         when(organisationRepository.findBySlug(slug)).thenReturn(Optional.of(org));
         when(permissionService.hasDomainPermission("domain-1", DomainPermission.DOMAIN_MANAGE_USERS))
                 .thenReturn(true);
-        when(domainUserRepository.findById(userId)).thenReturn(Optional.empty());
+        when(domainUserLookupPort.findById(userId)).thenReturn(Optional.empty());
 
         // Act
         ResponseEntity<?> response = domainGroupController.listUserGroups(slug, userId);
@@ -350,7 +350,7 @@ class DomainGroupControllerTest {
         when(domainGroupRepository.findById(groupId)).thenReturn(Optional.of(group));
         when(permissionService.hasDomainPermission("domain-1", DomainPermission.DOMAIN_MANAGE_USERS))
                 .thenReturn(true);
-        when(domainUserRepository.findByDomainIdAndUsername("domain-1", "john.doe"))
+        when(domainUserLookupPort.findByDomainIdAndUsername("domain-1", "john.doe"))
                 .thenReturn(Optional.of(user));
         when(domainGroupMemberRepository.findByDomainGroupIdAndUserId(groupId, "user-1"))
                 .thenReturn(Optional.empty());
