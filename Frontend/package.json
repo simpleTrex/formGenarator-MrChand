@@ -1,5 +1,5 @@
 {
-  "name": "learning",
+  "name": "adaptivebp-frontend",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -20,12 +20,6 @@
     "@angular/router": "^17.3.9",
     "@auth0/angular-jwt": "^5.2.0",
     "bootstrap": "^5.3.3",
-    "cors": "^2.8.5",
-    "d3": "^7.9.0",
-    "express": "^4.19.2",
-    "http": "^0.0.1-security",
-    "ids-enterprise-ng": "^17.7.1",
-    "jquery": "^3.7.1",
     "rxjs": "*",
     "tslib": "*",
     "zone.js": "^0.14.6"

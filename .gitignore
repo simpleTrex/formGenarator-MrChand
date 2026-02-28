@@ -203,11 +203,15 @@ gradle-app.setting
 **/*.bak
 **/*.backup
 **/*.orig
+**/*.original
+
+# Archives
+**/*.tar.gz
+**/*.zip
 
 # ===== PROJECT SPECIFIC =====
-# Custom form generator specific
-**/bin/
-**/lib/
+# Gemini agent files
+.gemini/
 
 # Root-level files that should not be tracked
 .env
@@ -216,6 +220,10 @@ log
 # MongoDB backup files (keep structure, ignore data)
 Backend/DB/dump/
 !Backend/DB/dump/.gitkeep
+
+# Frontend dev scripts (not needed for the app)
+Frontend/config.sh
+Frontend/run.sh
 
 # Generated documentation
 **/docs/generated/
@@ -240,3 +248,8 @@ Backend/DB/dump/
 .cursor/
 .copilot/
 C4
+
+# Project-specific junk files
+SecondGitPushCodes.md
+log
+.gemini/
