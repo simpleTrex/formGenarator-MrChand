@@ -16,14 +16,14 @@ const routes: Routes = [
 
 @NgModule({
     declarations: [
-        LoginComponent,
-        OwnerSignupComponent,
-        DomainLoginComponent,
-        DomainSignupComponent,
     ],
     imports: [
         SharedModule,
         RouterModule.forChild(routes),
+        LoginComponent,
+        OwnerSignupComponent,
+        DomainLoginComponent,
+        DomainSignupComponent,
     ],
 })
 export class AuthModule { }

@@ -1,0 +1,14 @@
+<button 
+  [type]="type"
+  class="modern-btn"
+  [ngClass]="[
+    'btn-' + variant,
+    'btn-' + size,
+    fullWidth ? 'w-100' : '',
+    disabled ? 'disabled' : ''
+  ]"
+  [disabled]="disabled || loading"
+>
+  <span *ngIf="loading" class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
+  <ng-content></ng-content>
+</button>

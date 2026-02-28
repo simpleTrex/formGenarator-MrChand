@@ -1,0 +1,19 @@
+<div class="modern-input-wrapper" [class.disabled]="disabled">
+  <label *ngIf="label" class="modern-label">
+    {{ label }} <span *ngIf="required" class="text-danger">*</span>
+  </label>
+  
+  <div class="input-container">
+    <i *ngIf="icon" [class]="icon + ' input-icon'"></i>
+    <input 
+      [type]="type" 
+      [placeholder]="placeholder" 
+      [disabled]="disabled"
+      [value]="value"
+      (input)="onInput($event)"
+      (blur)="onTouch()"
+      class="modern-input-field"
+      [class.has-icon]="icon"
+    />
+  </div>
+</div>

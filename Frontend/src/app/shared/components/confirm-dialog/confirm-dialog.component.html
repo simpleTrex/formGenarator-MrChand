@@ -1,0 +1,19 @@
+<div class="confirm-overlay" (click)="onBackdropClick()">
+  <div class="confirm-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <app-modern-card [theme]="theme" class="dialog-card">
+      <div class="dialog-content">
+        <h3 class="dialog-title">{{ title }}</h3>
+        <p class="dialog-message">{{ message }}</p>
+
+        <div class="dialog-actions">
+          <app-modern-button [variant]="cancelVariant" size="md" (click)="onCancel()">
+            {{ cancelText }}
+          </app-modern-button>
+          <app-modern-button [variant]="confirmVariant" size="md" (click)="onConfirm()">
+            {{ confirmText }}
+          </app-modern-button>
+        </div>
+      </div>
+    </app-modern-card>
+  </div>
+</div>

@@ -1,25 +1,53 @@
-<div class="login-card">
-  <h2>AdaptiveBP Owner Login</h2>
-  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-    <label>Email
-      <input type="email" formControlName="email" [class.invalid]="submitted && f['email'].errors" />
-    </label>
-    <div *ngIf="submitted && f['email'].errors" class="error-text">
-      <div *ngIf="f['email'].errors['required']">Email is required</div>
-      <div *ngIf="f['email'].errors['email']">Email is invalid</div>
+<div class="login-wrapper fade-in">
+  <app-modern-card theme="light">
+    <div class="login-header">
+      <h2>Owner Login</h2>
+      <p>Sign in to manage your domains</p>
     </div>
 
-    <label>Password
-      <input type="password" formControlName="password" [class.invalid]="submitted && f['password'].errors" />
-    </label>
-    <div *ngIf="submitted && f['password'].errors" class="error-text">
-      <div *ngIf="f['password'].errors['required']">Password is required</div>
-    </div>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      
+      <app-modern-input
+        label="Email Address"
+        type="email"
+        formControlName="email"
+        placeholder="name@company.com"
+        [required]="true"
+      ></app-modern-input>
+      <div *ngIf="submitted && f['email'].errors" class="error-text">
+        <div *ngIf="f['email'].errors['required']">Email is required</div>
+        <div *ngIf="f['email'].errors['email']">Email is invalid</div>
+      </div>
 
-    <button [disabled]="loading">Login</button>
-    <div *ngIf="error" class="error-text">{{ error }}</div>
-  </form>
-  <div class="helper-links">
-    <a routerLink="/domain-login">Domain user login</a>
-  </div>
+      <app-modern-input
+        label="Password"
+        type="password"
+        formControlName="password"
+        placeholder="Enter your password"
+        [required]="true"
+      ></app-modern-input>
+      <div *ngIf="submitted && f['password'].errors" class="error-text">
+        <div *ngIf="f['password'].errors['required']">Password is required</div>
+      </div>
+
+      <div *ngIf="error" class="error-alert">{{ error }}</div>
+
+      <div class="form-actions">
+        <app-modern-button 
+          type="submit" 
+          variant="primary" 
+          size="lg" 
+          [fullWidth]="true"
+          [loading]="loading"
+        >
+          Login to Dashboard
+        </app-modern-button>
+      </div>
+    </form>
+    
+    <div class="helper-links">
+      <p class="text-muted">Not an owner?</p>
+      <a routerLink="/domain-login" class="link-primary">Sign in as Domain User</a>
+    </div>
+  </app-modern-card>
 </div>

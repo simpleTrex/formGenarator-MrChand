@@ -1,0 +1,63 @@
+.modern-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+.modern-label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-dark);
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.modern-input-field {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  color: var(--text-dark);
+  background-color: var(--bg-light);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-input);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+}
+
+.modern-input-field::placeholder {
+  color: var(--text-muted-light);
+}
+
+.modern-input-field:focus {
+  border-color: var(--accent-neon);
+  box-shadow: 0 0 0 4px rgba(186, 255, 41, 0.2);
+}
+
+.modern-input-wrapper.disabled {
+  opacity: 0.6;
+}
+
+.modern-input-field:disabled {
+  background-color: var(--bg-offwhite);
+  cursor: not-allowed;
+}
+
+/* Icon Support */
+.input-icon {
+  position: absolute;
+  left: 1.25rem;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.modern-input-field.has-icon {
+  padding-left: 3rem;
+}

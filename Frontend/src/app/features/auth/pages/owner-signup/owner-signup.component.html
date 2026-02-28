@@ -1,32 +1,64 @@
-<div class="login-card">
-  <h2>Create AdaptiveBP Owner Account</h2>
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
-    <label>Display name
-      <input type="text" formControlName="displayName" [class.invalid]="submitted && f['displayName'].errors">
-    </label>
-    <div *ngIf="submitted && f['displayName'].errors" class="error-text">Display name is required</div>
-
-    <label>Email
-      <input type="email" formControlName="email" [class.invalid]="submitted && f['email'].errors">
-    </label>
-    <div *ngIf="submitted && f['email'].errors" class="error-text">
-      <div *ngIf="f['email'].errors['required']">Email is required</div>
-      <div *ngIf="f['email'].errors['email']">Invalid email</div>
+<div class="login-wrapper fade-in">
+  <app-modern-card theme="light">
+    <div class="login-header">
+      <h2>Create Owner Account</h2>
+      <p>Start managing your AdaptiveBP domains</p>
     </div>
 
-    <label>Password
-      <input type="password" formControlName="password" [class.invalid]="submitted && f['password'].errors">
-    </label>
-    <div *ngIf="submitted && f['password'].errors" class="error-text">
-      <div *ngIf="f['password'].errors['required']">Password is required</div>
-      <div *ngIf="f['password'].errors['minlength']">At least 6 characters</div>
-    </div>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      
+      <app-modern-input
+        label="Display Name"
+        type="text"
+        formControlName="displayName"
+        placeholder="Enter your name"
+        [required]="true"
+      ></app-modern-input>
+      <div *ngIf="submitted && f['displayName'].errors" class="error-text">Display name is required</div>
 
-    <button [disabled]="loading">Create account</button>
-    <div *ngIf="error" class="error-text">{{ error }}</div>
-    <div *ngIf="message" class="success-text">{{ message }}</div>
-  </form>
-  <div class="helper-links">
-    <a routerLink="/owner-login">Back to owner login</a>
-  </div>
+      <app-modern-input
+        label="Email Address"
+        type="email"
+        formControlName="email"
+        placeholder="name@company.com"
+        [required]="true"
+      ></app-modern-input>
+      <div *ngIf="submitted && f['email'].errors" class="error-text">
+        <div *ngIf="f['email'].errors['required']">Email is required</div>
+        <div *ngIf="f['email'].errors['email']">Email is invalid</div>
+      </div>
+
+      <app-modern-input
+        label="Password"
+        type="password"
+        formControlName="password"
+        placeholder="Create a password (min 6 chars)"
+        [required]="true"
+      ></app-modern-input>
+      <div *ngIf="submitted && f['password'].errors" class="error-text">
+        <div *ngIf="f['password'].errors['required']">Password is required</div>
+        <div *ngIf="f['password'].errors['minlength']">At least 6 characters required</div>
+      </div>
+
+      <div *ngIf="error" class="error-alert">{{ error }}</div>
+      <div *ngIf="message" class="success-alert">{{ message }}</div>
+
+      <div class="form-actions">
+        <app-modern-button 
+          type="submit" 
+          variant="primary" 
+          size="lg" 
+          [fullWidth]="true"
+          [loading]="loading"
+        >
+          Create Account
+        </app-modern-button>
+      </div>
+    </form>
+    
+    <div class="helper-links">
+      <p class="text-muted">Already have an account?</p>
+      <a routerLink="/owner-login" class="link-primary">Sign in here</a>
+    </div>
+  </app-modern-card>
 </div>
