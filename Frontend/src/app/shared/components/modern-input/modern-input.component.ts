@@ -35,6 +35,27 @@ export class ModernInputComponent implements ControlValueAccessor {
     this.onTouch();
   }
 
+  onEnterKey(event: Event): void {
+    event.preventDefault();
+    const input = event.target as HTMLInputElement;
+    // Find the parent form element
+    const form = input.closest('form');
+    if (!form) return;
+    // Get all focusable inputs/textareas/selects inside the form
+    const focusable = Array.from(
+      form.querySelectorAll<HTMLElement>('input:not([disabled]), textarea:not([disabled]), select:not([disabled])')
+    );
+    const currentIndex = focusable.indexOf(input);
+    const nextField = focusable[currentIndex + 1];
+    if (nextField) {
+      // Move focus to next field
+      nextField.focus();
+    } else {
+      // Last field — submit the form
+      form.requestSubmit();
+    }
+  }
+
   writeValue(value: any): void {
     this.value = value || '';
   }

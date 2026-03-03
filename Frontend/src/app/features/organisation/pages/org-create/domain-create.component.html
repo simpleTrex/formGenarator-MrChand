@@ -5,12 +5,13 @@
   <div style="display:flex;flex-direction:column;gap:10px;">
     <label>
       Business Name
-      <input type="text" [(ngModel)]="name" (input)="onNameInput()" placeholder="e.g., ABC Corp" />
+      <input type="text" [(ngModel)]="name" (input)="onNameInput()" (keydown.enter)="focusNext($event)"
+        placeholder="e.g., ABC Corp" />
     </label>
 
     <label>
       Preferred Domain Name (slug)
-      <input type="text" [(ngModel)]="slug" placeholder="e.g., abc-corp" />
+      <input type="text" [(ngModel)]="slug" (keydown.enter)="focusNext($event)" placeholder="e.g., abc-corp" />
     </label>
 
     <label>
@@ -20,10 +21,9 @@
 
     <label>
       Industry (optional)
-      <input type="text" [(ngModel)]="industry" />
+      <input type="text" [(ngModel)]="industry" (keydown.enter)="create()" />
     </label>
 
     <button (click)="create()" [disabled]="submitting || !name || !slug">Create Domain</button>
   </div>
 </div>
- 

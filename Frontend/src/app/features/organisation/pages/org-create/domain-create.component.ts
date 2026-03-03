@@ -23,6 +23,19 @@ export class DomainCreateComponent {
     }
   }
 
+  focusNext(event: Event): void {
+    event.preventDefault();
+    const current = event.target as HTMLElement;
+    const form = current.closest('div') || document;
+    const focusable = Array.from(
+      document.querySelectorAll<HTMLElement>('input:not([disabled]), textarea:not([disabled])')
+    );
+    const idx = focusable.indexOf(current);
+    if (idx >= 0 && focusable[idx + 1]) {
+      focusable[idx + 1].focus();
+    }
+  }
+
   slugify(input: string): string {
     return (input || '')
       .trim()
