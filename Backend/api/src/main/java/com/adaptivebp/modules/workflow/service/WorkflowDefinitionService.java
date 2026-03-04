@@ -1,7 +1,12 @@
-package com.adaptivebp.platform.workflow;
+package com.adaptivebp.modules.workflow.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.adaptivebp.modules.workflow.model.WorkflowDefinition;
+import com.adaptivebp.modules.workflow.model.WorkflowState;
+import com.adaptivebp.modules.workflow.model.WorkflowTransition;
+import com.adaptivebp.modules.workflow.repository.WorkflowDefinitionRepository;
 
 import java.util.Date;
 import java.util.List;

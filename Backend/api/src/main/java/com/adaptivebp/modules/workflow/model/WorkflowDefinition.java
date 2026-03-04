@@ -1,4 +1,4 @@
-package com.adaptivebp.platform.workflow;
+package com.adaptivebp.modules.workflow.model;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -61,109 +61,32 @@ public class WorkflowDefinition {
     }
 
     // Getters and Setters
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getDomainId() {
-        return domainId;
-    }
-
-    public void setDomainId(String domainId) {
-        this.domainId = domainId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getModelId() {
-        return modelId;
-    }
-
-    public void setModelId(String modelId) {
-        this.modelId = modelId;
-    }
-
-    public String getIcon() {
-        return icon;
-    }
-
-    public void setIcon(String icon) {
-        this.icon = icon;
-    }
-
-    public List<WorkflowState> getStates() {
-        return states;
-    }
-
-    public void setStates(List<WorkflowState> states) {
-        this.states = states;
-    }
-
-    public List<WorkflowTransition> getTransitions() {
-        return transitions;
-    }
-
-    public void setTransitions(List<WorkflowTransition> transitions) {
-        this.transitions = transitions;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Date getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Date updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean active) {
-        isActive = active;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+    public String getDomainId() { return domainId; }
+    public void setDomainId(String domainId) { this.domainId = domainId; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getModelId() { return modelId; }
+    public void setModelId(String modelId) { this.modelId = modelId; }
+    public String getIcon() { return icon; }
+    public void setIcon(String icon) { this.icon = icon; }
+    public List<WorkflowState> getStates() { return states; }
+    public void setStates(List<WorkflowState> states) { this.states = states; }
+    public List<WorkflowTransition> getTransitions() { return transitions; }
+    public void setTransitions(List<WorkflowTransition> transitions) { this.transitions = transitions; }
+    public Date getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
+    public Date getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Date updatedAt) { this.updatedAt = updatedAt; }
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    public int getVersion() { return version; }
+    public void setVersion(int version) { this.version = version; }
+    public boolean isActive() { return isActive; }
+    public void setActive(boolean active) { isActive = active; }
 
     /**
      * Get the initial state of this workflow

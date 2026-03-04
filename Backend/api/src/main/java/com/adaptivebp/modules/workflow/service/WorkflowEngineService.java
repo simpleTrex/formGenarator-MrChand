@@ -1,7 +1,14 @@
-package com.adaptivebp.platform.workflow;
+package com.adaptivebp.modules.workflow.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.adaptivebp.modules.workflow.model.WorkflowDefinition;
+import com.adaptivebp.modules.workflow.model.WorkflowInstance;
+import com.adaptivebp.modules.workflow.model.WorkflowState;
+import com.adaptivebp.modules.workflow.model.WorkflowTransition;
+import com.adaptivebp.modules.workflow.repository.WorkflowDefinitionRepository;
+import com.adaptivebp.modules.workflow.repository.WorkflowInstanceRepository;
 
 import java.util.Date;
 import java.util.List;
@@ -26,7 +33,6 @@ public class WorkflowEngineService {
      */
     public WorkflowInstance createInstance(String workflowDefinitionId, String domainId,
             String recordId, Map<String, Object> initialData, String createdBy) {
-        // Get workflow definition
         Optional<WorkflowDefinition> workflowOpt = definitionRepository.findById(workflowDefinitionId);
 
         if (workflowOpt.isEmpty()) {
@@ -35,14 +41,12 @@ public class WorkflowEngineService {
 
         WorkflowDefinition workflow = workflowOpt.get();
 
-        // Get initial state
         WorkflowState initialState = workflow.getInitialState();
 
         if (initialState == null) {
             throw new IllegalStateException("Workflow has no initial state");
         }
 
-        // Create instance
         WorkflowInstance instance = new WorkflowInstance();
         instance.setWorkflowDefinitionId(workflowDefinitionId);
         instance.setDomainId(domainId);
@@ -62,7 +66,6 @@ public class WorkflowEngineService {
      */
     public WorkflowInstance executeTransition(String instanceId, String transitionId,
             String userId, String comment, Map<String, Object> additionalData) {
-        // Get instance
         Optional<WorkflowInstance> instanceOpt = instanceRepository.findById(instanceId);
 
         if (instanceOpt.isEmpty()) {
@@ -71,7 +74,6 @@ public class WorkflowEngineService {
 
         WorkflowInstance instance = instanceOpt.get();
 
-        // Get workflow definition
         Optional<WorkflowDefinition> workflowOpt = definitionRepository.findById(instance.getWorkflowDefinitionId());
 
         if (workflowOpt.isEmpty()) {
@@ -80,32 +82,23 @@ public class WorkflowEngineService {
 
         WorkflowDefinition workflow = workflowOpt.get();
 
-        // Find the transition
         WorkflowTransition transition = workflow.getTransitions().stream()
                 .filter(t -> t.getId().equals(transitionId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Transition not found"));
 
-        // Validate transition is from current state
         if (!transition.getFromState().equals(instance.getCurrentState())) {
             throw new IllegalStateException("Invalid transition from current state");
         }
 
-        // TODO: Validate user has permission to perform this transition
-        // TODO: Validate required fields are present
-        // TODO: Execute business actions
-
-        // Update workflow instance
         instance.setPreviousState(instance.getCurrentState());
         instance.setCurrentState(transition.getToState());
         instance.setUpdatedAt(new Date());
 
-        // Merge additional data
         if (additionalData != null) {
             instance.getData().putAll(additionalData);
         }
 
-        // Add to history
         WorkflowInstance.TransitionHistory historyEntry = new WorkflowInstance.TransitionHistory();
         historyEntry.setTransitionId(transitionId);
         historyEntry.setFromState(transition.getFromState());
@@ -182,13 +175,13 @@ public class WorkflowEngineService {
 
         WorkflowInstance instance = instanceOpt.get();
 
-        WorkflowInstance.Comment comment = new WorkflowInstance.Comment();
-        comment.setId(UUID.randomUUID().toString());
-        comment.setUserId(userId);
-        comment.setText(text);
-        comment.setCreatedAt(new Date());
+        WorkflowInstance.Comment commentObj = new WorkflowInstance.Comment();
+        commentObj.setId(UUID.randomUUID().toString());
+        commentObj.setUserId(userId);
+        commentObj.setText(text);
+        commentObj.setCreatedAt(new Date());
 
-        instance.getComments().add(comment);
+        instance.getComments().add(commentObj);
         instance.setUpdatedAt(new Date());
 
         return instanceRepository.save(instance);

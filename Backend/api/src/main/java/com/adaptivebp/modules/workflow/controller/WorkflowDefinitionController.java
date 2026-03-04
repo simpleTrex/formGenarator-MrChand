@@ -1,4 +1,4 @@
-package com.adaptivebp.modules.identity.controller;
+package com.adaptivebp.modules.workflow.controller;
 
 import java.util.List;
 import java.util.Map;
@@ -11,9 +11,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import com.adaptivebp.modules.identity.dto.response.MessageResponse;
+import com.adaptivebp.modules.workflow.dto.response.WorkflowMessageResponse;
+import com.adaptivebp.modules.workflow.model.WorkflowDefinition;
+import com.adaptivebp.modules.workflow.model.WorkflowInstance;
+import com.adaptivebp.modules.workflow.model.WorkflowTransition;
+import com.adaptivebp.modules.workflow.service.WorkflowDefinitionService;
+import com.adaptivebp.modules.workflow.service.WorkflowEngineService;
 import com.adaptivebp.shared.security.AdaptiveUserDetails;
-import com.adaptivebp.platform.workflow.*;
 
 import jakarta.validation.Valid;
 
@@ -35,29 +39,20 @@ public class WorkflowDefinitionController {
      */
     @PostMapping("")
     public ResponseEntity<?> createWorkflow(@Valid @RequestBody WorkflowDefinition workflow) {
-        System.out.println("DEBUG: WorkflowDefinitionController - createWorkflow hit");
-        if (workflow != null) {
-            System.out.println("DEBUG: Name: " + workflow.getName());
-            System.out.println(
-                    "DEBUG: States count: " + (workflow.getStates() != null ? workflow.getStates().size() : "null"));
-        }
         try {
             AdaptiveUserDetails principal = currentAdaptivePrincipal();
             if (principal == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            // For OWNER users, use domainId from the workflow object
-            // For DOMAIN_USER, use domainId from the token
             String domainId;
             if (principal.getDomainId() != null) {
                 domainId = principal.getDomainId();
             } else if (workflow.getDomainId() != null) {
-                // OWNER can specify domainId in the request
                 domainId = workflow.getDomainId();
             } else {
                 return ResponseEntity.badRequest()
-                        .body(new MessageResponse("Error: domainId is required"));
+                        .body(new WorkflowMessageResponse("Error: domainId is required"));
             }
 
             workflow.setDomainId(domainId);
@@ -66,13 +61,10 @@ public class WorkflowDefinitionController {
             WorkflowDefinition created = workflowService.createWorkflow(workflow);
             return ResponseEntity.ok(created);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
         }
     }
 
-    /**
-     * Get all workflows for current domain
-     */
     /**
      * Get all workflows for current domain
      */
@@ -87,11 +79,10 @@ public class WorkflowDefinitionController {
         if (principal.getDomainId() != null) {
             effectiveDomainId = principal.getDomainId();
         } else if (domainId != null) {
-            // OWNER provided domainId via param
             effectiveDomainId = domainId;
         } else {
             return ResponseEntity.badRequest()
-                    .body(new MessageResponse("Error: domainId query parameter is required for OWNER"));
+                    .body(new WorkflowMessageResponse("Error: domainId query parameter is required for OWNER"));
         }
 
         List<WorkflowDefinition> workflows = workflowService.getWorkflowsByDomain(effectiveDomainId);
@@ -114,10 +105,7 @@ public class WorkflowDefinitionController {
         } else if (domainId != null) {
             effectiveDomainId = domainId;
         } else {
-            // For getById, we might allow OWNER to fetch without domainId if the service
-            // supports it?
-            // But existing service method requires domainId.
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: domainId is required"));
+            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: domainId is required"));
         }
 
         Optional<WorkflowDefinition> workflow = workflowService.getWorkflowById(id, effectiveDomainId);
@@ -146,13 +134,13 @@ public class WorkflowDefinitionController {
             } else if (workflow.getDomainId() != null) {
                 effectiveDomainId = workflow.getDomainId();
             } else {
-                return ResponseEntity.badRequest().body(new MessageResponse("Error: domainId is required"));
+                return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: domainId is required"));
             }
 
             WorkflowDefinition updated = workflowService.updateWorkflow(id, effectiveDomainId, workflow);
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
         }
     }
 
@@ -173,13 +161,13 @@ public class WorkflowDefinitionController {
             } else if (domainId != null) {
                 effectiveDomainId = domainId;
             } else {
-                return ResponseEntity.badRequest().body(new MessageResponse("Error: domainId is required"));
+                return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: domainId is required"));
             }
 
             workflowService.deleteWorkflow(id, effectiveDomainId);
-            return ResponseEntity.ok(new MessageResponse("Workflow deleted successfully"));
+            return ResponseEntity.ok(new WorkflowMessageResponse("Workflow deleted successfully"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
         }
     }
 
@@ -208,7 +196,7 @@ public class WorkflowDefinitionController {
 
             return ResponseEntity.ok(instance);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
         }
     }
 
@@ -238,7 +226,7 @@ public class WorkflowDefinitionController {
 
             return ResponseEntity.ok(instance);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
         }
     }
 
@@ -259,13 +247,13 @@ public class WorkflowDefinitionController {
             } else if (domainId != null) {
                 effectiveDomainId = domainId;
             } else {
-                return ResponseEntity.badRequest().body(new MessageResponse("Error: domainId is required"));
+                return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: domainId is required"));
             }
 
             workflowService.seedDefaultWorkflows(effectiveDomainId, principal.getId());
-            return ResponseEntity.ok(new MessageResponse("Default workflows created successfully"));
+            return ResponseEntity.ok(new WorkflowMessageResponse("Default workflows created successfully"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
         }
     }
 
@@ -278,7 +266,7 @@ public class WorkflowDefinitionController {
             List<WorkflowTransition> transitions = engineService.getAvailableTransitions(instanceId);
             return ResponseEntity.ok(Map.of("availableTransitions", transitions));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
         }
     }
 
@@ -325,7 +313,7 @@ public class WorkflowDefinitionController {
             WorkflowInstance instance = engineService.addComment(instanceId, principal.getId(), text);
             return ResponseEntity.ok(instance);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
         }
     }
 

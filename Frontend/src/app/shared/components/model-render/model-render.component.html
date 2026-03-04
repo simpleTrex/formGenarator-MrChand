@@ -2,7 +2,8 @@
     <div class="card-body">
         <select class="form-control" #model_tag (change)="onSelected(model_tag.value)">
             <option [ngValue]="" disabled>Choose your Model</option>
-            <option *ngFor="let option of availableFormTemplates" [ngValue]="option.value" [selected]="option.value==element.value">
+            <option *ngFor="let option of availableFormTemplates" [ngValue]="option.value"
+                [selected]="option.value==element.value">
                 {{option.value}}
             </option>
         </select>
