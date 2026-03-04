@@ -5,8 +5,8 @@ import { RouterModule } from '@angular/router';
 import { NaviBarComponent } from './components/navbar/navi-bar.component';
 import { NaviDataComponent } from './components/navi-data/navi-data.component';
 import { NotFoundPageComponent } from './components/not-found-page/not-found-page.component';
-import { RenderFormComponent } from '../features/form-builder/pages/form-preview/render-form.component';
-import { ModelRenderComponent } from '../features/form-builder/components/field-renderer/model-render.component';
+import { RenderFormComponent } from './components/render-form/render-form.component';
+import { ModelRenderComponent } from './components/model-render/model-render.component';
 
 @NgModule({
     declarations: [
