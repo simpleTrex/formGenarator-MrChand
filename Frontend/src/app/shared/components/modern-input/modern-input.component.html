@@ -12,6 +12,7 @@
       [value]="value"
       (input)="onInput($event)"
       (blur)="onTouch()"
+      (keydown.enter)="onEnterKey($event)"
       class="modern-input-field"
       [class.has-icon]="icon"
     />
