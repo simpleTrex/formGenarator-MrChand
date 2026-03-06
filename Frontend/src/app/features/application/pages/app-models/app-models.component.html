@@ -1,56 +1,60 @@
-<div class="models-container">
+<div class="models-container fade-in">
   <div class="page-actions">
     <button class="back-btn" (click)="goBackToApp()">← Back to Application</button>
   </div>
 
-  <div class="header">
-    <h2>Models (Domain-level) — App: {{ app?.name }}</h2>
-    <p class="sub">Create reusable data models and choose which apps in this domain can access them.</p>
+  <div class="models-info-section">
+    <h2 class="section-title">Models</h2>
+    <p class="info-text">Create reusable data models and choose which apps in this domain can access them.</p>
+    <p class="info-text" *ngIf="app"><strong>App:</strong> {{ app?.name }} <span class="badge">{{ app?.slug }}</span></p>
   </div>
 
-  <div *ngIf="loading">Loading...</div>
-  <div *ngIf="error" class="error-text">{{ error }}</div>
-  <div *ngIf="message" class="success-text">{{ message }}</div>
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Loading...</p>
+  </div>
+  <div *ngIf="error" class="error-alert">{{ error }}</div>
+  <div *ngIf="message" class="success-alert">{{ message }}</div>
 
   <div class="grid" *ngIf="!loading">
-    <div class="panel">
+    <app-modern-card theme="light">
       <div class="panel-header">
-        <strong>Models</strong>
-        <button class="btn btn-sm" (click)="newModel()" [disabled]="!canManageModels">+ New</button>
+        <h3>Models</h3>
+        <app-modern-button variant="outline" size="sm" (click)="newModel()" [disabled]="!canManageModels">+ New</app-modern-button>
       </div>
 
-      <div *ngIf="models.length === 0" class="empty">No models yet.</div>
+      <div *ngIf="models.length === 0" class="info-text">No models yet.</div>
 
       <div class="model-list">
-        <div class="model-item" *ngFor="let m of models"
+        <button type="button" class="model-item" *ngFor="let m of models"
              [class.active]="selectedModel?.id === m.id"
              (click)="selectModel(m)">
-          <div class="title">
-            <strong>{{ m.name }}</strong>
-            <span class="slug">{{ m.slug }}</span>
+          <div class="model-item-top">
+            <strong class="model-name">{{ m.name }}</strong>
+            <span class="badge">{{ m.slug }}</span>
           </div>
-          <div class="meta">
+          <div class="model-tags">
             <span class="tag" *ngIf="m.sharedWithAllApps">Shared to all apps</span>
             <span class="tag" *ngIf="!m.sharedWithAllApps">Restricted</span>
             <span class="tag">v{{ m.version || 1 }}</span>
           </div>
-        </div>
+        </button>
       </div>
-    </div>
+    </app-modern-card>
 
-    <div class="panel">
+    <app-modern-card theme="light">
       <div class="panel-header">
-        <strong>{{ selectedModel ? 'Edit Model' : 'Create Model' }}</strong>
+        <h3>{{ selectedModel ? 'Edit Model' : 'Create Model' }}</h3>
       </div>
 
       <form [formGroup]="modelForm" class="form">
         <div class="row">
-          <label>Name *</label>
+          <label>Name <span class="req">*</span></label>
           <input class="input" formControlName="name" placeholder="e.g., Product" />
         </div>
 
         <div class="row">
-          <label>Slug *</label>
+          <label>Slug <span class="req">*</span></label>
           <input class="input" formControlName="slug" placeholder="e.g., product" />
           <small class="hint" *ngIf="selectedModel">Slug cannot be changed.</small>
         </div>
@@ -78,9 +82,9 @@
         </div>
 
         <div class="row">
-          <div class="panel-header" style="padding:0; border:none;">
-            <strong>Fields</strong>
-            <button class="btn btn-sm" type="button" (click)="addField()" [disabled]="!canManageModels">+ Add Field</button>
+          <div class="panel-subheader">
+            <h4>Fields</h4>
+            <app-modern-button variant="outline" size="sm" type="button" (click)="addField()" [disabled]="!canManageModels">+ Add Field</app-modern-button>
           </div>
 
           <div class="fields" formArrayName="fields">
@@ -91,20 +95,20 @@
               </select>
               <label class="chk"><input type="checkbox" formControlName="required" /> Required</label>
               <label class="chk"><input type="checkbox" formControlName="unique" /> Unique</label>
-              <button class="btn danger" type="button" (click)="removeField(i)" [disabled]="fieldsArray.length <= 1 || !canManageModels">Remove</button>
+              <button class="danger-btn" type="button" (click)="removeField(i)" [disabled]="fieldsArray.length <= 1 || !canManageModels">Remove</button>
             </div>
           </div>
         </div>
 
         <div class="actions">
-          <button class="btn primary" type="button" (click)="save()" [disabled]="!canManageModels">Save</button>
-          <button class="btn danger" type="button" (click)="deleteSelected()" [disabled]="!selectedModel || !canManageModels">Delete</button>
+          <app-modern-button variant="primary" type="button" (click)="save()" [disabled]="!canManageModels">Save</app-modern-button>
+          <button class="danger-outline-btn" type="button" (click)="deleteSelected()" [disabled]="!selectedModel || !canManageModels">Delete</button>
         </div>
 
         <div *ngIf="!canManageModels" class="info-text">
           You can view models, but you don't have permission to create/edit them.
         </div>
       </form>
-    </div>
+    </app-modern-card>
   </div>
 </div>
