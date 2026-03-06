@@ -1,4 +1,4 @@
-<div class="app-container">
+<div class="app-container fade-in">
   <!-- Header Section -->
   <div class="page-actions">
     <button class="back-btn" (click)="goBackToDomain()">← Back to Domain</button>
@@ -9,17 +9,17 @@
 
   <!-- App Info Section -->
   <div class="app-info-section">
-    <h2>Application: {{ app?.name }}</h2>
-    <div *ngIf="error" class="error-text">{{ error }}</div>
+    <h2 class="section-title">Application: {{ app?.name }}</h2>
+    <div *ngIf="error" class="error-alert">{{ error }}</div>
     <div *ngIf="app" class="app-details">
       <p><strong>Name:</strong> {{ app.name }}</p>
-      <p><strong>Slug:</strong> {{ app.slug }}</p>
-      <p><strong>Domain:</strong> {{ domain?.name }} ({{ domainSlug }})</p>
+      <p><strong>Slug:</strong> <span class="badge">{{ app.slug }}</span></p>
+      <p><strong>Domain:</strong> {{ domain?.name }} <span class="badge">{{ domainSlug }}</span></p>
     </div>
   </div>
 
   <!-- Preview Mode (default for everyone) -->
-  <div *ngIf="mode === 'PREVIEW'" class="card" style="margin-top: 12px;">
+  <app-modern-card *ngIf="mode === 'PREVIEW'" theme="light" class="mt-4">
     <h3>Preview</h3>
     <p class="info-text">
       Workflows are not implemented yet. This will show the app's runtime preview for normal users.
@@ -30,54 +30,67 @@
     <p class="info-text" *ngIf="canAccessManager">
       You can also manage access using <strong>Access Manager</strong>.
     </p>
-  </div>
+  </app-modern-card>
 
   <!-- Edit Mode (editor/admin/owner) -->
-  <div *ngIf="mode === 'EDIT'" class="card" style="margin-top: 12px;">
+  <app-modern-card *ngIf="mode === 'EDIT'" theme="light" class="mt-4">
     <h3>Edit Mode</h3>
     <p class="info-text">Builder tools will appear here (models, workflows, pages, etc.).</p>
-    <div class="page-actions" style="padding: 0;">
-      <button class="back-btn" [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']">Models</button>
+    <div class="edit-actions">
+      <app-modern-button
+        variant="outline"
+        size="sm"
+        [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']"
+      >
+        Models
+      </app-modern-button>
     </div>
-  </div>
+  </app-modern-card>
 
   <!-- Access Manager (app admin/owner) -->
-  <div *ngIf="mode === 'ACCESS' && canManageAppGroups" class="manage-panels">
-    <div class="card">
-      <h3>Application Groups & Users</h3>
-      <p class="info-text">Drag and drop users between groups to manage access. All users are automatically in "App Viewer" by default.</p>
-      <div *ngIf="appGroupsLoading || usersLoading">Loading...</div>
-      <div *ngIf="groupError" class="error-text">{{ groupError }}</div>
+  <app-modern-card *ngIf="mode === 'ACCESS' && canManageAppGroups" theme="light" class="mt-4">
+    <h3>Application Groups & Users</h3>
+    <p class="info-text">Drag and drop users between groups to manage access. All users are automatically in "App Viewer" by default.</p>
 
-      <div class="groups-grid-only">
-        <div *ngFor="let group of appGroups" class="group-card"
-             (dragover)="onDragOver($event)"
-             (drop)="onDrop($event, group.id)">
-          <div class="group-card-header">
-            <strong>{{ group.name }}</strong>
-            <span class="badge">{{ getUsersInGroup(group.id).length }} member(s)</span>
+    <div *ngIf="appGroupsLoading || usersLoading" class="loading-state">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p>Loading access data...</p>
+    </div>
+
+    <div *ngIf="groupError" class="error-alert">{{ groupError }}</div>
+
+    <div class="groups-grid">
+      <div *ngFor="let group of appGroups" class="group-card"
+           (dragover)="onDragOver($event)"
+           (drop)="onDrop($event, group.id)">
+
+        <div class="group-card-header">
+          <h4 class="group-name">{{ group.name }}</h4>
+          <span class="user-count-badge">{{ getUsersInGroup(group.id).length }} member(s)</span>
+        </div>
+
+        <div class="group-permissions">
+          <span class="permission-chip" *ngFor="let perm of group.permissions">{{ perm }}</span>
+        </div>
+
+        <div class="group-members">
+          <div *ngIf="getUsersInGroup(group.id).length === 0" class="empty-dropzone">
+            Drop users here
           </div>
-          <div class="group-permissions">
-            <span class="chip" *ngFor="let perm of group.permissions">{{ perm }}</span>
-          </div>
-          <div class="group-members">
-            <div *ngIf="getUsersInGroup(group.id).length === 0" class="empty-message">
-              Drop users here to add them
+
+          <div *ngFor="let user of getUsersInGroup(group.id)"
+               class="user-item"
+               draggable="true"
+               (dragstart)="onDragStart($event, user, group.id)"
+               (dragend)="onDragEnd()">
+            <div class="user-info">
+              <strong>{{ user.username }}</strong>
+              <span>{{ user.email }}</span>
             </div>
-            <div *ngFor="let user of getUsersInGroup(group.id)"
-                 class="user-item"
-                 draggable="true"
-                 (dragstart)="onDragStart($event, user, group.id)"
-                 (dragend)="onDragEnd()">
-              <div class="user-info">
-                <strong>{{ user.username }}</strong>
-                <small>{{ user.email }}</small>
-              </div>
-              <button class="btn-remove" (click)="removeUserFromGroup(user.id, group.id)" title="Remove">×</button>
-            </div>
+            <button class="icon-btn-remove" (click)="removeUserFromGroup(user.id, group.id)" title="Remove user">✕</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </app-modern-card>
 </div>
