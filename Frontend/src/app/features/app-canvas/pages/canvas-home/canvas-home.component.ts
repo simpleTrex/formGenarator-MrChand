@@ -56,11 +56,11 @@ export class CanvasHomeComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        this.route.parent?.params.subscribe(params => {
-            this.domainSlug = params['slug'];
-            this.appSlug = params['appSlug'];
-            this.loadData();
-        });
+        const rootParams = this.route.snapshot.pathFromRoot
+            .reduce((acc, r) => ({ ...acc, ...r.params }), {} as any);
+        this.domainSlug = rootParams['slug'] || '';
+        this.appSlug = rootParams['appSlug'] || '';
+        this.loadData();
     }
 
     private loadData(): void {

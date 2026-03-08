@@ -43,11 +43,11 @@ export class PrimitivePickerComponent implements OnInit {
     }
 
     selectPrimitive(type: string): void {
-        this.router.navigate(['new', type], { relativeTo: this.route });
+        this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'components', 'new', type]);
     }
 
     goToLibrary(): void {
-        this.router.navigate(['library'], { relativeTo: this.route });
+        this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'components', 'library']);
     }
 
     goBack(): void {

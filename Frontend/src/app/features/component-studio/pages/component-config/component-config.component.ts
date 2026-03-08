@@ -44,14 +44,19 @@ export class ComponentConfigComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        this.route.parent?.params.subscribe(params => {
-            this.domainSlug = params['slug'];
-            this.appSlug = params['appSlug'];
-        });
+        const rootParams = this.route.snapshot.pathFromRoot
+            .reduce((acc, r) => ({ ...acc, ...r.params }), {} as any);
+        this.domainSlug = rootParams['slug'] || '';
+        this.appSlug = rootParams['appSlug'] || '';
 
         this.route.params.subscribe(params => {
-            this.primitiveType = params['primitiveType'] || '';
-            this.compId = params['compId'] || '';
+            // also reread in case of param change
+            const rp = this.route.snapshot.pathFromRoot
+                .reduce((acc, r) => ({ ...acc, ...r.params }), {} as any);
+            this.domainSlug = rp['slug'] || this.domainSlug;
+            this.appSlug = rp['appSlug'] || this.appSlug;
+            this.primitiveType = params['primitiveType'] || rp['primitiveType'] || '';
+            this.compId = params['compId'] || rp['compId'] || '';
             this.isEditing = !!this.compId;
             this.initializeForm();
         });
@@ -172,7 +177,7 @@ export class ComponentConfigComponent implements OnInit {
         request$.subscribe({
             next: () => {
                 this.saving = false;
-                this.router.navigate(['..', '..', 'library'], { relativeTo: this.route });
+                this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'components', 'library']);
             },
             error: (err: any) => {
                 this.error = err?.error?.message || 'Failed to save component';
@@ -183,9 +188,9 @@ export class ComponentConfigComponent implements OnInit {
 
     cancel(): void {
         if (this.isEditing) {
-            this.router.navigate(['..', '..', 'library'], { relativeTo: this.route });
+            this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'components', 'library']);
         } else {
-            this.router.navigate(['..'], { relativeTo: this.route });
+            this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'components']);
         }
     }
 

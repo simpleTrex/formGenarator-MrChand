@@ -1,19 +1,6 @@
+// Components from this module are now declared in ApplicationModule (application.module.ts).
+// This file is kept to avoid breaking any existing imports, but has no declarations.
 import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { CanvasHomeComponent } from './pages/canvas-home/canvas-home.component';
 
-const routes: Routes = [
-    { path: '', component: CanvasHomeComponent },
-];
-
-@NgModule({
-    declarations: [CanvasHomeComponent],
-    imports: [
-        CommonModule,
-        FormsModule,
-        RouterModule.forChild(routes),
-    ],
-})
+@NgModule({})
 export class AppCanvasModule { }

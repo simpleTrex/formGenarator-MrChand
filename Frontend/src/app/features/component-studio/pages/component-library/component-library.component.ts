@@ -59,7 +59,7 @@ export class ComponentLibraryComponent implements OnInit {
     }
 
     editComponent(compId: string): void {
-        this.router.navigate(['..', 'edit', compId], { relativeTo: this.route });
+        this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'components', 'edit', compId]);
     }
 
     deleteComponent(compId: string): void {
@@ -71,7 +71,7 @@ export class ComponentLibraryComponent implements OnInit {
     }
 
     addNew(): void {
-        this.router.navigate(['..'], { relativeTo: this.route });
+        this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'components']);
     }
 
     goBack(): void {
