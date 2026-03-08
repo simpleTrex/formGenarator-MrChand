@@ -44,7 +44,7 @@
                         <option *ngFor="let f of selectedModelFields" [value]="f.key">{{ f.key }} ({{ f.type }})
                         </option>
                     </select>
-                    <span class="field-hint" *ngIf="field.hint && typeof field.hint === 'string'">{{ field.hint
+                    <span class="field-hint" *ngIf="field.hint && field.hint.options === undefined">{{ field.hint
                         }}</span>
                 </div>
 
@@ -97,7 +97,7 @@
                 <div class="form-group" *ngIf="field.fieldType === 'TEXT'">
                     <label class="form-label">{{ field.label }} <span *ngIf="field.required">*</span></label>
                     <input class="form-input" [formControlName]="field.key"
-                        [placeholder]="(field.hint && typeof field.hint === 'string') ? field.hint : ''" />
+                        [placeholder]="field.hint && field.hint.options === undefined ? field.hint : ''" />
                 </div>
 
             </ng-container>
