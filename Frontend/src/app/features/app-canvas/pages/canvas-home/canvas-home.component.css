@@ -1,0 +1,455 @@
+/* Canvas Builder Full-Screen Layout */
+
+:host {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    background: #f0f0f0;
+}
+
+/* ─── Shell ──────────────────────────────────────────────────────────────── */
+.canvas-shell {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────── */
+.sidebar {
+    width: 260px;
+    min-width: 220px;
+    background: #111;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 1rem 0;
+    gap: 0.5rem;
+}
+
+.sidebar-section {
+    padding: 0 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-section:last-child {
+    border-bottom: none;
+    flex-grow: 1;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.sidebar-title {
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    transition: background 150ms ease;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.icon-btn-del {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0 4px;
+    transition: color 150ms ease;
+}
+
+.icon-btn-del:hover {
+    color: #ef4444;
+}
+
+/* Pages list */
+.page-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 150ms ease;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.page-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.page-item-active {
+    background: rgba(186, 255, 41, 0.15) !important;
+    color: #baff29;
+}
+
+.page-icon {
+    font-size: 1rem;
+}
+
+.page-name {
+    flex-grow: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.add-page-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.page-input {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 0.45rem 0.7rem;
+    color: white;
+    font-size: 0.88rem;
+    font-family: inherit;
+}
+
+.page-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.page-input:focus {
+    outline: none;
+    border-color: #baff29;
+}
+
+.add-page-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-dark {
+    background: #baff29;
+    color: #111;
+}
+
+.btn-dark:hover {
+    opacity: 0.85;
+}
+
+.btn-ghost {
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.empty-sidebar {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.35);
+    padding: 0.5rem 0;
+}
+
+.link {
+    color: #baff29;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* Tray items */
+.tray-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    cursor: grab;
+    transition: background 150ms ease;
+    color: rgba(255, 255, 255, 0.75);
+    border: 1px solid transparent;
+}
+
+.tray-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tray-item:active {
+    cursor: grabbing;
+}
+
+.tray-icon {
+    font-size: 1.1rem;
+}
+
+.tray-name {
+    flex-grow: 1;
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+
+.drag-hint {
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 1rem;
+}
+
+/* ─── Main canvas area ───────────────────────────────────────────────────── */
+.canvas-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.canvas-topbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.5rem;
+    background: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.back-btn {
+    background: transparent;
+    border: 1.5px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50rem;
+    padding: 0.4rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 150ms ease;
+    flex-shrink: 0;
+}
+
+.back-btn:hover {
+    background: #111;
+    color: white;
+    border-color: #111;
+}
+
+.canvas-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #111;
+    margin: 0;
+    flex-grow: 1;
+    letter-spacing: -0.02em;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-save {
+    background: #111;
+    color: white;
+    border: none;
+    border-radius: 50rem;
+    padding: 0.5rem 1.4rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 150ms ease;
+}
+
+.btn-save:hover:not(:disabled) {
+    opacity: 0.82;
+}
+
+.btn-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.save-msg {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.error-inline {
+    font-size: 0.85rem;
+    color: #dc2626;
+}
+
+.no-page-state,
+.loading-state {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: #999;
+    font-size: 1rem;
+}
+
+.no-page-icon {
+    font-size: 3.5rem;
+}
+
+/* ─── Grid Canvas ────────────────────────────────────────────────────────── */
+.grid-canvas {
+    flex-grow: 1;
+    overflow: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.grid-hint {
+    font-size: 0.8rem;
+    color: #aaa;
+    font-weight: 500;
+}
+
+.grid-wrapper {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: repeat(10, 90px);
+    gap: 6px;
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    min-width: 900px;
+}
+
+/* Drop zones (background grid) */
+.drop-row {
+    display: contents;
+}
+
+.drop-cell {
+    border: 1.5px dashed rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    transition: background 150ms ease, border-color 150ms ease;
+    min-height: 90px;
+}
+
+.drop-cell:hover {
+    background: rgba(186, 255, 41, 0.08);
+    border-color: rgba(186, 255, 41, 0.4);
+}
+
+.drop-cell-taken {
+    border-style: solid;
+    border-color: transparent;
+    pointer-events: none;
+}
+
+/* Placed component tiles */
+.grid-tile {
+    background: #111;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.tile-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1rem;
+    flex-grow: 1;
+    color: white;
+}
+
+.tile-icon {
+    font-size: 1.4rem;
+}
+
+.tile-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    flex-grow: 1;
+}
+
+.tile-remove {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 150ms ease;
+}
+
+.tile-remove:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.tile-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0.8rem;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.tile-resize-btns {
+    display: flex;
+    gap: 3px;
+}
+
+.resize-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 100ms ease;
+}
+
+.resize-btn:hover {
+    background: rgba(186, 255, 41, 0.2);
+    color: #baff29;
+}

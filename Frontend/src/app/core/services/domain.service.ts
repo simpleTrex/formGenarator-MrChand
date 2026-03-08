@@ -153,6 +153,79 @@ export class DomainService {
   deleteDomainModel(domainSlug: string, appSlug: string, modelSlug: string): Observable<any> {
     return this.baseService.delete(`${this.adaptive}/domains/${domainSlug}/models/${encodeURIComponent(modelSlug)}?appSlug=${encodeURIComponent(appSlug)}`, true, {});
   }
+
+  // ─── Primitive Templates ───────────────────────────────────────────────────
+  getPrimitives(): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/primitives`, true);
+  }
+
+  getPrimitiveSchema(type: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/primitives/${type}`, true);
+  }
+
+  // ─── Component Definitions ────────────────────────────────────────────────
+  getComponents(domainSlug: string, appSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/components`, true);
+  }
+
+  getComponent(domainSlug: string, appSlug: string, compId: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/components/${compId}`, true);
+  }
+
+  createComponent(domainSlug: string, appSlug: string, payload: any): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/components`, true, payload);
+  }
+
+  updateComponent(domainSlug: string, appSlug: string, compId: string, payload: any): Observable<any> {
+    return this.baseService.put(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/components/${compId}`, true, payload);
+  }
+
+  deleteComponent(domainSlug: string, appSlug: string, compId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/components/${compId}`, true, {});
+  }
+
+  // ─── App Pages ────────────────────────────────────────────────────────────
+  getPages(domainSlug: string, appSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/pages`, true);
+  }
+
+  createPage(domainSlug: string, appSlug: string, payload: { name: string; slug?: string; order?: number }): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/pages`, true, payload);
+  }
+
+  updatePage(domainSlug: string, appSlug: string, pageId: string, payload: any): Observable<any> {
+    return this.baseService.put(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/pages/${pageId}`, true, payload);
+  }
+
+  deletePage(domainSlug: string, appSlug: string, pageId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/pages/${pageId}`, true, {});
+  }
+
+  // ─── Page Layout ──────────────────────────────────────────────────────────
+  getPageLayout(domainSlug: string, appSlug: string, pageId: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/pages/${pageId}/layout`, true);
+  }
+
+  savePageLayout(domainSlug: string, appSlug: string, pageId: string, layout: any[]): Observable<any> {
+    return this.baseService.put(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/pages/${pageId}/layout`, true, { layout });
+  }
+
+  // ─── Domain Records ───────────────────────────────────────────────────────
+  getRecords(domainSlug: string, appSlug: string, modelSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/models/${modelSlug}/records?appSlug=${encodeURIComponent(appSlug)}`, true);
+  }
+
+  createRecord(domainSlug: string, appSlug: string, modelSlug: string, data: any): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${domainSlug}/models/${modelSlug}/records?appSlug=${encodeURIComponent(appSlug)}`, true, { data });
+  }
+
+  updateRecord(domainSlug: string, appSlug: string, modelSlug: string, recordId: string, data: any): Observable<any> {
+    return this.baseService.put(`${this.adaptive}/domains/${domainSlug}/models/${modelSlug}/records/${recordId}?appSlug=${encodeURIComponent(appSlug)}`, true, { data });
+  }
+
+  deleteRecord(domainSlug: string, appSlug: string, modelSlug: string, recordId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${domainSlug}/models/${modelSlug}/records/${recordId}?appSlug=${encodeURIComponent(appSlug)}`, true, {});
+  }
 }
 
 export const _domainService = [

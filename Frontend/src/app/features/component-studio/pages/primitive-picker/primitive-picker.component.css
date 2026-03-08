@@ -1,0 +1,89 @@
+/* Component Studio — Primitive Picker */
+
+:host { display: block; min-height: 100vh; background: var(--bg-offwhite, #f8f8f8); }
+
+.studio-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.studio-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.back-btn, .lib-btn {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.12);
+  padding: 0.5rem 1.2rem;
+  border-radius: 50rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 150ms ease;
+}
+.back-btn:hover { background: #111; color: #fff; border-color: #111; }
+.lib-btn { background: #111; color: #fff; }
+.lib-btn:hover { opacity: 0.85; }
+
+.studio-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #111;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.5rem;
+}
+.studio-sub { color: #666; font-size: 1rem; margin-bottom: 2.5rem; }
+
+.primitives-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.primitive-card {
+  background: white;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  padding: 2rem 1.5rem;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.primitive-card:hover {
+  border-color: #baff29;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.09);
+}
+
+.primitive-icon { font-size: 2.5rem; }
+.primitive-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+}
+.primitive-desc { font-size: 0.875rem; color: #666; margin: 0; line-height: 1.5; }
+.pick-btn {
+  margin-top: auto;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #111;
+  background: #baff29;
+  padding: 0.3rem 0.9rem;
+  border-radius: 50rem;
+}
+
+.loading-state, .error-alert { padding: 1.5rem; color: #666; }
+.error-alert { color: #dc2626; background: rgba(239,68,68,0.08); border-radius: 8px; }
+
+.fade-in { animation: fadeIn 250ms ease both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

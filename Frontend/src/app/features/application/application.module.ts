@@ -9,6 +9,14 @@ import { AppModelsComponent } from './pages/app-models/app-models.component';
 const routes: Routes = [
     { path: ':appSlug', component: AppHomeComponent },
     { path: ':appSlug/models', component: AppModelsComponent },
+    {
+        path: ':appSlug/components',
+        loadChildren: () => import('../component-studio/component-studio.module').then(m => m.ComponentStudioModule)
+    },
+    {
+        path: ':appSlug/canvas',
+        loadChildren: () => import('../app-canvas/app-canvas.module').then(m => m.AppCanvasModule)
+    },
 ];
 
 @NgModule({

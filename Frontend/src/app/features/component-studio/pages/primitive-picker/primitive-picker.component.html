@@ -1,0 +1,22 @@
+<div class="studio-container fade-in">
+    <div class="studio-header">
+        <button class="back-btn" (click)="goBack()">← Back to App</button>
+        <button class="lib-btn" (click)="goToLibrary()">📚 My Components</button>
+    </div>
+
+    <h1 class="studio-title">Choose a Business Primitive</h1>
+    <p class="studio-sub">Select a UI block type to configure it for your app.</p>
+
+    <div *ngIf="loading" class="loading-state">Loading primitives...</div>
+    <div *ngIf="error" class="error-alert">{{ error }}</div>
+
+    <div class="primitives-grid" *ngIf="!loading && !error">
+        <div class="primitive-card" *ngFor="let p of primitives" (click)="selectPrimitive(p.type)" role="button"
+            tabindex="0" (keyup.enter)="selectPrimitive(p.type)">
+            <span class="primitive-icon">{{ p.icon }}</span>
+            <h3 class="primitive-name">{{ p.label }}</h3>
+            <p class="primitive-desc">{{ p.description }}</p>
+            <span class="pick-btn">Configure →</span>
+        </div>
+    </div>
+</div>

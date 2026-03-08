@@ -1,0 +1,115 @@
+<div class="canvas-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Pages</span>
+                <button class="icon-btn" (click)="startAddPage()" title="Add page">+</button>
+            </div>
+
+            <div *ngIf="addingPage" class="add-page-form">
+                <input class="page-input" [(ngModel)]="newPageName" placeholder="Page name"
+                    (keyup.enter)="confirmAddPage()" />
+                <div class="add-page-actions">
+                    <button class="btn-sm btn-dark" (click)="confirmAddPage()">Add</button>
+                    <button class="btn-sm btn-ghost" (click)="cancelAddPage()">Cancel</button>
+                </div>
+            </div>
+
+            <div *ngIf="pages.length === 0 && !addingPage" class="empty-sidebar">
+                No pages yet.
+            </div>
+
+            <div *ngFor="let p of pages" class="page-item" [class.page-item-active]="selectedPage?.id === p.id"
+                (click)="selectPage(p)">
+                <span class="page-icon">📄</span>
+                <span class="page-name">{{ p.name }}</span>
+                <button class="icon-btn-del" (click)="$event.stopPropagation(); deletePage(p)" title="Delete">✕</button>
+            </div>
+        </div>
+
+        <!-- Component tray -->
+        <div class="sidebar-section" *ngIf="selectedPage">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Components</span>
+                <button class="icon-btn" (click)="goToComponents()" title="Add component">+</button>
+            </div>
+
+            <div *ngIf="components.length === 0" class="empty-sidebar">
+                No components. <a class="link" (click)="goToComponents()">Create one →</a>
+            </div>
+
+            <div *ngFor="let c of components" class="tray-item" draggable="true"
+                (dragstart)="onTrayDragStart(c, $event)" title="Drag to canvas">
+                <span class="tray-icon">{{ primitiveIcons[c.primitiveType] || '🧩' }}</span>
+                <span class="tray-name">{{ c.name }}</span>
+                <span class="drag-hint">⠿</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main area -->
+    <main class="canvas-main">
+        <div class="canvas-topbar">
+            <button class="back-btn" (click)="goBack()">← Back</button>
+            <h2 class="canvas-title">
+                🎨 App Builder
+                <span *ngIf="selectedPage"> — {{ selectedPage.name }}</span>
+            </h2>
+            <div class="topbar-actions">
+                <span *ngIf="saveMsg" class="save-msg">✅ {{ saveMsg }}</span>
+                <span *ngIf="error" class="error-inline">⚠️ {{ error }}</span>
+                <button class="btn-save" *ngIf="selectedPage" (click)="saveLayout()" [disabled]="saving">
+                    {{ saving ? 'Saving...' : '💾 Save Layout' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="!selectedPage && !loading" class="no-page-state">
+            <span class="no-page-icon">📐</span>
+            <p>Create a page in the sidebar to start building.</p>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="loading" class="loading-state">Loading...</div>
+
+        <!-- Grid Canvas -->
+        <div class="grid-canvas" *ngIf="selectedPage && !loading">
+            <div class="grid-hint">Drag components from the left panel onto the grid.</div>
+
+            <div class="grid-wrapper">
+                <!-- Placed component tiles -->
+                <div *ngFor="let cell of layoutCells; let i = index" class="grid-tile"
+                    [style.grid-row]="cell.row + ' / span ' + cell.h"
+                    [style.grid-column]="cell.col + ' / span ' + cell.w">
+                    <div class="tile-inner">
+                        <span class="tile-icon">{{ cell.compIcon }}</span>
+                        <span class="tile-name">{{ cell.compName }}</span>
+                        <button class="tile-remove" (click)="removeCell(i)" title="Remove">✕</button>
+                    </div>
+                    <!-- Resize handle hints -->
+                    <div class="tile-meta">
+                        <span>{{ cell.w }} col × {{ cell.h }} row</span>
+                        <div class="tile-resize-btns">
+                            <button class="resize-btn" (click)="cell.w = cell.w > 1 ? cell.w - 1 : 1">◀</button>
+                            <button class="resize-btn"
+                                (click)="cell.w = cell.w < (13 - cell.col) ? cell.w + 1 : (13 - cell.col)">▶</button>
+                            <button class="resize-btn" (click)="cell.h = cell.h > 1 ? cell.h - 1 : 1">▲</button>
+                            <button class="resize-btn" (click)="cell.h = cell.h < 10 ? cell.h + 1 : 10">▼</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drop zones (background grid cells) -->
+                <div *ngFor="let row of getGridRows()" class="drop-row" [style.grid-row]="row">
+                    <div *ngFor="let col of getGridCols()" class="drop-cell"
+                        [class.drop-cell-taken]="!!getCellAt(row, col) || isCellShadow(row, col)"
+                        [style.grid-column]="col" (dragover)="onCanvasDragOver($event)"
+                        (drop)="onCanvasDrop(row, col, $event)"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

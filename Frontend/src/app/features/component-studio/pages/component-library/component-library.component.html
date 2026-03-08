@@ -1,0 +1,32 @@
+<div class="library-container fade-in">
+    <div class="library-header">
+        <button class="back-btn" (click)="goBack()">← Back to App</button>
+        <button class="add-btn" (click)="addNew()">+ New Component</button>
+    </div>
+
+    <h1 class="library-title">My UI Components</h1>
+    <p class="library-sub">Components you've built for this application.</p>
+
+    <div *ngIf="deleteError" class="error-alert">{{ deleteError }}</div>
+
+    <div *ngIf="loading" class="loading-state">Loading components...</div>
+
+    <div *ngIf="!loading && components.length === 0" class="empty-state">
+        <span class="empty-icon">🧩</span>
+        <p>No components yet. Click <strong>+ New Component</strong> to start building.</p>
+    </div>
+
+    <div class="comp-list" *ngIf="!loading && components.length > 0">
+        <div class="comp-card" *ngFor="let c of components">
+            <div class="comp-icon">{{ getIcon(c.primitiveType) }}</div>
+            <div class="comp-info">
+                <h3 class="comp-name">{{ c.name }}</h3>
+                <span class="comp-type">{{ c.primitiveType.replace('_', ' ') }}</span>
+            </div>
+            <div class="comp-actions">
+                <button class="action-btn edit" (click)="editComponent(c.id)">✏️ Edit</button>
+                <button class="action-btn delete" (click)="deleteComponent(c.id)">🗑️ Delete</button>
+            </div>
+        </div>
+    </div>
+</div>

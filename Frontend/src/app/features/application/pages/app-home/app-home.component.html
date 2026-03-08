@@ -4,7 +4,8 @@
     <button class="back-btn" (click)="goBackToDomain()">← Back to Domain</button>
     <button class="back-btn" *ngIf="mode !== 'PREVIEW'" (click)="enterPreviewMode()">Preview Mode</button>
     <button class="back-btn" *ngIf="canEditMode && mode !== 'EDIT'" (click)="enterEditMode()">Edit Mode</button>
-    <button class="back-btn" *ngIf="canAccessManager && mode !== 'ACCESS'" (click)="enterAccessManagerMode()">Access Manager</button>
+    <button class="back-btn" *ngIf="canAccessManager && mode !== 'ACCESS'" (click)="enterAccessManagerMode()">Access
+      Manager</button>
   </div>
 
   <!-- App Info Section -->
@@ -37,12 +38,17 @@
     <h3>Edit Mode</h3>
     <p class="info-text">Builder tools will appear here (models, workflows, pages, etc.).</p>
     <div class="edit-actions">
-      <app-modern-button
-        variant="outline"
-        size="sm"
-        [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']"
-      >
-        Models
+      <app-modern-button variant="outline" size="sm" [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']">
+        🗂️ Models
+      </app-modern-button>
+
+      <app-modern-button variant="primary" size="sm"
+        [routerLink]="['/domain', domainSlug, 'app', appSlug, 'components']">
+        🧩 UI Components
+      </app-modern-button>
+
+      <app-modern-button variant="outline" size="sm" [routerLink]="['/domain', domainSlug, 'app', appSlug, 'canvas']">
+        🎨 App Builder
       </app-modern-button>
     </div>
   </app-modern-card>
@@ -50,7 +56,8 @@
   <!-- Access Manager (app admin/owner) -->
   <app-modern-card *ngIf="mode === 'ACCESS' && canManageAppGroups" theme="light" class="mt-4">
     <h3>Application Groups & Users</h3>
-    <p class="info-text">Drag and drop users between groups to manage access. All users are automatically in "App Viewer" by default.</p>
+    <p class="info-text">Drag and drop users between groups to manage access. All users are automatically in "App
+      Viewer" by default.</p>
 
     <div *ngIf="appGroupsLoading || usersLoading" class="loading-state">
       <div class="spinner-border text-primary" role="status"></div>
@@ -60,9 +67,8 @@
     <div *ngIf="groupError" class="error-alert">{{ groupError }}</div>
 
     <div class="groups-grid">
-      <div *ngFor="let group of appGroups" class="group-card"
-           (dragover)="onDragOver($event)"
-           (drop)="onDrop($event, group.id)">
+      <div *ngFor="let group of appGroups" class="group-card" (dragover)="onDragOver($event)"
+        (drop)="onDrop($event, group.id)">
 
         <div class="group-card-header">
           <h4 class="group-name">{{ group.name }}</h4>
@@ -78,16 +84,14 @@
             Drop users here
           </div>
 
-          <div *ngFor="let user of getUsersInGroup(group.id)"
-               class="user-item"
-               draggable="true"
-               (dragstart)="onDragStart($event, user, group.id)"
-               (dragend)="onDragEnd()">
+          <div *ngFor="let user of getUsersInGroup(group.id)" class="user-item" draggable="true"
+            (dragstart)="onDragStart($event, user, group.id)" (dragend)="onDragEnd()">
             <div class="user-info">
               <strong>{{ user.username }}</strong>
               <span>{{ user.email }}</span>
             </div>
-            <button class="icon-btn-remove" (click)="removeUserFromGroup(user.id, group.id)" title="Remove user">✕</button>
+            <button class="icon-btn-remove" (click)="removeUserFromGroup(user.id, group.id)"
+              title="Remove user">✕</button>
           </div>
         </div>
       </div>

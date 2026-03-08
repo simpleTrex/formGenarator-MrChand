@@ -1,0 +1,114 @@
+<div class="config-container fade-in">
+    <div class="config-header">
+        <button class="back-btn" (click)="cancel()">← Back</button>
+    </div>
+
+    <h1 class="config-title">
+        {{ isEditing ? 'Edit Component' : 'Configure: ' + getPrimitiveLabel() }}
+    </h1>
+
+    <div *ngIf="loading" class="loading-state">Loading form...</div>
+    <div *ngIf="error" class="error-alert">{{ error }}</div>
+
+    <form *ngIf="!loading && !error" [formGroup]="form" (ngSubmit)="save()" class="config-form">
+
+        <!-- Component Name -->
+        <div class="form-group">
+            <label class="form-label">Component Name *</label>
+            <input class="form-input" formControlName="name" placeholder="e.g. Product Card" />
+            <span class="field-error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+                Name is required
+            </span>
+        </div>
+
+        <!-- Dynamic fields from schema -->
+        <ng-container *ngFor="let field of schema?.fields">
+            <ng-container *ngIf="field.key !== 'name'">
+
+                <!-- Model Select -->
+                <div class="form-group" *ngIf="field.fieldType === 'MODEL_SELECT'">
+                    <label class="form-label">{{ field.label }} <span *ngIf="field.required">*</span></label>
+                    <select class="form-input" [formControlName]="field.key"
+                        (change)="onModelChange(form.get(field.key)?.value)">
+                        <option value="">— Select a Model —</option>
+                        <option *ngFor="let m of models" [value]="m.id">{{ m.name }}</option>
+                    </select>
+                    <span class="field-hint" *ngIf="field.hint">{{ field.hint }}</span>
+                </div>
+
+                <!-- Field Select (single) -->
+                <div class="form-group" *ngIf="field.fieldType === 'FIELD_SELECT'">
+                    <label class="form-label">{{ field.label }} <span *ngIf="field.required">*</span></label>
+                    <select class="form-input" [formControlName]="field.key">
+                        <option value="">— Select field —</option>
+                        <option *ngFor="let f of selectedModelFields" [value]="f.key">{{ f.key }} ({{ f.type }})
+                        </option>
+                    </select>
+                    <span class="field-hint" *ngIf="field.hint && typeof field.hint === 'string'">{{ field.hint
+                        }}</span>
+                </div>
+
+                <!-- Field Multiselect (toggle pills) -->
+                <div class="form-group" *ngIf="field.fieldType === 'FIELD_MULTISELECT'">
+                    <label class="form-label">{{ field.label }} <span *ngIf="field.required">*</span></label>
+                    <div class="pill-group">
+                        <span *ngFor="let f of selectedModelFields" class="pill"
+                            [class.pill-active]="getMultiselectValues(field.key).includes(f.key)"
+                            (click)="toggleMultiselect(field.key, f.key)">{{ f.key }}</span>
+                    </div>
+                    <p class="field-hint" *ngIf="selectedModelFields.length === 0">Select a Model first.</p>
+                </div>
+
+                <!-- Enum Select -->
+                <div class="form-group" *ngIf="field.fieldType === 'ENUM_SELECT'">
+                    <label class="form-label">{{ field.label }} <span *ngIf="field.required">*</span></label>
+                    <select class="form-input" [formControlName]="field.key">
+                        <option value="">— Select —</option>
+                        <option *ngFor="let opt of field.hint?.options" [value]="opt">{{ opt }}</option>
+                    </select>
+                </div>
+
+                <!-- Page Select -->
+                <div class="form-group" *ngIf="field.fieldType === 'PAGE_SELECT'">
+                    <label class="form-label">{{ field.label }}</label>
+                    <select class="form-input" [formControlName]="field.key">
+                        <option value="">— None —</option>
+                        <option *ngFor="let p of pages" [value]="p.id">{{ p.name }}</option>
+                    </select>
+                </div>
+
+                <!-- Action Select -->
+                <div class="form-group" *ngIf="field.fieldType === 'ACTION_SELECT'">
+                    <label class="form-label">{{ field.label }}</label>
+                    <select class="form-input" [formControlName]="field.key">
+                        <option value="">None</option>
+                        <option value="OPEN_DETAIL">Open Detail View</option>
+                        <option *ngFor="let p of pages" [value]="'GO_TO:' + p.id">Go to: {{ p.name }}</option>
+                    </select>
+                </div>
+
+                <!-- Boolean (checkbox) -->
+                <div class="form-group form-group-inline" *ngIf="field.fieldType === 'BOOLEAN'">
+                    <input type="checkbox" class="form-checkbox" [formControlName]="field.key" [id]="field.key" />
+                    <label class="form-label-inline" [for]="field.key">{{ field.label }}</label>
+                </div>
+
+                <!-- Text -->
+                <div class="form-group" *ngIf="field.fieldType === 'TEXT'">
+                    <label class="form-label">{{ field.label }} <span *ngIf="field.required">*</span></label>
+                    <input class="form-input" [formControlName]="field.key"
+                        [placeholder]="(field.hint && typeof field.hint === 'string') ? field.hint : ''" />
+                </div>
+
+            </ng-container>
+        </ng-container>
+
+        <!-- Form actions -->
+        <div class="form-actions">
+            <button type="button" class="btn-cancel" (click)="cancel()">Cancel</button>
+            <button type="submit" class="btn-save" [disabled]="saving">
+                {{ saving ? 'Saving...' : (isEditing ? 'Update Component' : 'Create Component') }}
+            </button>
+        </div>
+    </form>
+</div>
