@@ -44,7 +44,7 @@ jobs:
           docker build -t adaptivebp-backend:${{ github.sha }} .
           
       - name: Run Trivy vulnerability scanner on Backend
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: 'adaptivebp-backend:${{ github.sha }}'
           format: 'table'
@@ -79,7 +79,7 @@ jobs:
           docker build -t adaptivebp-frontend:${{ github.sha }} .
           
       - name: Run Trivy vulnerability scanner on Frontend
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: 'adaptivebp-frontend:${{ github.sha }}'
           format: 'table'
