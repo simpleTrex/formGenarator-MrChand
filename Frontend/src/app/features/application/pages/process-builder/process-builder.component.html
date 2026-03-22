@@ -662,7 +662,7 @@
               <span class="node-type-badge">{{ node.type }}</span>
               <span class="node-name">{{ node.name }}</span>
               <span *ngIf="node.type === 'FORM_PAGE'" class="node-meta">
-                {{ node.config?.['elements']?.length || 0 }} field(s)
+                {{ node.config['elements']?.length || 0 }} field(s)
               </span>
             </div>
             <div class="node-actions" *ngIf="isDraft">
