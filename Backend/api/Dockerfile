@@ -18,6 +18,9 @@ RUN ./mvnw package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
+# Patch OS vulnerabilities
+RUN apk update && apk upgrade --no-cache
+
 # Run as non-root user
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
