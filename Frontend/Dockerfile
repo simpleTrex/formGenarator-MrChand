@@ -13,6 +13,9 @@ RUN npm run build -- --configuration=production
 # Stage 2: Serve via NGINX
 FROM nginx:alpine
 
+# Patch OS vulnerabilities
+RUN apk update && apk upgrade --no-cache
+
 # Remove default nginx website
 RUN rm -rf /usr/share/nginx/html/*
 
