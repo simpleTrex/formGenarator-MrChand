@@ -1,7 +1,27 @@
 import { Component, OnInit } from '@angular/core';
+
+const APP_THEMES = [
+  { id: 'midnight', label: 'Midnight',   primary: '#1a1a2e' },
+  { id: 'ocean',    label: 'Ocean',      primary: '#0c4a6e' },
+  { id: 'forest',   label: 'Forest',     primary: '#14532d' },
+  { id: 'ember',    label: 'Ember',      primary: '#7f1d1d' },
+  { id: 'violet',   label: 'Violet',     primary: '#3b0764' },
+  { id: 'steel',    label: 'Steel',      primary: '#1e293b' },
+  { id: 'rose',     label: 'Rose',       primary: '#881337' },
+  { id: 'amber',    label: 'Amber',      primary: '#78350f' },
+  { id: 'teal',     label: 'Teal',       primary: '#134e4a' },
+  { id: 'indigo',   label: 'Indigo',     primary: '#312e81' },
+  { id: 'slate',    label: 'Slate',      primary: '#0f172a' },
+  { id: 'plum',     label: 'Plum',       primary: '#4a044e' },
+  { id: 'pine',     label: 'Pine',       primary: '#052e16' },
+  { id: 'crimson',  label: 'Crimson',    primary: '#450a0a' },
+  { id: 'navy',     label: 'Navy',       primary: '#1e3a5f' },
+  { id: 'graphite', label: 'Graphite',   primary: '#374151' },
+];
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomainService } from '../../../../core/services/domain.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ProcessService } from '../../../../core/services/process.service';
 
 @Component({
   selector: 'app-app-home',
@@ -25,16 +45,25 @@ export class AppHomeComponent implements OnInit {
   draggedUser: any = null;
   draggedFromGroupId: string | null = null;
 
+  startingProcess = false;
+  startError = '';
+
   domainAccess = { permissions: [] as string[], groups: [] as string[] };
   currentUserAppGroups: any[] = [];
   appPermissions: string[] = [];
 
   mode: 'PREVIEW' | 'EDIT' | 'ACCESS' = 'PREVIEW';
 
+  // Theme pulled from localStorage (set on domain home)
+  themeColor = '#1a1a2e';
+  appThemes = APP_THEMES;
+  selectedAppThemeId = 'midnight';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private domainService: DomainService,
+    private processService: ProcessService,
     public auth: AuthService,
   ) { }
 
@@ -61,6 +90,13 @@ export class AppHomeComponent implements OnInit {
     this.domainService.getApplication(this.domainSlug, this.appSlug).subscribe({
       next: (res) => {
         this.app = res;
+        const domainTheme = localStorage.getItem(`dt-${this.domainSlug}`);
+        if (domainTheme) this.themeColor = this.resolveThemeColor(domainTheme);
+        const appTheme = localStorage.getItem(`at-${this.domainSlug}-${this.appSlug}`);
+        if (appTheme) {
+          this.selectedAppThemeId = appTheme;
+          this.themeColor = this.resolveThemeColor(appTheme);
+        }
         this.initializeAccess();
       },
       error: (err) => this.error = err?.error?.message || 'Application not found'
@@ -93,6 +129,22 @@ export class AppHomeComponent implements OnInit {
 
   goBackToDomain() {
     this.router.navigate(['/domain', this.domainSlug]);
+  }
+
+  startProcess(): void {
+    this.startingProcess = true;
+    this.startError = '';
+    this.processService.startProcess(this.domainSlug, this.appSlug).subscribe({
+      next: (res) => {
+        this.startingProcess = false;
+        const instanceId = res.instance.id;
+        this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'instances', instanceId]);
+      },
+      error: (err: any) => {
+        this.startingProcess = false;
+        this.startError = err?.error?.message || 'Failed to start process';
+      }
+    });
   }
 
   private contextMatchesDomain(): boolean {
@@ -273,6 +325,17 @@ export class AppHomeComponent implements OnInit {
     return this.appUsers.filter(user =>
       !user.appGroups || user.appGroups.length === 0
     );
+  }
+
+  selectAppTheme(id: string) {
+    this.selectedAppThemeId = id;
+    this.themeColor = this.resolveThemeColor(id);
+    localStorage.setItem(`at-${this.domainSlug}-${this.appSlug}`, id);
+  }
+
+  private resolveThemeColor(id: string): string {
+    const t = APP_THEMES.find(x => x.id === id);
+    return t ? t.primary : '#1a1a2e';
   }
 
   // Remove user from group

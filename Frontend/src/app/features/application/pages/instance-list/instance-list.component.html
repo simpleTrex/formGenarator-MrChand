@@ -1,0 +1,77 @@
+<div class="il-shell fade-in" [style.--tc]="themeColor">
+
+  <!-- Nav -->
+  <nav class="il-nav">
+    <button class="il-nav-back" (click)="goBack()">← Back</button>
+    <h1 class="il-nav-title">All Instances</h1>
+    <button class="il-refresh-btn" (click)="load()" title="Refresh">↻</button>
+  </nav>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="il-loading">
+    <div class="il-spinner"></div>
+    <span>Loading instances…</span>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="il-alert">{{ error }}</div>
+
+  <div *ngIf="!loading" class="il-body">
+
+    <!-- Stats bar -->
+    <div *ngIf="instances.length > 0" class="il-stats-bar">
+      <div class="il-stat">
+        <span class="il-stat-num">{{ instances.length }}</span>
+        <span class="il-stat-label">Total</span>
+      </div>
+      <div class="il-stat-divider"></div>
+      <div class="il-stat">
+        <span class="il-stat-num" style="color:#16a34a">{{ countByStatus('ACTIVE') }}</span>
+        <span class="il-stat-label">Active</span>
+      </div>
+      <div class="il-stat-divider"></div>
+      <div class="il-stat">
+        <span class="il-stat-num" style="color:#2563eb">{{ countByStatus('COMPLETED') }}</span>
+        <span class="il-stat-label">Completed</span>
+      </div>
+      <div class="il-stat-divider"></div>
+      <div class="il-stat">
+        <span class="il-stat-num" style="color:#94a3b8">{{ countByStatus('CANCELLED') }}</span>
+        <span class="il-stat-label">Cancelled</span>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="instances.length === 0" class="il-empty">
+      <div class="il-empty-icon">0</div>
+      <p class="il-empty-title">No instances yet</p>
+      <p class="il-empty-sub">Start a process from the app home page and it will appear here.</p>
+      <button class="il-empty-btn" (click)="goBack()">Go to App Home</button>
+    </div>
+
+    <!-- Instance cards -->
+    <div *ngIf="instances.length > 0" class="il-list">
+      <button *ngFor="let inst of instances" class="il-card" (click)="viewInstance(inst.id!)">
+
+        <div class="il-card-left">
+          <span [class]="'il-status-dot dot-' + inst.status.toLowerCase()"></span>
+        </div>
+
+        <div class="il-card-body">
+          <div class="il-card-row1">
+            <span [class]="'il-badge badge-' + inst.status.toLowerCase()">{{ inst.status }}</span>
+            <code class="il-id">{{ inst.id }}</code>
+          </div>
+          <div class="il-card-row2">
+            <span *ngIf="inst.currentNodeId" class="il-meta-chip">Step: {{ inst.currentNodeId }}</span>
+            <span class="il-meta-chip">Started: {{ formatDate(inst.startedAt) }}</span>
+            <span *ngIf="inst.completedAt" class="il-meta-chip">Done: {{ formatDate(inst.completedAt) }}</span>
+          </div>
+        </div>
+
+        <span class="il-card-arrow">→</span>
+      </button>
+    </div>
+
+  </div>
+</div>

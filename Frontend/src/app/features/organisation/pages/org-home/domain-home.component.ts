@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -8,6 +8,25 @@ import { ModernCardComponent } from '../../../../shared/components/modern-card/m
 import { ModernButtonComponent } from '../../../../shared/components/modern-button/modern-button.component';
 import { ModernInputComponent } from '../../../../shared/components/modern-input/modern-input.component';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+
+export const DOMAIN_THEMES = [
+  { id: 'midnight', name: 'Midnight', primary: '#1a1a2e', accent: '#baff29' },
+  { id: 'ocean',    name: 'Ocean',    primary: '#0c4a6e', accent: '#38bdf8' },
+  { id: 'forest',   name: 'Forest',   primary: '#14532d', accent: '#4ade80' },
+  { id: 'ember',    name: 'Ember',    primary: '#7f1d1d', accent: '#fb923c' },
+  { id: 'violet',   name: 'Violet',   primary: '#3b0764', accent: '#c084fc' },
+  { id: 'steel',    name: 'Steel',    primary: '#1e293b', accent: '#94a3b8' },
+  { id: 'rose',     name: 'Rose',     primary: '#881337', accent: '#fda4af' },
+  { id: 'amber',    name: 'Amber',    primary: '#78350f', accent: '#fcd34d' },
+  { id: 'teal',     name: 'Teal',     primary: '#134e4a', accent: '#2dd4bf' },
+  { id: 'indigo',   name: 'Indigo',   primary: '#312e81', accent: '#a5b4fc' },
+  { id: 'slate',    name: 'Slate',    primary: '#0f172a', accent: '#cbd5e1' },
+  { id: 'plum',     name: 'Plum',     primary: '#4a044e', accent: '#e879f9' },
+  { id: 'pine',     name: 'Pine',     primary: '#052e16', accent: '#86efac' },
+  { id: 'crimson',  name: 'Crimson',  primary: '#450a0a', accent: '#fca5a5' },
+  { id: 'navy',     name: 'Navy',     primary: '#1e3a5f', accent: '#93c5fd' },
+  { id: 'graphite', name: 'Graphite', primary: '#374151', accent: '#e5e7eb' },
+];
 
 @Component({
   selector: 'app-domain-home',
@@ -54,6 +73,30 @@ export class DomainHomeComponent implements OnInit {
 
   showLogoutConfirm = false;
 
+  // ── Theme ─────────────────────────────────────────────────────────────────
+  readonly domainThemes = DOMAIN_THEMES;
+  selectedThemeId = 'midnight';
+  activeAuthTab: 'login' | 'register' = 'login';
+
+  get currentTheme() {
+    return DOMAIN_THEMES.find(t => t.id === this.selectedThemeId) ?? DOMAIN_THEMES[0];
+  }
+
+  get heroBg(): string {
+    const p = this.currentTheme.primary;
+    return `linear-gradient(135deg, ${p} 0%, ${p}dd 100%)`;
+  }
+
+  selectTheme(id: string): void {
+    this.selectedThemeId = id;
+    localStorage.setItem(`dt-${this.slug}`, id);
+  }
+
+  private loadTheme(): void {
+    const saved = localStorage.getItem(`dt-${this.slug}`);
+    if (saved && DOMAIN_THEMES.find(t => t.id === saved)) this.selectedThemeId = saved;
+  }
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -98,6 +141,7 @@ export class DomainHomeComponent implements OnInit {
           this.domain = res;
           this.mode = 'PREVIEW';
           this.showCreateAppForm = false;
+          this.loadTheme();
           this.initializeAccess();
         },
         error: (err) => this.error = err?.error?.message || 'Domain not found or access denied'

@@ -1,0 +1,864 @@
+<div class="app-container fade-in">
+
+  <!-- Header -->
+  <div class="page-actions">
+    <button class="back-btn" (click)="goBack()">← Back to App</button>
+    <h2 class="section-title">
+      Application Process
+      <span *ngIf="processStatus"
+        [class]="'status-badge badge-' + processStatus.toLowerCase()"
+        style="font-size:0.7rem;margin-left:0.75rem;vertical-align:middle;">{{ processStatus }}</span>
+    </h2>
+    <button class="guide-btn" (click)="showGuide = true; guideSection = 'overview'">
+      Workflow Guide
+    </button>
+  </div>
+
+  <!-- ── WORKFLOW GUIDE MODAL ─────────────────────────────────────────────── -->
+  <div class="guide-overlay" *ngIf="showGuide" (click)="showGuide = false">
+    <div class="guide-modal" (click)="$event.stopPropagation()">
+
+      <!-- Modal header -->
+      <div class="guide-header">
+        <div>
+          <h3 class="guide-title">Workflow Builder Guide</h3>
+          <p class="guide-subtitle">Everything you need to build a process from scratch</p>
+        </div>
+        <button class="guide-close" (click)="showGuide = false">×</button>
+      </div>
+
+      <!-- Sidebar + content layout -->
+      <div class="guide-body">
+
+        <!-- Sidebar nav -->
+        <nav class="guide-nav">
+          <button [class.active]="guideSection === 'overview'"   (click)="guideSection = 'overview'">Overview</button>
+          <button [class.active]="guideSection === 'nodes'"      (click)="guideSection = 'nodes'">Node Types</button>
+          <button [class.active]="guideSection === 'edges'"      (click)="guideSection = 'edges'">Edges &amp; Flow</button>
+          <button [class.active]="guideSection === 'conditions'" (click)="guideSection = 'conditions'">Conditions</button>
+          <button [class.active]="guideSection === 'tips'"       (click)="guideSection = 'tips'">Tips &amp; Rules</button>
+        </nav>
+
+        <!-- Content area -->
+        <div class="guide-content">
+
+          <!-- ── OVERVIEW ── -->
+          <div *ngIf="guideSection === 'overview'">
+            <h4 class="gc-heading">How a Workflow Works</h4>
+            <p class="gc-text">A workflow is a sequence of <strong>nodes</strong> connected by <strong>edges</strong>. When a user starts the process, it advances through each node in order, pausing at interactive steps until the user acts.</p>
+
+            <div class="gc-flow-diagram">
+              <div class="gc-flow-step start">START</div>
+              <div class="gc-flow-arrow">→</div>
+              <div class="gc-flow-step form">FORM PAGE</div>
+              <div class="gc-flow-arrow">→</div>
+              <div class="gc-flow-step action">DATA ACTION</div>
+              <div class="gc-flow-arrow">→</div>
+              <div class="gc-flow-step approval">APPROVAL</div>
+              <div class="gc-flow-arrow">→</div>
+              <div class="gc-flow-step end">END</div>
+            </div>
+
+            <h4 class="gc-heading mt">Step-by-step to build a workflow</h4>
+            <ol class="gc-list">
+              <li>Go to the <strong>Nodes</strong> tab — add a <code>START</code> node first.</li>
+              <li>Add your interactive nodes: <code>FORM_PAGE</code>, <code>APPROVAL</code>, <code>DATA_VIEW</code>.</li>
+              <li>Add automatic nodes: <code>DATA_ACTION</code>, <code>CONDITION</code>, <code>NOTIFICATION</code>.</li>
+              <li>Finish with an <code>END</code> node.</li>
+              <li>Go to the <strong>Edges</strong> tab — connect every node in order.</li>
+              <li>Go to <strong>Settings</strong> — configure auth and draft options.</li>
+              <li>Click <strong>Save Draft</strong> to save, then <strong>Publish</strong> to make it live.</li>
+            </ol>
+
+            <div class="gc-callout">
+              Every process must have exactly one <strong>START</strong> and one <strong>END</strong> node. All other nodes must be reachable from START via edges.
+            </div>
+          </div>
+
+          <!-- ── NODES ── -->
+          <div *ngIf="guideSection === 'nodes'">
+            <h4 class="gc-heading">Node Types</h4>
+            <p class="gc-text">Each node type has a specific role. Choose the right type for each step in your workflow.</p>
+
+            <div class="gc-node-card start-c">
+              <div class="gc-node-label">START</div>
+              <p>The entry point. Every workflow begins here. <strong>Add exactly one.</strong> No configuration needed — the engine auto-advances past it.</p>
+            </div>
+
+            <div class="gc-node-card end-c">
+              <div class="gc-node-label">END</div>
+              <p>The exit point. When the process reaches END, the instance is marked <em>Completed</em>. <strong>Add exactly one.</strong></p>
+            </div>
+
+            <div class="gc-node-card form-c">
+              <div class="gc-node-label">FORM_PAGE</div>
+              <p>Shows a form to the user. The process pauses here until the user fills and submits it. You configure:</p>
+              <ul class="gc-bullet">
+                <li><strong>Elements</strong> — input fields (text, number, date, select, radio, checkbox, etc.)</li>
+                <li><strong>Submit label</strong> — text on the submit button (default: Submit)</li>
+                <li><strong>Visibility rules</strong> — show/hide a field based on another field's value</li>
+                <li><strong>Required</strong> — mark fields as mandatory</li>
+              </ul>
+              <p class="gc-note">Data collected here is referenced in later nodes as <code>nodeId__fieldId</code>.</p>
+            </div>
+
+            <div class="gc-node-card approval-c">
+              <div class="gc-node-label">APPROVAL</div>
+              <p>Presents collected process data to an approver who must take an action. Configure:</p>
+              <ul class="gc-bullet">
+                <li><strong>Actions</strong> — e.g. Approve / Reject (you define the labels and IDs)</li>
+                <li><strong>Comment</strong> — approver can optionally leave a note</li>
+              </ul>
+              <p class="gc-note">Connect different edges for each action using a CONDITION node or edge conditions after this node.</p>
+            </div>
+
+            <div class="gc-node-card action-c">
+              <div class="gc-node-label">DATA_ACTION</div>
+              <p>Runs automatically — no user interaction. Writes data to a linked model. Configure:</p>
+              <ul class="gc-bullet">
+                <li><strong>Model</strong> — which data model to write to</li>
+                <li><strong>Operation</strong> — CREATE, UPDATE, or DELETE</li>
+                <li><strong>Field mappings</strong> — map model fields from form data (<code>FORM_FIELD</code>) or a fixed value (<code>STATIC_VALUE</code>). Use the dropdown to pick fields collected in ancestor FORM_PAGE nodes.</li>
+              </ul>
+            </div>
+
+            <div class="gc-node-card view-c">
+              <div class="gc-node-label">DATA_VIEW</div>
+              <p>Shows records from a linked model to the user (read-only table). The process pauses until the user clicks Continue. Configure:</p>
+              <ul class="gc-bullet">
+                <li><strong>Model</strong> — which model to query</li>
+                <li><strong>Filter field</strong> — optionally filter rows by a form field value</li>
+              </ul>
+            </div>
+
+            <div class="gc-node-card condition-c">
+              <div class="gc-node-label">CONDITION</div>
+              <p>Runs automatically. Evaluates one or more rules and routes to different edges. Configure:</p>
+              <ul class="gc-bullet">
+                <li><strong>Rules</strong> — each rule has a field, an operator, a value, and a target edge ID</li>
+                <li>The first matching rule wins. If none match, the default (no-label) edge is used.</li>
+              </ul>
+            </div>
+
+            <div class="gc-node-card notif-c">
+              <div class="gc-node-label">NOTIFICATION</div>
+              <p>Sends an email/notification automatically. Configure:</p>
+              <ul class="gc-bullet">
+                <li><strong>Recipient</strong> — email address or a form field reference</li>
+                <li><strong>Subject &amp; Body</strong> — message content</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- ── EDGES ── -->
+          <div *ngIf="guideSection === 'edges'">
+            <h4 class="gc-heading">Edges — Connecting Nodes</h4>
+            <p class="gc-text">An edge is a directed connection from one node to another. The workflow follows edges to determine what happens next.</p>
+
+            <h5 class="gc-sub">How to add an edge</h5>
+            <ol class="gc-list">
+              <li>Go to the <strong>Edges</strong> tab.</li>
+              <li>Click <strong>Add Edge</strong>.</li>
+              <li>Set <strong>From Node</strong> — where the edge starts.</li>
+              <li>Set <strong>To Node</strong> — where the edge leads.</li>
+              <li>Optionally set a <strong>Label</strong> (e.g. "approved", "rejected") — used by CONDITION nodes to route to the right edge.</li>
+              <li>Optionally set a <strong>Condition</strong> — a simple field/operator/value check. If this edge has a condition, it only activates when the condition is true.</li>
+            </ol>
+
+            <h5 class="gc-sub">Rules for edges</h5>
+            <ul class="gc-bullet">
+              <li>Every node except END must have at least one outgoing edge.</li>
+              <li>Every node except START must have at least one incoming edge.</li>
+              <li>CONDITION nodes need one edge per rule — each edge has a different label matching the rule's target edge ID.</li>
+              <li>APPROVAL nodes typically have one edge per action (approve/reject).</li>
+              <li>A node with multiple outgoing edges should use a CONDITION node to decide which path to follow.</li>
+            </ul>
+
+            <div class="gc-callout">
+              The <strong>Flow Preview</strong> tab shows a visual diagram of all nodes and edges. Nodes with a red border are not reachable from START — add edges to connect them.
+            </div>
+
+            <h5 class="gc-sub">Edge label vs edge condition</h5>
+            <table class="gc-table">
+              <thead><tr><th>Property</th><th>Purpose</th><th>When to use</th></tr></thead>
+              <tbody>
+                <tr><td>Label</td><td>Named route that a CONDITION node targets by ID</td><td>When using a CONDITION node to split paths</td></tr>
+                <tr><td>Condition</td><td>Field/operator/value check evaluated at runtime</td><td>When you want a direct rule on the edge itself without a CONDITION node</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ── CONDITIONS ── -->
+          <div *ngIf="guideSection === 'conditions'">
+            <h4 class="gc-heading">Conditions &amp; Branching</h4>
+            <p class="gc-text">Conditions let your workflow take different paths depending on data collected from forms or approval actions.</p>
+
+            <h5 class="gc-sub">Method 1 — CONDITION Node</h5>
+            <p class="gc-text">Add a <code>CONDITION</code> node after an APPROVAL or FORM_PAGE. In its config add one rule per possible path:</p>
+            <div class="gc-example">
+              <div class="gc-ex-row"><span class="gc-ex-label">Field</span><span class="gc-ex-val">approval_action</span></div>
+              <div class="gc-ex-row"><span class="gc-ex-label">Operator</span><span class="gc-ex-val">EQUALS</span></div>
+              <div class="gc-ex-row"><span class="gc-ex-label">Value</span><span class="gc-ex-val">approve</span></div>
+              <div class="gc-ex-row"><span class="gc-ex-label">Target Edge</span><span class="gc-ex-val">approved-path (the label of the edge that leads to the next step)</span></div>
+            </div>
+            <p class="gc-note">Connect the CONDITION node to two different nodes with two edges — one labeled "approved-path", one labeled "rejected-path". The engine routes to the matching edge.</p>
+
+            <h5 class="gc-sub">Method 2 — Edge Condition (direct)</h5>
+            <p class="gc-text">On any edge you can set an inline condition. The engine will only follow that edge if the condition is true. If multiple edges have conditions, the first matching one wins.</p>
+
+            <h5 class="gc-sub">Operators reference</h5>
+            <table class="gc-table">
+              <thead><tr><th>Operator</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td>EQUALS</td><td>Field value exactly matches the given value</td></tr>
+                <tr><td>NOT_EQUALS</td><td>Field value does not match</td></tr>
+                <tr><td>GREATER_THAN</td><td>Numeric field is greater than value</td></tr>
+                <tr><td>LESS_THAN</td><td>Numeric field is less than value</td></tr>
+                <tr><td>CONTAINS</td><td>Text field contains the value as a substring</td></tr>
+                <tr><td>IS_EMPTY</td><td>Field has no value</td></tr>
+                <tr><td>IS_NOT_EMPTY</td><td>Field has any value</td></tr>
+              </tbody>
+            </table>
+
+            <h5 class="gc-sub">Field reference format</h5>
+            <p class="gc-text">When referencing a field collected in a FORM_PAGE, use the format:</p>
+            <div class="gc-code-block">nodeId__fieldId</div>
+            <p class="gc-note">In DATA_ACTION field mappings, use the dropdown to select from available ancestor fields — the system builds this reference automatically.</p>
+
+            <h5 class="gc-sub">Example — Approval branching</h5>
+            <div class="gc-flow-diagram small">
+              <div class="gc-flow-step form">FORM_PAGE</div>
+              <div class="gc-flow-arrow">→</div>
+              <div class="gc-flow-step approval">APPROVAL</div>
+              <div class="gc-flow-arrow">→</div>
+              <div class="gc-flow-step condition-s">CONDITION</div>
+              <div class="gc-flow-arrow">→</div>
+              <div class="gc-flow-step action">DATA_ACTION<br><small>(if approved)</small></div>
+            </div>
+          </div>
+
+          <!-- ── TIPS ── -->
+          <div *ngIf="guideSection === 'tips'">
+            <h4 class="gc-heading">Tips, Rules &amp; Common Mistakes</h4>
+
+            <h5 class="gc-sub">Required rules</h5>
+            <ul class="gc-bullet">
+              <li>Exactly <strong>one START</strong> and one <strong>END</strong> node per process.</li>
+              <li>All nodes must be reachable from START — check the <strong>Flow Preview</strong> tab for red-bordered disconnected nodes.</li>
+              <li>Every node must have at least one <strong>outgoing edge</strong> (except END).</li>
+              <li>A process must be in <strong>DRAFT</strong> status to edit. Publish to make it live.</li>
+              <li>Once published, the process is <strong>locked</strong>. Archive it first, then create a new draft to modify.</li>
+            </ul>
+
+            <h5 class="gc-sub">DATA_ACTION tips</h5>
+            <ul class="gc-bullet">
+              <li>Link at least one model before building DATA_ACTION nodes — go to <strong>Linked Models</strong> at the top.</li>
+              <li>For <code>FORM_FIELD</code> source: use the dropdown — it shows fields from ancestor FORM_PAGE nodes only. Fields from nodes that aren't predecessors in the flow won't appear.</li>
+              <li>For <code>STATIC_VALUE</code> source: type a fixed value (e.g. "pending", "true", "42").</li>
+              <li>Unmapped model fields will be stored as null.</li>
+            </ul>
+
+            <h5 class="gc-sub">Form element tips</h5>
+            <ul class="gc-bullet">
+              <li>Give every element a <strong>unique ID</strong> — it is used as the reference key in conditions and DATA_ACTION mappings.</li>
+              <li>Use <strong>Visibility Rules</strong> to create conditional form fields — e.g. show an "Other" text input only when the user selects "Other" from a dropdown.</li>
+              <li>Import fields from a linked model to auto-generate a form matching your data schema.</li>
+            </ul>
+
+            <h5 class="gc-sub">Common mistakes</h5>
+            <table class="gc-table">
+              <thead><tr><th>Mistake</th><th>Fix</th></tr></thead>
+              <tbody>
+                <tr><td>Process won't publish — validation errors</td><td>Check that START and END exist, all nodes have edges, and required configs are set</td></tr>
+                <tr><td>DATA_VIEW shows — (dashes)</td><td>The DATA_ACTION that saves records ran with empty field mappings. Reconfigure mappings and re-run the process</td></tr>
+                <tr><td>CONDITION node doesn't route correctly</td><td>Make sure the Target Edge ID in the rule exactly matches the Label on the outgoing edge</td></tr>
+                <tr><td>Form field not showing in DATA_ACTION dropdown</td><td>The FORM_PAGE node is not a predecessor — check edges so it comes before the DATA_ACTION in the flow</td></tr>
+                <tr><td>Process stuck / PAUSED status</td><td>An automatic node failed. Check that all linked models exist and field types match</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div><!-- /guide-content -->
+      </div><!-- /guide-body -->
+
+    </div><!-- /guide-modal -->
+  </div><!-- /guide-overlay -->
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Loading process...</p>
+  </div>
+
+  <div *ngIf="!loading">
+
+    <!-- Alerts -->
+    <div *ngIf="error" class="error-alert">{{ error }}</div>
+    <div *ngIf="successMsg" class="success-alert">{{ successMsg }}</div>
+    <div *ngIf="validationErrors.length > 0" class="error-alert">
+      <strong>Validation issues:</strong>
+      <ul class="error-list">
+        <li *ngFor="let e of validationErrors">{{ e }}</li>
+      </ul>
+    </div>
+
+    <!-- ── Basic Info ── -->
+    <app-modern-card theme="light" class="mt-4">
+      <h3 class="card-heading">Basic Info</h3>
+      <div class="form-row mt-3">
+        <div class="form-group flex-2">
+          <label class="form-label">Process Name <span class="required">*</span></label>
+          <input class="form-input" type="text" placeholder="e.g. Stock Intake Process" [(ngModel)]="name" [disabled]="isPublished" />
+        </div>
+        <div class="form-group flex-3">
+          <label class="form-label">Description</label>
+          <input class="form-input" type="text" placeholder="What does this process do?" [(ngModel)]="description" [disabled]="isPublished" />
+        </div>
+      </div>
+    </app-modern-card>
+
+    <!-- ── Linked Models ── -->
+    <app-modern-card theme="light" class="mt-3">
+      <h3 class="card-heading">Linked Models</h3>
+      <p class="info-text">Select the domain models this process can read from or write to.</p>
+
+      <div *ngIf="modelsLoading" class="loading-state">
+        <div class="spinner-border text-primary" role="status" style="width:1.25rem;height:1.25rem;"></div>
+        <span>Loading models...</span>
+      </div>
+
+      <div *ngIf="!modelsLoading && availableModels.length === 0" class="empty-hint">
+        No models found for this app. Create models in the Models section first.
+      </div>
+
+      <div *ngIf="!modelsLoading && availableModels.length > 0" class="model-picker-grid">
+        <div *ngFor="let m of availableModels"
+             class="model-picker-card"
+             [class.selected]="isModelLinked(m.id)"
+             (click)="isPublished ? null : toggleModel(m.id)">
+          <div class="model-picker-check">
+            <span *ngIf="isModelLinked(m.id)" class="check-icon">✓</span>
+          </div>
+          <div class="model-picker-info">
+            <strong>{{ m.name }}</strong>
+            <span class="model-slug">{{ m.slug }}</span>
+            <span class="model-fields-count">{{ m.fields?.length || 0 }} field(s)</span>
+          </div>
+          <div class="model-picker-scope">
+            <span class="scope-badge" *ngIf="m.sharedWithAllApps">All Apps</span>
+            <span class="scope-badge scope-app" *ngIf="!m.sharedWithAllApps">This App</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="linkedModelIds.length > 0" class="linked-summary mt-2">
+        <span class="linked-label">Linked:</span>
+        <span *ngFor="let lm of getLinkedModels()" class="tag">{{ lm.name }}</span>
+      </div>
+    </app-modern-card>
+
+    <!-- ── Tabs ── -->
+    <div class="tab-bar mt-4">
+      <button class="tab-btn" [class.active]="activeTab === 'nodes'" (click)="setTab('nodes')">
+        Nodes ({{ nodes.length }})
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'edges'" (click)="setTab('edges')">
+        Edges ({{ edges.length }})
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'settings'" (click)="setTab('settings')">
+        Settings
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'flow'" (click)="setTab('flow')">
+        Flow Preview
+      </button>
+    </div>
+
+    <!-- ══════════════ NODES TAB ══════════════ -->
+    <div *ngIf="activeTab === 'nodes'">
+      <app-modern-card theme="light" class="mt-2">
+        <div class="section-header">
+          <h3>Nodes</h3>
+          <app-modern-button *ngIf="isDraft" variant="outline" size="sm" (click)="openAddNode()">+ Add Node</app-modern-button>
+        </div>
+        <p class="info-text">Each node is a step in the process. START and END nodes are required.</p>
+
+        <!-- ── Node form ── -->
+        <div *ngIf="showNodeForm" class="node-editor mt-3">
+          <h4>{{ editingNodeIndex >= 0 ? 'Edit Node' : 'New Node' }}</h4>
+
+          <!-- ID / Type / Name row -->
+          <div class="form-row mt-2">
+            <div class="form-group">
+              <label class="form-label">Node ID <span class="required">*</span></label>
+              <input class="form-input mono" type="text" placeholder="e.g. node_form" [(ngModel)]="nodeForm.id" [disabled]="editingNodeIndex >= 0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Type <span class="required">*</span></label>
+              <select class="form-input" [(ngModel)]="nodeForm.type" (change)="onNodeTypeChange()">
+                <option *ngFor="let t of nodeTypeOptions" [value]="t.value">{{ t.label }}</option>
+              </select>
+            </div>
+            <div class="form-group flex-2">
+              <label class="form-label">Name <span class="required">*</span></label>
+              <input class="form-input" type="text" placeholder="e.g. Enter Stock Details" [(ngModel)]="nodeForm.name" />
+            </div>
+          </div>
+
+          <!-- ═══════════ FORM_PAGE config ═══════════ -->
+          <div *ngIf="nodeForm.type === 'FORM_PAGE'" class="config-panel mt-3">
+            <div class="config-panel-header">
+              <span class="config-panel-title">Form Builder</span>
+              <div class="config-panel-actions">
+                <!-- Import from model -->
+                <div class="import-row" *ngIf="getLinkedModels().length > 0">
+                  <select class="form-input-sm" [(ngModel)]="importModelId">
+                    <option value="">Import from model...</option>
+                    <option *ngFor="let m of getLinkedModels()" [value]="m.id">{{ m.name }}</option>
+                  </select>
+                  <button class="btn-sm-outline" (click)="importFromModel(importModelId)" [disabled]="!importModelId">Import Fields</button>
+                </div>
+                <app-modern-button variant="outline" size="sm" (click)="openAddElement()">+ Add Field</app-modern-button>
+              </div>
+            </div>
+
+            <!-- Element list -->
+            <div class="element-list mt-2" *ngIf="formElements.length > 0">
+              <div *ngFor="let el of formElements; let i = index"
+                   class="element-row"
+                   [class.editing]="showElementForm && editingElementIndex === i">
+                <div class="element-move">
+                  <button class="move-btn" (click)="moveElement(i, -1)" [disabled]="i === 0">↑</button>
+                  <button class="move-btn" (click)="moveElement(i, 1)" [disabled]="i === formElements.length - 1">↓</button>
+                </div>
+                <div class="element-info">
+                  <span class="element-id mono">{{ el.id }}</span>
+                  <span class="type-chip">{{ el.type }}</span>
+                  <span class="element-label">{{ el.label }}</span>
+                  <span *ngIf="el.validation?.['required']" class="req-chip">required</span>
+                </div>
+                <div class="element-actions">
+                  <button class="icon-btn" (click)="openEditElement(i)">✏️</button>
+                  <button class="icon-btn danger" (click)="removeElement(i)">🗑</button>
+                </div>
+              </div>
+            </div>
+            <p *ngIf="formElements.length === 0" class="info-text mt-1">No fields yet. Add a field or import from a linked model.</p>
+
+            <!-- Element sub-form -->
+            <div *ngIf="showElementForm" class="element-form mt-3">
+              <h5>{{ editingElementIndex >= 0 ? 'Edit Field' : 'New Field' }}</h5>
+              <div class="form-row mt-2">
+                <div class="form-group">
+                  <label class="form-label">Field ID <span class="required">*</span></label>
+                  <input class="form-input mono" type="text" placeholder="e.g. itemName" [(ngModel)]="elementForm.id" [disabled]="editingElementIndex >= 0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Type</label>
+                  <select class="form-input" [(ngModel)]="elementForm.type">
+                    <option *ngFor="let t of formElementTypes" [value]="t.value">{{ t.label }}</option>
+                  </select>
+                </div>
+                <div class="form-group flex-2">
+                  <label class="form-label">Label <span class="required">*</span></label>
+                  <input class="form-input" type="text" placeholder="e.g. Item Name" [(ngModel)]="elementForm.label" />
+                </div>
+              </div>
+
+              <!-- Validation -->
+              <div class="form-row mt-2">
+                <div class="form-group checkbox-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="elementForm.validation['required']" /> Required
+                  </label>
+                </div>
+                <div class="form-group" *ngIf="hasMinMax(elementForm.type)">
+                  <label class="form-label">Min</label>
+                  <input class="form-input" type="number" [(ngModel)]="elementForm.validation['min']" />
+                </div>
+                <div class="form-group" *ngIf="hasMinMax(elementForm.type)">
+                  <label class="form-label">Max</label>
+                  <input class="form-input" type="number" [(ngModel)]="elementForm.validation['max']" />
+                </div>
+                <div class="form-group flex-2" *ngIf="hasPlaceholder(elementForm.type)">
+                  <label class="form-label">Placeholder</label>
+                  <input class="form-input" type="text" placeholder="Hint text for user" [(ngModel)]="elementForm.config['placeholder']" />
+                </div>
+              </div>
+
+              <!-- Select/Radio options -->
+              <div *ngIf="hasOptions(elementForm.type)" class="options-section mt-2">
+                <label class="form-label">Options</label>
+                <div class="option-list" *ngIf="(elementForm.config.options || []).length > 0">
+                  <div *ngFor="let opt of elementForm.config.options; let oi = index" class="option-row">
+                    <span class="mono option-val">{{ opt.value }}</span>
+                    <span class="option-sep">→</span>
+                    <span class="option-label">{{ opt.label }}</span>
+                    <button class="icon-btn-xs danger" (click)="removeSelectOption(oi)">×</button>
+                  </div>
+                </div>
+                <div class="add-option-row mt-1">
+                  <input class="form-input-sm" type="text" placeholder="value" [(ngModel)]="newSelectOption.value" />
+                  <input class="form-input-sm" type="text" placeholder="label (display)" [(ngModel)]="newSelectOption.label" />
+                  <button class="btn-sm-outline" (click)="addSelectOption()">Add Option</button>
+                </div>
+              </div>
+
+              <div class="form-actions mt-2">
+                <app-modern-button variant="primary" size="sm" (click)="saveElement()">Save Field</app-modern-button>
+                <app-modern-button variant="outline" size="sm" (click)="cancelElementForm()">Cancel</app-modern-button>
+              </div>
+            </div>
+
+            <!-- Submit label -->
+            <div class="form-group mt-3">
+              <label class="form-label">Submit Button Label</label>
+              <input class="form-input" style="max-width:260px;" type="text" placeholder="e.g. Submit for Review" [(ngModel)]="formSubmitLabel" />
+            </div>
+          </div>
+
+          <!-- ═══════════ DATA_ACTION config ═══════════ -->
+          <div *ngIf="nodeForm.type === 'DATA_ACTION'" class="config-panel mt-3">
+            <span class="config-panel-title">Data Action Config</span>
+            <div class="form-row mt-3">
+              <div class="form-group">
+                <label class="form-label">Operation</label>
+                <select class="form-input" [(ngModel)]="daOperation">
+                  <option value="CREATE">Create Record</option>
+                  <option value="UPDATE">Update Record</option>
+                  <option value="DELETE">Delete Record</option>
+                </select>
+              </div>
+              <div class="form-group flex-2">
+                <label class="form-label">Target Model</label>
+                <select class="form-input" [(ngModel)]="daModelId" (change)="onDaModelChange()">
+                  <option value="">— select a linked model —</option>
+                  <option *ngFor="let m of getLinkedModels()" [value]="m.id">{{ m.name }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div *ngIf="daMappings.length > 0" class="mappings-table mt-3">
+              <div class="mapping-header">
+                <span>Model Field</span>
+                <span>Source</span>
+                <span>Value / Reference</span>
+              </div>
+              <div *ngFor="let map of daMappings; let mi = index" class="mapping-row">
+                <span class="mono">{{ map.targetField }}</span>
+                <select class="form-input-sm" [(ngModel)]="map.source">
+                  <option value="FORM_FIELD">Form Field</option>
+                  <option value="STATIC_VALUE">Static Value</option>
+                </select>
+                <!-- FORM_FIELD: dropdown from ancestor FORM_PAGEs -->
+                <ng-container *ngIf="map.source === 'FORM_FIELD'">
+                  <select *ngIf="ancestorFieldRefs.length > 0" class="form-input-sm" [(ngModel)]="map.value">
+                    <option value="">— select field —</option>
+                    <option *ngFor="let r of ancestorFieldRefs" [value]="r.ref">{{ r.label }}</option>
+                  </select>
+                  <span *ngIf="ancestorFieldRefs.length === 0" class="info-hint">
+                    No ancestor form fields — connect this node via edges first.
+                  </span>
+                </ng-container>
+                <!-- STATIC_VALUE: free-text input -->
+                <input *ngIf="map.source === 'STATIC_VALUE'" class="form-input-sm" type="text"
+                  placeholder="e.g. pending" [(ngModel)]="map.value" />
+              </div>
+            </div>
+            <p *ngIf="!daModelId" class="info-text mt-2">Select a linked model above to configure field mappings.</p>
+          </div>
+
+          <!-- ═══════════ DATA_VIEW config ═══════════ -->
+          <div *ngIf="nodeForm.type === 'DATA_VIEW'" class="config-panel mt-3">
+            <span class="config-panel-title">Data View Config</span>
+            <div class="form-group mt-3">
+              <label class="form-label">Model to Display</label>
+              <select class="form-input" style="max-width:320px;" [(ngModel)]="dvModelId">
+                <option value="">— select a linked model —</option>
+                <option *ngFor="let m of getLinkedModels()" [value]="m.id">{{ m.name }}</option>
+              </select>
+            </div>
+            <div *ngIf="dvModelId" class="mt-2">
+              <label class="form-label">Fields to Display</label>
+              <div class="field-checkbox-grid mt-1">
+                <label *ngFor="let f of getModelFields(dvModelId)" class="checkbox-label">
+                  <input type="checkbox" [checked]="isDvFieldSelected(f.key)" (change)="toggleDvField(f.key)" />
+                  {{ f.key }} <span class="type-chip-xs">{{ f.type }}</span>
+                </label>
+              </div>
+            </div>
+            <p *ngIf="!dvModelId" class="info-text mt-2">Select a linked model to pick display fields.</p>
+          </div>
+
+          <!-- ═══════════ CONDITION config ═══════════ -->
+          <div *ngIf="nodeForm.type === 'CONDITION'" class="config-panel mt-3">
+            <div class="config-panel-header">
+              <span class="config-panel-title">Condition Rules</span>
+              <app-modern-button variant="outline" size="sm" (click)="addConditionRule()">+ Add Rule</app-modern-button>
+            </div>
+
+            <div *ngFor="let rule of conditionRules; let ri = index" class="condition-rule-card mt-2">
+              <div class="rule-header">
+                <span class="rule-label">Rule {{ ri + 1 }}</span>
+                <button class="icon-btn-xs danger" (click)="removeConditionRule(ri)">Remove Rule</button>
+              </div>
+              <div *ngFor="let cond of rule.conditions; let ci = index" class="condition-row mt-1">
+                <select *ngIf="ancestorFieldRefs.length > 0" class="form-input-sm flex-2" [(ngModel)]="cond.field">
+                  <option value="">— field —</option>
+                  <option *ngFor="let r of ancestorFieldRefs" [value]="r.ref">{{ r.label }}</option>
+                </select>
+                <input *ngIf="ancestorFieldRefs.length === 0" class="form-input-sm flex-2" type="text" placeholder="field ref (e.g. node_form__status)" [(ngModel)]="cond.field" />
+                <select class="form-input-sm" [(ngModel)]="cond.operator">
+                  <option *ngFor="let op of conditionOperators" [value]="op">{{ op }}</option>
+                </select>
+                <input class="form-input-sm flex-2" type="text" placeholder="value" [(ngModel)]="cond.value" />
+                <button class="icon-btn-xs danger" (click)="removeConditionRow(ri, ci)">×</button>
+              </div>
+              <button class="btn-sm-outline mt-1" (click)="addConditionRow(ri)">+ And</button>
+              <div class="form-group mt-2">
+                <label class="form-label">→ Go to Edge ID if matched</label>
+                <select class="form-input-sm" [(ngModel)]="rule.targetEdgeId">
+                  <option value="">— select edge —</option>
+                  <option *ngFor="let e of edges" [value]="e.id">{{ e.id }} ({{ e.label || e.fromNodeId + '→' + e.toNodeId }})</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group mt-3">
+              <label class="form-label">Default Edge (if no rule matches)</label>
+              <select class="form-input" style="max-width:320px;" [(ngModel)]="conditionDefaultEdge">
+                <option value="">— select edge —</option>
+                <option *ngFor="let e of edges" [value]="e.id">{{ e.id }} ({{ e.label || e.fromNodeId + '→' + e.toNodeId }})</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ═══════════ APPROVAL config ═══════════ -->
+          <div *ngIf="nodeForm.type === 'APPROVAL'" class="config-panel mt-3">
+            <div class="config-panel-header">
+              <span class="config-panel-title">Approval Actions</span>
+              <app-modern-button variant="outline" size="sm" (click)="addApprovalAction()">+ Add Action</app-modern-button>
+            </div>
+            <p class="info-text">Define what buttons the approver sees (e.g. Approve / Reject).</p>
+            <div *ngFor="let action of approvalActions; let ai = index" class="approval-action-row mt-2">
+              <input class="form-input-sm mono" type="text" placeholder="id (e.g. approve)" [(ngModel)]="action.id" />
+              <input class="form-input-sm flex-2" type="text" placeholder="label (e.g. Approve)" [(ngModel)]="action.label" />
+              <button class="icon-btn-xs danger" (click)="removeApprovalAction(ai)">×</button>
+            </div>
+            <p *ngIf="approvalActions.length === 0" class="info-text mt-1">No actions yet. Add at least two (approve + reject).</p>
+          </div>
+
+          <!-- Save / Cancel node -->
+          <div class="form-actions mt-3">
+            <app-modern-button variant="primary" size="sm" (click)="saveNode()">Save Node</app-modern-button>
+            <app-modern-button variant="outline" size="sm" (click)="cancelNodeForm()">Cancel</app-modern-button>
+          </div>
+        </div>
+
+        <!-- Node list -->
+        <div class="node-list mt-3" *ngIf="nodes.length > 0">
+          <div *ngFor="let node of nodes; let i = index" class="node-row">
+            <div class="node-info">
+              <span class="node-id mono">{{ node.id }}</span>
+              <span class="node-type-badge">{{ node.type }}</span>
+              <span class="node-name">{{ node.name }}</span>
+              <span *ngIf="node.type === 'FORM_PAGE'" class="node-meta">
+                {{ node.config?.['elements']?.length || 0 }} field(s)
+              </span>
+            </div>
+            <div class="node-actions" *ngIf="isDraft">
+              <button class="icon-btn" title="Edit" (click)="openEditNode(i)">✏️</button>
+              <button class="icon-btn danger" title="Remove"
+                [disabled]="node.type === 'START' || node.type === 'END'"
+                (click)="removeNode(i)">🗑</button>
+            </div>
+          </div>
+        </div>
+        <p *ngIf="nodes.length === 0" class="info-text mt-2">No nodes yet.</p>
+      </app-modern-card>
+    </div>
+
+    <!-- ══════════════ EDGES TAB ══════════════ -->
+    <div *ngIf="activeTab === 'edges'">
+      <app-modern-card theme="light" class="mt-2">
+        <div class="section-header">
+          <h3>Edges</h3>
+          <app-modern-button *ngIf="isDraft" variant="outline" size="sm" (click)="openAddEdge()">+ Add Edge</app-modern-button>
+        </div>
+        <p class="info-text">Edges connect nodes — each arrow between steps is one edge.</p>
+
+        <!-- Edge form -->
+        <div *ngIf="showEdgeForm" class="inline-form mt-3">
+          <h4>{{ editingEdgeIndex >= 0 ? 'Edit Edge' : 'New Edge' }}</h4>
+          <div class="form-row mt-2">
+            <div class="form-group">
+              <label class="form-label">Edge ID <span class="required">*</span></label>
+              <input class="form-input mono" type="text" placeholder="e.g. edge_1" [(ngModel)]="edgeForm.id" [disabled]="editingEdgeIndex >= 0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">From Node <span class="required">*</span></label>
+              <select class="form-input" [(ngModel)]="edgeForm.fromNodeId">
+                <option value="">— select —</option>
+                <option *ngFor="let n of nodes" [value]="n.id">{{ n.id }} ({{ n.name }})</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">To Node <span class="required">*</span></label>
+              <select class="form-input" [(ngModel)]="edgeForm.toNodeId">
+                <option value="">— select —</option>
+                <option *ngFor="let n of nodes" [value]="n.id">{{ n.id }} ({{ n.name }})</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Label</label>
+              <input class="form-input" type="text" placeholder="e.g. If approved" [(ngModel)]="edgeForm.label" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Condition Ref</label>
+              <input class="form-input mono" type="text" placeholder="e.g. approve" [(ngModel)]="edgeForm.conditionRef" />
+            </div>
+          </div>
+          <div class="form-actions mt-2">
+            <app-modern-button variant="primary" size="sm" (click)="saveEdge()">Save Edge</app-modern-button>
+            <app-modern-button variant="outline" size="sm" (click)="cancelEdgeForm()">Cancel</app-modern-button>
+          </div>
+        </div>
+
+        <!-- Edge list -->
+        <div class="edge-list mt-3" *ngIf="edges.length > 0">
+          <div *ngFor="let edge of edges; let i = index" class="edge-row">
+            <div class="edge-info">
+              <span class="mono">{{ edge.id }}</span>
+              <span class="edge-arrow">{{ edge.fromNodeId }} → {{ edge.toNodeId }}</span>
+              <span *ngIf="edge.label" class="badge">{{ edge.label }}</span>
+              <span *ngIf="edge.conditionRef" class="badge secondary">ref: {{ edge.conditionRef }}</span>
+            </div>
+            <div class="node-actions" *ngIf="isDraft">
+              <button class="icon-btn" (click)="openEditEdge(i)">✏️</button>
+              <button class="icon-btn danger" (click)="removeEdge(i)">🗑</button>
+            </div>
+          </div>
+        </div>
+        <p *ngIf="edges.length === 0" class="info-text mt-2">No edges yet. Connect your nodes.</p>
+      </app-modern-card>
+    </div>
+
+    <!-- ══════════════ SETTINGS TAB ══════════════ -->
+    <div *ngIf="activeTab === 'settings'">
+      <app-modern-card theme="light" class="mt-2">
+        <h3>Process Settings</h3>
+        <div class="form-group mt-3">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="settings.allowSaveDraft" [disabled]="isPublished" />
+            Allow users to save draft mid-process
+          </label>
+        </div>
+        <div class="form-group mt-2">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="settings.requireAuth" [disabled]="isPublished" />
+            Require authentication to start process
+          </label>
+        </div>
+      </app-modern-card>
+    </div>
+
+    <!-- ══════════════ FLOW PREVIEW TAB ══════════════ -->
+    <div *ngIf="activeTab === 'flow'">
+      <app-modern-card theme="light" class="mt-2">
+        <div class="section-header">
+          <h3>Flow Preview</h3>
+          <span class="info-hint">Read-only. Edit nodes and edges in the Nodes / Edges tabs.</span>
+        </div>
+
+        <!-- Disconnected node warnings -->
+        <div *ngIf="disconnectedNodeIds.length > 0" class="error-alert mt-2">
+          <strong>⚠ Disconnected nodes</strong> — not reachable from START:
+          <span *ngFor="let id of disconnectedNodeIds" class="mono-tag">{{ id }}</span>
+          <br><small>Connect them with edges or remove them before publishing.</small>
+        </div>
+
+        <div *ngIf="flowNodes.length === 0" class="info-text mt-3">No nodes to display. Add nodes first.</div>
+
+        <!-- SVG canvas -->
+        <div *ngIf="flowNodes.length > 0" class="flow-canvas mt-3">
+          <svg [attr.viewBox]="svgViewBox" style="width:100%;height:auto;min-height:220px;display:block;">
+            <defs>
+              <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                <path d="M 0 0 L 8 3 L 0 6 Z" fill="#718096" />
+              </marker>
+            </defs>
+
+            <!-- Edges -->
+            <g *ngFor="let fe of flowEdges">
+              <path [attr.d]="fe.path" fill="none" stroke="#a0aec0" stroke-width="1.5"
+                    marker-end="url(#arr)" />
+              <text *ngIf="fe.label"
+                    [attr.x]="fe.midX" [attr.y]="fe.midY - 4"
+                    text-anchor="middle" font-size="9" fill="#718096">{{ fe.label }}</text>
+            </g>
+
+            <!-- Nodes -->
+            <g *ngFor="let fn of flowNodes">
+              <rect [attr.x]="fn.x" [attr.y]="fn.y"
+                    [attr.width]="fn.width" [attr.height]="fn.height"
+                    rx="6"
+                    [attr.fill]="nodeTypeFill(fn.type)"
+                    [attr.stroke]="fn.isDisconnected ? '#e53e3e' : '#cbd5e0'"
+                    [attr.stroke-width]="fn.isDisconnected ? 2 : 1.5"
+                    [attr.stroke-dasharray]="fn.isDisconnected ? '4 3' : 'none'" />
+              <text [attr.x]="fn.x + fn.width / 2" [attr.y]="fn.y + 17"
+                    text-anchor="middle" font-size="9" fill="#718096">{{ fn.type }}</text>
+              <text [attr.x]="fn.x + fn.width / 2" [attr.y]="fn.y + 34"
+                    text-anchor="middle" font-size="11" font-weight="600" fill="#1a202c">
+                {{ fn.name.length > 16 ? (fn.name | slice:0:15) + '…' : fn.name }}
+              </text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Legend -->
+        <div class="flow-legend mt-3">
+          <span *ngFor="let t of nodeTypeOptions" class="legend-item">
+            <span class="legend-dot" [style.background]="nodeTypeFill(t.value)"></span>
+            {{ t.label }}
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background:#fff;border:2px dashed #e53e3e;"></span>
+            Disconnected
+          </span>
+        </div>
+      </app-modern-card>
+    </div>
+
+    <!-- ── Save / Publish / Archive bar ── -->
+    <div class="save-bar mt-4">
+      <!-- DRAFT / new: can save -->
+      <app-modern-button *ngIf="isDraft" variant="primary" size="md" [loading]="saving" (click)="save()">
+        {{ hasExisting ? 'Save Changes' : 'Create Process' }}
+      </app-modern-button>
+      <!-- DRAFT: can publish -->
+      <app-modern-button *ngIf="isDraft && hasExisting" variant="outline" size="md" [loading]="saving" (click)="publish()">
+        Publish
+      </app-modern-button>
+      <!-- PUBLISHED: can only archive -->
+      <app-modern-button *ngIf="isPublished" variant="outline" size="md" [loading]="saving" (click)="archive()">
+        Archive
+      </app-modern-button>
+      <!-- ARCHIVED: auto-create failed — let user retry manually -->
+      <app-modern-button *ngIf="isArchived" variant="primary" size="md" [loading]="saving" (click)="createNewDraft()">
+        Create New Draft
+      </app-modern-button>
+
+      <app-modern-button variant="outline" size="md" (click)="goBack()">Back to App</app-modern-button>
+    </div>
+
+    <p *ngIf="isPublished" class="info-text mt-2">
+      This process is published. Archive it to edit (active instances keep running).
+    </p>
+    <p *ngIf="isArchived" class="info-text mt-2">
+      This process is archived. Click "Create New Draft" to start a new editable version.
+    </p>
+
+  </div>
+</div>

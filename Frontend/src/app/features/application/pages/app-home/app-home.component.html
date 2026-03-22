@@ -1,96 +1,190 @@
-<div class="app-container fade-in">
-  <!-- Header Section -->
-  <div class="page-actions">
-    <button class="back-btn" (click)="goBackToDomain()">← Back to Domain</button>
-    <button class="back-btn" *ngIf="mode !== 'PREVIEW'" (click)="enterPreviewMode()">Preview Mode</button>
-    <button class="back-btn" *ngIf="canEditMode && mode !== 'EDIT'" (click)="enterEditMode()">Edit Mode</button>
-    <button class="back-btn" *ngIf="canAccessManager && mode !== 'ACCESS'" (click)="enterAccessManagerMode()">Access Manager</button>
-  </div>
+<div class="ah-shell fade-in" [style.--tc]="themeColor">
 
-  <!-- App Info Section -->
-  <div class="app-info-section">
-    <h2 class="section-title">Application: {{ app?.name }}</h2>
-    <div *ngIf="error" class="error-alert">{{ error }}</div>
-    <div *ngIf="app" class="app-details">
-      <p><strong>Name:</strong> {{ app.name }}</p>
-      <p><strong>Slug:</strong> <span class="badge">{{ app.slug }}</span></p>
-      <p><strong>Domain:</strong> {{ domain?.name }} <span class="badge">{{ domainSlug }}</span></p>
+  <!-- ── Nav bar (always visible) ── -->
+  <nav class="ah-nav">
+    <button class="ah-nav-back" (click)="goBackToDomain()">
+      ← {{ domain?.name || 'Domain' }}
+    </button>
+
+    <!-- Admin mode tabs — only shown to admins/owners -->
+    <div class="ah-mode-tabs" *ngIf="canEditMode || canAccessManager">
+      <button class="ah-tab" [class.active]="mode === 'PREVIEW'" (click)="enterPreviewMode()">Home</button>
+      <button class="ah-tab" *ngIf="canEditMode"      [class.active]="mode === 'EDIT'"    (click)="enterEditMode()">Manage</button>
+      <button class="ah-tab" *ngIf="canAccessManager" [class.active]="mode === 'ACCESS'"  (click)="enterAccessManagerMode()">Access</button>
     </div>
-  </div>
+  </nav>
 
-  <!-- Preview Mode (default for everyone) -->
-  <app-modern-card *ngIf="mode === 'PREVIEW'" theme="light" class="mt-4">
-    <h3>Preview</h3>
-    <p class="info-text">
-      Workflows are not implemented yet. This will show the app's runtime preview for normal users.
-    </p>
-    <p class="info-text" *ngIf="canEditMode">
-      You have editor permission. Use <strong>Edit Mode</strong> to manage models/workflows.
-    </p>
-    <p class="info-text" *ngIf="canAccessManager">
-      You can also manage access using <strong>Access Manager</strong>.
-    </p>
-  </app-modern-card>
+  <div *ngIf="error" class="ah-alert ah-alert-error">{{ error }}</div>
 
-  <!-- Edit Mode (editor/admin/owner) -->
-  <app-modern-card *ngIf="mode === 'EDIT'" theme="light" class="mt-4">
-    <h3>Edit Mode</h3>
-    <p class="info-text">Builder tools will appear here (models, workflows, pages, etc.).</p>
-    <div class="edit-actions">
-      <app-modern-button
-        variant="outline"
-        size="sm"
-        [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']"
-      >
-        Models
-      </app-modern-button>
-    </div>
-  </app-modern-card>
-
-  <!-- Access Manager (app admin/owner) -->
-  <app-modern-card *ngIf="mode === 'ACCESS' && canManageAppGroups" theme="light" class="mt-4">
-    <h3>Application Groups & Users</h3>
-    <p class="info-text">Drag and drop users between groups to manage access. All users are automatically in "App Viewer" by default.</p>
-
-    <div *ngIf="appGroupsLoading || usersLoading" class="loading-state">
-      <div class="spinner-border text-primary" role="status"></div>
-      <p>Loading access data...</p>
+  <!-- ════════════════════════════════════════
+       NORMAL USER — clean Start landing
+  ════════════════════════════════════════ -->
+  <ng-container *ngIf="!canEditMode && !canAccessManager">
+    <div class="ah-user-landing">
+      <div class="ah-app-bubble">{{ (app?.name || '?')[0].toUpperCase() }}</div>
+      <h1 class="ah-landing-name">{{ app?.name }}</h1>
+      <p *ngIf="app?.description" class="ah-landing-desc">{{ app.description }}</p>
+      <div *ngIf="startError" class="ah-alert ah-alert-error">{{ startError }}</div>
+      <button class="ah-start-btn" [disabled]="startingProcess" (click)="startProcess()">
+        <span *ngIf="!startingProcess">Get Started →</span>
+        <span *ngIf="startingProcess" class="ah-spinner"></span>
+      </button>
     </div>
 
-    <div *ngIf="groupError" class="error-alert">{{ groupError }}</div>
+  </ng-container>
 
-    <div class="groups-grid">
-      <div *ngFor="let group of appGroups" class="group-card"
-           (dragover)="onDragOver($event)"
-           (drop)="onDrop($event, group.id)">
+  <!-- ════════════════════════════════════════
+       ADMIN / OWNER — mode-based content
+  ════════════════════════════════════════ -->
+  <ng-container *ngIf="canEditMode || canAccessManager">
 
-        <div class="group-card-header">
-          <h4 class="group-name">{{ group.name }}</h4>
-          <span class="user-count-badge">{{ getUsersInGroup(group.id).length }} member(s)</span>
+    <!-- ── PREVIEW ── -->
+    <div *ngIf="mode === 'PREVIEW'" class="ah-body">
+
+      <!-- App hero -->
+      <div class="ah-admin-hero">
+        <div class="ah-app-bubble-sm">{{ (app?.name || '?')[0].toUpperCase() }}</div>
+        <div class="ah-admin-hero-text">
+          <h1 class="ah-admin-name">{{ app?.name }}</h1>
+          <p *ngIf="app?.description" class="ah-admin-desc">{{ app.description }}</p>
         </div>
+      </div>
 
-        <div class="group-permissions">
-          <span class="permission-chip" *ngFor="let perm of group.permissions">{{ perm }}</span>
-        </div>
+      <div *ngIf="startError" class="ah-alert ah-alert-error">{{ startError }}</div>
 
-        <div class="group-members">
-          <div *ngIf="getUsersInGroup(group.id).length === 0" class="empty-dropzone">
-            Drop users here
+      <!-- Start button -->
+      <button class="ah-start-btn-sm" [disabled]="startingProcess" (click)="startProcess()">
+        <span *ngIf="!startingProcess">▶ Start Process</span>
+        <span *ngIf="startingProcess" class="ah-spinner"></span>
+      </button>
+
+    </div>
+
+    <!-- ── MANAGE / EDIT ── -->
+    <div *ngIf="mode === 'EDIT'" class="ah-body">
+      <h2 class="ah-section-title">Manage Application</h2>
+      <p class="ah-muted">Configure processes, data models, and monitor instances.</p>
+
+      <div class="ah-manage-grid mt-3">
+        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'process']" class="ah-manage-card">
+          <div class="ah-manage-icon-wrap">PB</div>
+          <div class="ah-manage-body">
+            <strong>Process Builder</strong>
+            <span>Design and publish the workflow</span>
           </div>
+          <span class="ah-manage-arrow">→</span>
+        </a>
 
-          <div *ngFor="let user of getUsersInGroup(group.id)"
-               class="user-item"
-               draggable="true"
-               (dragstart)="onDragStart($event, user, group.id)"
-               (dragend)="onDragEnd()">
-            <div class="user-info">
-              <strong>{{ user.username }}</strong>
-              <span>{{ user.email }}</span>
+        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']" class="ah-manage-card">
+          <div class="ah-manage-icon-wrap">DM</div>
+          <div class="ah-manage-body">
+            <strong>Data Models</strong>
+            <span>Define schemas and fields</span>
+          </div>
+          <span class="ah-manage-arrow">→</span>
+        </a>
+
+        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'instances']" class="ah-manage-card">
+          <div class="ah-manage-icon-wrap">AI</div>
+          <div class="ah-manage-body">
+            <strong>All Instances</strong>
+            <span>View and manage running processes</span>
+          </div>
+          <span class="ah-manage-arrow">→</span>
+        </a>
+      </div>
+
+      <!-- Theme selector -->
+      <div class="ah-theme-section mt-4">
+        <h3 class="ah-theme-title">App Theme</h3>
+        <p class="ah-muted">Choose a colour theme for this application.</p>
+        <div class="ah-theme-grid mt-3">
+          <button *ngFor="let t of appThemes"
+                  class="ah-theme-swatch"
+                  [class.selected]="selectedAppThemeId === t.id"
+                  [style.background]="t.primary"
+                  [title]="t.label"
+                  (click)="selectAppTheme(t.id)">
+            <span *ngIf="selectedAppThemeId === t.id" class="ah-theme-check">✓</span>
+          </button>
+        </div>
+        <p class="ah-theme-label-row">
+          <span *ngFor="let t of appThemes">
+            <span *ngIf="selectedAppThemeId === t.id" class="ah-theme-name-badge">{{ t.label }}</span>
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <!-- ── ACCESS MANAGER ── -->
+    <div *ngIf="mode === 'ACCESS' && canManageAppGroups" class="ah-body">
+      <h2 class="ah-section-title">Access Manager</h2>
+      <p class="ah-muted">Drag users between groups to manage their permissions.</p>
+
+      <div *ngIf="appGroupsLoading || usersLoading" class="ah-loading">
+        <div class="ah-spinner-dark"></div> Loading…
+      </div>
+      <div *ngIf="groupError" class="ah-alert ah-alert-error">{{ groupError }}</div>
+
+      <div class="ah-access-layout mt-3">
+        <div class="ah-groups-grid">
+          <div *ngFor="let group of appGroups"
+               class="ah-group-card"
+               (dragover)="onDragOver($event)"
+               (drop)="onDrop($event, group.id)">
+            <div class="ah-group-head">
+              <span class="ah-group-name">{{ group.name }}</span>
+              <span class="ah-count-pill">{{ getUsersInGroup(group.id).length }}</span>
             </div>
-            <button class="icon-btn-remove" (click)="removeUserFromGroup(user.id, group.id)" title="Remove user">✕</button>
+            <div class="ah-perms-row">
+              <span *ngFor="let perm of group.permissions" class="ah-perm-chip">{{ perm }}</span>
+            </div>
+            <div class="ah-group-members">
+              <div *ngIf="getUsersInGroup(group.id).length === 0" class="ah-dropzone">
+                Drop users here
+              </div>
+              <div *ngFor="let user of getUsersInGroup(group.id)"
+                   class="ah-user-pill"
+                   draggable="true"
+                   (dragstart)="onDragStart($event, user, group.id)"
+                   (dragend)="onDragEnd()">
+                <div class="ah-user-avatar">{{ (user.username || '?')[0].toUpperCase() }}</div>
+                <div class="ah-user-info">
+                  <span class="ah-user-name">{{ user.username }}</span>
+                  <span class="ah-user-email">{{ user.email }}</span>
+                </div>
+                <button class="ah-remove-btn" (click)="removeUserFromGroup(user.id, group.id)" title="Remove">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unassigned sidebar -->
+        <div class="ah-unassigned">
+          <div class="ah-unassigned-head">
+            <span>Unassigned</span>
+            <span class="ah-count-pill">{{ getUsersWithoutGroups().length }}</span>
+          </div>
+          <div class="ah-unassigned-list">
+            <p *ngIf="getUsersWithoutGroups().length === 0" class="ah-muted" style="text-align:center;padding:1rem 0">
+              All users assigned
+            </p>
+            <div *ngFor="let user of getUsersWithoutGroups()"
+                 class="ah-user-pill"
+                 draggable="true"
+                 (dragstart)="onDragStart($event, user, null)"
+                 (dragend)="onDragEnd()">
+              <div class="ah-user-avatar">{{ (user.username || '?')[0].toUpperCase() }}</div>
+              <div class="ah-user-info">
+                <span class="ah-user-name">{{ user.username }}</span>
+                <span class="ah-user-email">{{ user.email }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </app-modern-card>
+
+  </ng-container>
+
 </div>

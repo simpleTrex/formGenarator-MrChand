@@ -1,0 +1,193 @@
+<div class="iv-shell fade-in" [style.--tc]="themeColor">
+
+  <!-- ── Nav ── -->
+  <nav class="iv-nav">
+    <button class="iv-nav-back" (click)="goBackToApp()">← Back</button>
+    <span class="iv-nav-spacer"></span>
+    <button *ngIf="instance?.status === 'ACTIVE' && isAdmin" class="iv-cancel-btn" (click)="cancel()">
+      Cancel
+    </button>
+  </nav>
+
+  <!-- ── Loading ── -->
+  <div *ngIf="loading" class="iv-loading">
+    <div class="iv-spinner"></div>
+    <span>Loading…</span>
+  </div>
+
+  <div *ngIf="!loading && instance" class="iv-body">
+
+    <!-- ── Error ── -->
+    <div *ngIf="error" class="iv-alert iv-alert-error">{{ error }}</div>
+
+    <!-- ══════════════════════════════════════════
+         ACTIVE — current step
+    ══════════════════════════════════════════ -->
+    <ng-container *ngIf="instance.status === 'ACTIVE' && nodeView">
+
+      <!-- Step header banner -->
+      <div class="iv-step-header">
+        <div class="iv-step-icon" [ngSwitch]="nodeView.nodeType">
+          <span *ngSwitchCase="'FORM_PAGE'" class="iv-icon-label">FP</span>
+          <span *ngSwitchCase="'APPROVAL'" class="iv-icon-label">AP</span>
+          <span *ngSwitchCase="'DATA_VIEW'" class="iv-icon-label">DV</span>
+          <span *ngSwitchDefault class="iv-icon-label">—</span>
+        </div>
+        <div class="iv-step-meta">
+          <p class="iv-step-type">{{ nodeView.nodeType | titlecase }}</p>
+          <h2 class="iv-step-name">{{ nodeView.nodeName }}</h2>
+        </div>
+      </div>
+
+      <!-- ── FORM_PAGE ── -->
+      <div *ngIf="nodeView.nodeType === 'FORM_PAGE'" class="iv-card">
+        <div class="iv-dynamic-form">
+          <ng-container *ngFor="let el of formElements">
+            <div *ngIf="isVisible(el)" class="iv-field">
+              <label class="iv-label">
+                {{ el.label }}
+                <span *ngIf="el.validation?.['required']" class="iv-req">*</span>
+              </label>
+
+              <input *ngIf="el.type === 'TEXT_INPUT'" class="iv-input" type="text"
+                [placeholder]="el.config?.['placeholder'] || ''"
+                [(ngModel)]="formData[el.id]" />
+
+              <textarea *ngIf="el.type === 'TEXT_AREA'" class="iv-input iv-textarea" rows="3"
+                [placeholder]="el.config?.['placeholder'] || ''"
+                [(ngModel)]="formData[el.id]"></textarea>
+
+              <input *ngIf="el.type === 'NUMBER_INPUT'" class="iv-input" type="number"
+                [(ngModel)]="formData[el.id]" />
+
+              <input *ngIf="el.type === 'DATE_PICKER'" class="iv-input" type="date"
+                [(ngModel)]="formData[el.id]" />
+
+              <input *ngIf="el.type === 'DATETIME_PICKER'" class="iv-input" type="datetime-local"
+                [(ngModel)]="formData[el.id]" />
+
+              <select *ngIf="el.type === 'SELECT'" class="iv-input iv-select" [(ngModel)]="formData[el.id]">
+                <option value="">— select —</option>
+                <option *ngFor="let opt of getOptions(el)" [value]="opt.value">{{ opt.label }}</option>
+              </select>
+
+              <div *ngIf="el.type === 'RADIO'" class="iv-radio-group">
+                <label *ngFor="let opt of getOptions(el)" class="iv-radio-label">
+                  <input type="radio" [name]="el.id" [value]="opt.value" [(ngModel)]="formData[el.id]" />
+                  {{ opt.label }}
+                </label>
+              </div>
+
+              <label *ngIf="el.type === 'CHECKBOX' && getOptions(el).length === 0" class="iv-checkbox-label">
+                <input type="checkbox" [(ngModel)]="formData[el.id]" /> {{ el.label }}
+              </label>
+
+              <p *ngIf="el.type === 'LABEL'" class="iv-label-text">{{ el.label }}</p>
+            </div>
+          </ng-container>
+        </div>
+
+        <div class="iv-form-actions">
+          <button class="iv-submit-btn" [disabled]="submitting" (click)="submit()">
+            <span *ngIf="!submitting">{{ nodeView.config['submitLabel'] || 'Continue' }} →</span>
+            <span *ngIf="submitting" class="iv-spinner-sm"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── APPROVAL ── -->
+      <div *ngIf="nodeView.nodeType === 'APPROVAL'" class="iv-card">
+        <div *ngIf="nodeView.prefilledData && objectKeys(nodeView.prefilledData).length > 0" class="iv-data-summary">
+          <p class="iv-summary-title">Process Data</p>
+          <div *ngFor="let key of objectKeys(nodeView.prefilledData)" class="iv-data-row">
+            <span class="iv-data-key">{{ key }}</span>
+            <span class="iv-data-val">{{ nodeView.prefilledData[key] ?? '—' }}</span>
+          </div>
+        </div>
+
+        <div class="iv-field">
+          <label class="iv-label">Your Decision <span class="iv-req">*</span></label>
+          <div class="iv-action-row">
+            <button *ngFor="let action of approvalActions"
+              [class]="'iv-action-btn action-' + action + (selectedAction === action ? ' selected' : '')"
+              (click)="selectedAction = action">
+              <span *ngIf="action === 'approve'">✓</span>
+              <span *ngIf="action === 'reject'">✕</span>
+              {{ action | titlecase }}
+            </button>
+          </div>
+        </div>
+
+        <div class="iv-field">
+          <label class="iv-label">Comment <span class="iv-optional">(optional)</span></label>
+          <textarea class="iv-input iv-textarea" rows="2"
+            placeholder="Reason or note…"
+            [(ngModel)]="comment"></textarea>
+        </div>
+
+        <div class="iv-form-actions">
+          <button class="iv-submit-btn" [disabled]="submitting || !selectedAction" (click)="submit()">
+            <span *ngIf="!submitting">Submit Decision →</span>
+            <span *ngIf="submitting" class="iv-spinner-sm"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── DATA_VIEW ── -->
+      <div *ngIf="nodeView.nodeType === 'DATA_VIEW'" class="iv-card">
+        <div *ngIf="nodeView.records && nodeView.records.length > 0" class="iv-table-wrap">
+          <table class="iv-table">
+            <thead>
+              <tr>
+                <th *ngFor="let col of getRecordColumns(nodeView.records)">{{ formatColumnName(col) }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of nodeView.records">
+                <td *ngFor="let col of getRecordColumns(nodeView.records)">{{ row[col] ?? '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="iv-record-count">{{ nodeView.records.length }} record(s)</p>
+        </div>
+        <p *ngIf="!nodeView.records || nodeView.records.length === 0" class="iv-empty-text">
+          No records found.
+        </p>
+        <div class="iv-form-actions">
+          <button class="iv-submit-btn" [disabled]="submitting" (click)="submit()">
+            <span *ngIf="!submitting">Continue →</span>
+            <span *ngIf="submitting" class="iv-spinner-sm"></span>
+          </button>
+        </div>
+      </div>
+
+    </ng-container>
+
+    <!-- ══════════════════════════════════════════
+         TERMINAL STATES
+    ══════════════════════════════════════════ -->
+    <div *ngIf="instance.status !== 'ACTIVE'" class="iv-terminal-card">
+
+      <div *ngIf="instance.status === 'COMPLETED'" class="iv-terminal">
+        <div class="iv-terminal-badge iv-badge-done">Completed</div>
+        <h2 class="iv-terminal-title iv-done">All done</h2>
+        <p class="iv-terminal-sub">Your process was completed successfully.</p>
+      </div>
+
+      <div *ngIf="instance.status === 'CANCELLED'" class="iv-terminal">
+        <div class="iv-terminal-badge iv-badge-cancel">Cancelled</div>
+        <h2 class="iv-terminal-title iv-cancel">Process Cancelled</h2>
+        <p class="iv-terminal-sub">This process was cancelled.</p>
+      </div>
+
+      <div *ngIf="instance.status === 'PAUSED'" class="iv-terminal">
+        <div class="iv-terminal-badge iv-badge-paused">Paused</div>
+        <h2 class="iv-terminal-title iv-paused">Process Paused</h2>
+        <p class="iv-terminal-sub">An error occurred during routing. Please contact your administrator.</p>
+      </div>
+
+      <button class="iv-home-btn" (click)="goBackToApp()">Back to App</button>
+    </div>
+
+  </div>
+</div>

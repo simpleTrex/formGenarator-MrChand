@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
+import { ArchitectureComponent } from './features/architecture/architecture.component';
 
 const routes: Routes = [
   {
@@ -39,6 +40,7 @@ const routes: Routes = [
     loadChildren: () => import('./features/form-builder/form-builder.module').then(m => m.FormBuilderModule),
     canActivate: [AuthGuard],
   },
+  { path: 'architecture', component: ArchitectureComponent },
   { path: '**', redirectTo: '' },
 ];
 

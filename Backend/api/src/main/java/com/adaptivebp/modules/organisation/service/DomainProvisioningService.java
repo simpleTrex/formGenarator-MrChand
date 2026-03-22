@@ -29,9 +29,10 @@ public class DomainProvisioningService {
         List<DomainGroup> existing = domainGroupRepository.findByDomainId(organisation.getId());
         if (existing.isEmpty()) {
             DomainGroup adminGroup = buildGroup(organisation.getId(), "Domain Admin",
-                    EnumSet.allOf(DomainPermission.class), true);
+                    EnumSet.allOf(DomainPermission.class), true); // includes DOMAIN_MANAGE_PROCESSES
             DomainGroup contributorGroup = buildGroup(organisation.getId(), "Domain Contributor",
-                    EnumSet.of(DomainPermission.DOMAIN_MANAGE_APPS, DomainPermission.DOMAIN_USE_APP), true);
+                    EnumSet.of(DomainPermission.DOMAIN_MANAGE_APPS, DomainPermission.DOMAIN_USE_APP,
+                            DomainPermission.DOMAIN_MANAGE_PROCESSES), true);
             domainGroupRepository.saveAll(List.of(adminGroup, contributorGroup));
             if (ownerDomainUserId != null) {
                 assignUser(adminGroup, ownerDomainUserId, ownerDomainUserId);

@@ -23,6 +23,7 @@ import com.adaptivebp.modules.formbuilder.dto.request.CreateDomainModelRequest;
 import com.adaptivebp.modules.formbuilder.dto.request.UpdateDomainModelRequest;
 import com.adaptivebp.modules.formbuilder.model.DomainModel;
 import com.adaptivebp.modules.formbuilder.repository.DomainModelRepository;
+import com.adaptivebp.modules.formbuilder.service.ModelRecordService;
 import com.adaptivebp.modules.organisation.model.Organisation;
 import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
@@ -37,6 +38,7 @@ public class DomainModelController {
     @Autowired private DomainModelRepository domainModelRepository;
     @Autowired private ApplicationLookupPort applicationLookupPort;
     @Autowired private PermissionService permissionService;
+    @Autowired private ModelRecordService modelRecordService;
 
     @GetMapping
     public ResponseEntity<?> list(@PathVariable String slug, @RequestParam(name = "appSlug") String appSlug) {
@@ -111,6 +113,10 @@ public class DomainModelController {
         if (request.getFields() != null) {
             model.setFields(request.getFields());
             model.setVersion(model.getVersion() + 1);
+            DomainModel saved = domainModelRepository.save(model);
+            // Migrate existing records: add null for any newly added fields
+            modelRecordService.migrateRecordsForModel(saved.getId(), saved.getFields());
+            return ResponseEntity.ok(saved);
         }
         return ResponseEntity.ok(domainModelRepository.save(model));
     }
