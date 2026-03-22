@@ -27,15 +27,12 @@ pipeline {
             steps {
                 dir('Backend/api') {
                     echo 'Building Spring Boot Backend...'
-                    // Ensure the mvnw executable has the right permissions
                     sh 'chmod +x mvnw'
-                    // Package the application (running tests as part of this lifecycle)
                     sh './mvnw clean package'
                     
-                    echo 'Running SAST Security Scan...'
-                    // Example Semgrep scan (Requires Semgrep installed on Jenkins Agent)
-                    // We use || true to not block the pipeline if semgrep throws non-critical warnings initially
-                    sh 'semgrep ci --config=p/default || true'
+                    echo 'Running SAST Security Scan via Docker...'
+                    // Using Docker-based Semgrep for cleaner builds
+                    sh "docker run --rm -v ${WORKSPACE}/Backend/api:/src returntocorp/semgrep semgrep ci --config=p/default || true"
                 }
             }
         }
@@ -44,12 +41,11 @@ pipeline {
             steps {
                 dir('Frontend') {
                     echo 'Building Angular Frontend...'
-                    // Install node modules and build the production artifact
                     sh 'npm ci'
                     sh 'npm run build --configuration=production'
                     
-                    echo 'Running SAST Security Scan...'
-                    sh 'semgrep ci --config=p/default || true'
+                    echo 'Running SAST Security Scan via Docker...'
+                    sh "docker run --rm -v ${WORKSPACE}/Frontend:/src returntocorp/semgrep semgrep ci --config=p/default || true"
                 }
             }
         }
@@ -73,12 +69,12 @@ pipeline {
         stage('Container Scanning (Trivy)') {
             steps {
                 script {
-                    echo 'Scanning Backend Container for OS/Library Vulnerabilities...'
-                    // Requires Trivy installed on the Jenkins Agent
-                    sh "trivy image --severity CRITICAL,HIGH --exit-code 1 --no-progress ${BACKEND_IMAGE}:${env.GIT_COMMIT}"
+                    echo 'Scanning Backend Container for OS/Library Vulnerabilities via Docker...'
+                    // We mount the docker socket so the Trivy container can scan local host images
+                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${WORKSPACE}/.trivy-cache:/root/.cache aquasecurity/trivy:0.49.1 image --severity CRITICAL,HIGH --exit-code 1 --no-progress ${BACKEND_IMAGE}:${env.GIT_COMMIT}"
                     
                     echo 'Scanning Frontend Container...'
-                    sh "trivy image --severity CRITICAL,HIGH --exit-code 1 --no-progress ${FRONTEND_IMAGE}:${env.GIT_COMMIT}"
+                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${WORKSPACE}/.trivy-cache:/root/.cache aquasecurity/trivy:0.49.1 image --severity CRITICAL,HIGH --exit-code 1 --no-progress ${FRONTEND_IMAGE}:${env.GIT_COMMIT}"
                 }
             }
         }
