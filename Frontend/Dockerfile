@@ -4,7 +4,11 @@ WORKDIR /app
 
 # Copy package and install dependencies
 COPY package.json package-lock.json ./
-RUN npm ci
+# Add npm retry settings to help avoid ECONNRESET issues during download
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm ci
 
 # Copy source code and build
 COPY . .
