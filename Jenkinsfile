@@ -71,10 +71,10 @@ pipeline {
                 script {
                     echo 'Scanning Backend Container for OS/Library Vulnerabilities via Docker...'
                     // We mount the docker socket so the Trivy container can scan local host images
-                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${WORKSPACE}/.trivy-cache:/root/.cache aquasecurity/trivy:0.49.1 image --severity CRITICAL,HIGH --exit-code 1 --no-progress ${BACKEND_IMAGE}:${env.GIT_COMMIT}"
+                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${WORKSPACE}/.trivy-cache:/root/.cache aquasecurity/trivy:latest image --severity CRITICAL,HIGH --exit-code 1 --no-progress ${BACKEND_IMAGE}:${env.GIT_COMMIT}"
                     
                     echo 'Scanning Frontend Container...'
-                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${WORKSPACE}/.trivy-cache:/root/.cache aquasecurity/trivy:0.49.1 image --severity CRITICAL,HIGH --exit-code 1 --no-progress ${FRONTEND_IMAGE}:${env.GIT_COMMIT}"
+                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${WORKSPACE}/.trivy-cache:/root/.cache aquasecurity/trivy:latest image --severity CRITICAL,HIGH --exit-code 1 --no-progress ${FRONTEND_IMAGE}:${env.GIT_COMMIT}"
                 }
             }
         }
