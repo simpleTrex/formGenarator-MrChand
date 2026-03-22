@@ -10,10 +10,11 @@ import org.springframework.stereotype.Service;
 
 import com.adaptivebp.modules.formbuilder.model.DomainModelField;
 import com.adaptivebp.modules.formbuilder.model.ModelRecord;
+import com.adaptivebp.modules.formbuilder.port.ModelRecordQueryPort;
 import com.adaptivebp.modules.formbuilder.repository.ModelRecordRepository;
 
 @Service
-public class ModelRecordService {
+public class ModelRecordService implements ModelRecordQueryPort {
 
     @Autowired private ModelRecordRepository recordRepository;
 
@@ -47,6 +48,7 @@ public class ModelRecordService {
         recordRepository.deleteById(recordId);
     }
 
+    @Override
     public List<ModelRecord> findByModel(String modelId, String domainId) {
         return recordRepository.findByModelIdAndDomainId(modelId, domainId);
     }

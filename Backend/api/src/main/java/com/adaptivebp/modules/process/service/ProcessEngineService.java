@@ -28,7 +28,7 @@ import com.adaptivebp.modules.process.model.enums.InstanceStatus;
 import com.adaptivebp.modules.process.model.enums.NodeType;
 import com.adaptivebp.modules.process.model.enums.ProcessStatus;
 import com.adaptivebp.modules.formbuilder.model.ModelRecord;
-import com.adaptivebp.modules.formbuilder.service.ModelRecordService;
+import com.adaptivebp.modules.formbuilder.port.ModelRecordQueryPort;
 import com.adaptivebp.modules.process.repository.ProcessDefinitionRepository;
 import com.adaptivebp.modules.process.repository.ProcessInstanceRepository;
 
@@ -48,7 +48,7 @@ public class ProcessEngineService {
     private FormValidationService formValidationService;
 
     @Autowired
-    private ModelRecordService modelRecordService;
+    private ModelRecordQueryPort modelRecordQueryPort;
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -204,7 +204,7 @@ public class ProcessEngineService {
                 if (modelId != null && !modelId.isBlank()) {
                     @SuppressWarnings("unchecked")
                     List<String> displayFields = (List<String>) node.getConfig().get("displayFields");
-                    List<ModelRecord> records = modelRecordService.findByModel(modelId, instance.getDomainId());
+                    List<ModelRecord> records = modelRecordQueryPort.findByModel(modelId, instance.getDomainId());
                     List<Map<String, Object>> recordData = records.stream()
                             .map(r -> {
                                 Map<String, Object> row = new java.util.LinkedHashMap<>();
@@ -489,7 +489,7 @@ public class ProcessEngineService {
         try {
             switch (operation.toUpperCase()) {
                 case "CREATE" -> {
-                    ModelRecord saved = modelRecordService.create(
+                    ModelRecord saved = modelRecordQueryPort.create(
                             modelId, instance.getDomainId(), instance.getAppId(),
                             instance.getId(), userId, record);
                     CreatedRecord created = new CreatedRecord();
@@ -505,7 +505,7 @@ public class ProcessEngineService {
                     // Look up the recordId stored by a previous CREATE node
                     String recordId = resolveRecordId(config, instance);
                     if (recordId != null) {
-                        modelRecordService.update(recordId, record);
+                        modelRecordQueryPort.update(recordId, record);
                     } else {
                         log.warn("DATA_ACTION UPDATE: no recordId resolved for node '{}'. Skipping.", node.getId());
                     }
@@ -515,7 +515,7 @@ public class ProcessEngineService {
                 case "DELETE" -> {
                     String recordId = resolveRecordId(config, instance);
                     if (recordId != null) {
-                        modelRecordService.delete(recordId);
+                        modelRecordQueryPort.delete(recordId);
                     } else {
                         log.warn("DATA_ACTION DELETE: no recordId resolved for node '{}'. Skipping.", node.getId());
                     }
