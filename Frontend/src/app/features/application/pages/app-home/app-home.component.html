@@ -7,9 +7,9 @@
     </button>
 
     <!-- Admin mode tabs — only shown to admins/owners -->
-    <div class="ah-mode-tabs" *ngIf="canEditMode || canAccessManager">
+    <div class="ah-mode-tabs" *ngIf="canEnterManageMode || canAccessManager">
       <button class="ah-tab" [class.active]="mode === 'PREVIEW'" (click)="enterPreviewMode()">Home</button>
-      <button class="ah-tab" *ngIf="canEditMode"      [class.active]="mode === 'EDIT'"    (click)="enterEditMode()">Manage</button>
+      <button class="ah-tab" *ngIf="canEnterManageMode"      [class.active]="mode === 'EDIT'"    (click)="enterEditMode()">Manage</button>
       <button class="ah-tab" *ngIf="canAccessManager" [class.active]="mode === 'ACCESS'"  (click)="enterAccessManagerMode()">Access</button>
     </div>
   </nav>
@@ -19,7 +19,7 @@
   <!-- ════════════════════════════════════════
        NORMAL USER — clean Start landing
   ════════════════════════════════════════ -->
-  <ng-container *ngIf="!canEditMode && !canAccessManager">
+  <ng-container *ngIf="!canEnterManageMode && !canAccessManager">
     <div class="ah-user-landing">
       <div class="ah-app-bubble">{{ (app?.name || '?')[0].toUpperCase() }}</div>
       <h1 class="ah-landing-name">{{ app?.name }}</h1>
@@ -36,7 +36,7 @@
   <!-- ════════════════════════════════════════
        ADMIN / OWNER — mode-based content
   ════════════════════════════════════════ -->
-  <ng-container *ngIf="canEditMode || canAccessManager">
+  <ng-container *ngIf="canEnterManageMode || canAccessManager">
 
     <!-- ── PREVIEW ── -->
     <div *ngIf="mode === 'PREVIEW'" class="ah-body">
@@ -65,54 +65,90 @@
       <h2 class="ah-section-title">Manage Application</h2>
       <p class="ah-muted">Configure processes, data models, and monitor instances.</p>
 
-      <div class="ah-manage-grid mt-3">
-        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'process']" class="ah-manage-card">
-          <div class="ah-manage-icon-wrap">PB</div>
-          <div class="ah-manage-body">
-            <strong>Process Builder</strong>
-            <span>Design and publish the workflow</span>
-          </div>
-          <span class="ah-manage-arrow">→</span>
-        </a>
+      <ng-container *ngIf="canEditMode">
+        <div class="ah-manage-grid mt-3">
+          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'process']" class="ah-manage-card">
+            <div class="ah-manage-icon-wrap">PB</div>
+            <div class="ah-manage-body">
+              <strong>Process Builder</strong>
+              <span>Design and publish the workflow</span>
+            </div>
+            <span class="ah-manage-arrow">→</span>
+          </a>
 
-        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']" class="ah-manage-card">
-          <div class="ah-manage-icon-wrap">DM</div>
-          <div class="ah-manage-body">
-            <strong>Data Models</strong>
-            <span>Define schemas and fields</span>
-          </div>
-          <span class="ah-manage-arrow">→</span>
-        </a>
+          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']" class="ah-manage-card">
+            <div class="ah-manage-icon-wrap">DM</div>
+            <div class="ah-manage-body">
+              <strong>Data Models</strong>
+              <span>Define schemas and fields</span>
+            </div>
+            <span class="ah-manage-arrow">→</span>
+          </a>
 
-        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'instances']" class="ah-manage-card">
-          <div class="ah-manage-icon-wrap">AI</div>
-          <div class="ah-manage-body">
-            <strong>All Instances</strong>
-            <span>View and manage running processes</span>
-          </div>
-          <span class="ah-manage-arrow">→</span>
-        </a>
-      </div>
-
-      <!-- Theme selector -->
-      <div class="ah-theme-section mt-4">
-        <h3 class="ah-theme-title">App Theme</h3>
-        <p class="ah-muted">Choose a colour theme for this application.</p>
-        <div class="ah-theme-grid mt-3">
-          <button *ngFor="let t of appThemes"
-                  class="ah-theme-swatch"
-                  [class.selected]="selectedAppThemeId === t.id"
-                  [style.background]="t.primary"
-                  [title]="t.label"
-                  (click)="selectAppTheme(t.id)">
-            <span *ngIf="selectedAppThemeId === t.id" class="ah-theme-check">✓</span>
-          </button>
+          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'instances']" class="ah-manage-card">
+            <div class="ah-manage-icon-wrap">AI</div>
+            <div class="ah-manage-body">
+              <strong>All Instances</strong>
+              <span>View and manage running processes</span>
+            </div>
+            <span class="ah-manage-arrow">→</span>
+          </a>
         </div>
-        <p class="ah-theme-label-row">
-          <span *ngFor="let t of appThemes">
-            <span *ngIf="selectedAppThemeId === t.id" class="ah-theme-name-badge">{{ t.label }}</span>
-          </span>
-        </p>
+
+        <!-- Theme selector -->
+        <div class="ah-theme-section mt-4">
+          <h3 class="ah-theme-title">App Theme</h3>
+          <p class="ah-muted">Choose a colour theme for this application.</p>
+          <div class="ah-theme-grid mt-3">
+            <button *ngFor="let t of appThemes"
+                    class="ah-theme-swatch"
+                    [class.selected]="selectedAppThemeId === t.id"
+                    [style.background]="t.primary"
+                    [title]="t.label"
+                    (click)="selectAppTheme(t.id)">
+              <span *ngIf="selectedAppThemeId === t.id" class="ah-theme-check">✓</span>
+            </button>
+          </div>
+          <p class="ah-theme-label-row">
+            <span *ngFor="let t of appThemes">
+              <span *ngIf="selectedAppThemeId === t.id" class="ah-theme-name-badge">{{ t.label }}</span>
+            </span>
+          </p>
+        </div>
+      </ng-container>
+
+      <!-- Delete Application (Domain Admin only) -->
+      <div *ngIf="canManageApp" class="ah-theme-section mt-4">
+        <h3 class="ah-theme-title">Delete Application</h3>
+        <p class="ah-muted">This will permanently delete <strong>{{ app?.name }}</strong> and related data.</p>
+
+        <div *ngIf="deleteError" class="ah-alert ah-alert-error" style="margin: 1rem 0 0;">
+          {{ deleteError }}
+        </div>
+
+        <ng-container *ngIf="!showDeleteConfirm">
+          <button class="ah-start-btn-sm" (click)="openDeleteConfirm()" style="margin-top: 0.9rem;">
+            Delete Application
+          </button>
+        </ng-container>
+
+        <ng-container *ngIf="showDeleteConfirm">
+          <p class="ah-muted" style="margin-top: 0.9rem;">Type <strong>{{ deleteExpectedPhrase }}</strong> to confirm.</p>
+          <input
+            type="text"
+            [disabled]="deletingApp"
+            [(ngModel)]="deleteConfirmText"
+            placeholder="delete {{ app?.name }}"
+            style="width: 100%; max-width: 520px; padding: 0.65rem 0.8rem; border-radius: 10px; border: 1.5px solid rgba(0,0,0,0.1); background: white; font-size: 0.9rem; outline: none;"
+          />
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.9rem;">
+            <button class="ah-nav-back" [disabled]="deletingApp" (click)="cancelDeleteConfirm()">Cancel</button>
+            <button class="ah-start-btn-sm" [disabled]="deletingApp || !canConfirmDelete" (click)="confirmDeleteApplication()">
+              <span *ngIf="!deletingApp">Confirm Delete</span>
+              <span *ngIf="deletingApp" class="ah-spinner"></span>
+            </button>
+          </div>
+        </ng-container>
       </div>
     </div>
 

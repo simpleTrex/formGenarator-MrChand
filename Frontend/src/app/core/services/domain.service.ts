@@ -109,6 +109,10 @@ export class DomainService {
     return this.baseService.get(`${this.adaptive}/domains/${slug}/apps/${appSlug}`, true);
   }
 
+  deleteApplication(slug: string, appSlug: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${slug}/apps/${appSlug}`, true, {});
+  }
+
   getAppGroups(slug: string, appSlug: string): Observable<any> {
     return this.baseService.get(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups`, true);
   }

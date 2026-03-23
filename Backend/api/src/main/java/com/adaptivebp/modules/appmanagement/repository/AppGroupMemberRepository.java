@@ -9,4 +9,6 @@ public interface AppGroupMemberRepository extends MongoRepository<AppGroupMember
     List<AppGroupMember> findByAppIdAndUserId(String appId, String userId);
     List<AppGroupMember> findByGroupId(String groupId);
     Optional<AppGroupMember> findByGroupIdAndUserId(String groupId, String userId);
+
+    void deleteByAppId(String appId);
 }

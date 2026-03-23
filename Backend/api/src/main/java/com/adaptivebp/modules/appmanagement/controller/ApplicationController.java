@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,6 +18,7 @@ import com.adaptivebp.modules.appmanagement.dto.request.CreateApplicationRequest
 import com.adaptivebp.modules.appmanagement.model.Application;
 import com.adaptivebp.modules.appmanagement.repository.ApplicationRepository;
 import com.adaptivebp.modules.appmanagement.service.ApplicationProvisioningService;
+import com.adaptivebp.modules.appmanagement.service.ApplicationDeletionService;
 import com.adaptivebp.modules.organisation.model.Organisation;
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
 import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
@@ -39,6 +41,9 @@ public class ApplicationController {
 
     @Autowired
     private ApplicationProvisioningService applicationProvisioningService;
+
+    @Autowired
+    private ApplicationDeletionService applicationDeletionService;
 
     @GetMapping
     public ResponseEntity<?> list(@PathVariable String slug) {
@@ -78,6 +83,18 @@ public class ApplicationController {
         Application saved = applicationRepository.save(application);
         applicationProvisioningService.provisionDefaultGroups(saved, request.getOwnerUserId());
         return ResponseEntity.ok(saved);
+    }
+
+    @DeleteMapping("/{appSlug}")
+    public ResponseEntity<?> delete(@PathVariable String slug, @PathVariable String appSlug) {
+        Organisation domain = requireDomain(slug);
+        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+            return ResponseEntity.status(403).build();
+        }
+        Application app = applicationRepository.findByDomainIdAndSlug(domain.getId(), appSlug)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));
+        applicationDeletionService.deleteApplication(domain.getId(), app);
+        return ResponseEntity.noContent().build();
     }
 
     private Organisation requireDomain(String slug) {

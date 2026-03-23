@@ -27,4 +27,6 @@ public interface ProcessDefinitionRepository extends MongoRepository<ProcessDefi
 
     List<ProcessDefinition> findByDomainIdAndAppIdAndStatus(
             String domainId, String appId, ProcessStatus status);
+
+        void deleteByDomainIdAndAppId(String domainId, String appId);
 }

@@ -17,4 +17,6 @@ public interface ProcessInstanceRepository extends MongoRepository<ProcessInstan
     List<ProcessInstance> findByAssignedToUserIdAndStatus(String userId, InstanceStatus status);
 
     long countByProcessDefinitionIdAndStatus(String definitionId, InstanceStatus status);
+
+    void deleteByDomainIdAndAppId(String domainId, String appId);
 }

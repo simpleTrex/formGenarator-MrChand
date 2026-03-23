@@ -15,4 +15,6 @@ public interface ModelRecordRepository extends MongoRepository<ModelRecord, Stri
     List<ModelRecord> findByInstanceId(String instanceId);
 
     void deleteByModelId(String modelId);
+
+    void deleteByDomainIdAndAppId(String domainId, String appId);
 }

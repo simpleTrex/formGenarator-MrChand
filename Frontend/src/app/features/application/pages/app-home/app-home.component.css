@@ -1,4 +1,3 @@
-/* ── Shell ──────────────────────────────────────────────────────────────────── */
 :host { display: block; min-height: 100vh; background: #f8fafc; }
 
 .ah-shell { min-height: 100vh; display: flex; flex-direction: column; }
@@ -6,7 +5,6 @@
 .fade-in { animation: fadeIn 300ms ease-out both; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-/* ── Nav ────────────────────────────────────────────────────────────────────── */
 .ah-nav {
   display: flex;
   justify-content: space-between;
@@ -54,7 +52,6 @@
 .ah-tab.active { background: var(--tc, #1a1a2e); color: white; }
 .ah-tab:not(.active):hover { color: #1e293b; }
 
-/* ── Alerts ─────────────────────────────────────────────────────────────────── */
 .ah-alert {
   margin: 0.75rem 2rem;
   padding: 0.7rem 1rem;
@@ -64,7 +61,6 @@
 }
 .ah-alert-error { background: rgba(239,68,68,0.08); color: #dc2626; border: 1px solid rgba(239,68,68,0.18); }
 
-/* ── Normal-user landing (full-page centered) ──────────────────────────────── */
 .ah-user-landing {
   flex: 1;
   display: flex;
@@ -109,7 +105,6 @@
   margin: 0 0 2.5rem;
 }
 
-/* ── Start button — prominent ────────────────────────────────────────────────── */
 .ah-start-btn {
   background: var(--tc, #1a1a2e);
   color: white;
@@ -135,7 +130,6 @@
 }
 .ah-start-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* ── Admin body (shared wrapper for all admin modes) ────────────────────────── */
 .ah-body {
   max-width: 960px;
   margin: 0 auto;
@@ -143,7 +137,6 @@
   width: 100%;
 }
 
-/* ── Admin hero row ─────────────────────────────────────────────────────────── */
 .ah-admin-hero {
   display: flex;
   align-items: center;
@@ -177,7 +170,6 @@
 }
 .ah-admin-desc { font-size: 0.9rem; color: #64748b; margin: 0; }
 
-/* ── Start button — compact (admin preview) ─────────────────────────────────── */
 .ah-start-btn-sm {
   background: var(--tc, #1a1a2e);
   color: white;
@@ -197,7 +189,6 @@
 .ah-start-btn-sm:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
 .ah-start-btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ── Quick-access cards (preview admin mode) ────────────────────────────────── */
 .ah-quick-grid {
   display: flex;
   flex-direction: column;
@@ -226,7 +217,6 @@
 .ah-quick-arrow { color: #94a3b8; transition: transform 160ms; }
 .ah-quick-card:hover .ah-quick-arrow { transform: translateX(3px); color: var(--tc, #1a1a2e); }
 
-/* ── Section title ──────────────────────────────────────────────────────────── */
 .ah-section-title {
   font-family: 'Outfit', sans-serif;
   font-size: 1.5rem;
@@ -237,7 +227,6 @@
 }
 .ah-muted { font-size: 0.875rem; color: #64748b; margin: 0; line-height: 1.5; }
 
-/* ── Manage grid (EDIT mode) ────────────────────────────────────────────────── */
 .ah-manage-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -287,7 +276,6 @@
 .ah-manage-arrow { color: #94a3b8; transition: transform 170ms; }
 .ah-manage-card:hover .ah-manage-arrow { transform: translateX(4px); color: var(--tc, #1a1a2e); }
 
-/* ── Access manager ─────────────────────────────────────────────────────────── */
 .ah-access-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -406,7 +394,6 @@
 
 .ah-unassigned-list { display: flex; flex-direction: column; gap: 0.4rem; }
 
-/* ── Spinner ────────────────────────────────────────────────────────────────── */
 .ah-spinner {
   width: 16px; height: 16px;
   border: 2px solid rgba(255,255,255,0.4);
@@ -425,7 +412,6 @@
 
 .ah-loading { display: flex; align-items: center; gap: 0.75rem; color: #64748b; font-size: 0.9rem; padding: 1.5rem 0; }
 
-/* ── App Theme picker ───────────────────────────────────────────────────────── */
 .ah-theme-section {
   border-top: 1px solid rgba(0,0,0,0.06);
   padding-top: 1.5rem;
@@ -471,6 +457,5 @@
   color: #64748b;
 }
 
-/* ── Utilities ──────────────────────────────────────────────────────────────── */
 .mt-3 { margin-top: 1.25rem; }
 .mt-4 { margin-top: 2rem; }

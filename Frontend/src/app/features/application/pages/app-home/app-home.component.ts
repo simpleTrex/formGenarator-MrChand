@@ -54,6 +54,11 @@ export class AppHomeComponent implements OnInit {
 
   mode: 'PREVIEW' | 'EDIT' | 'ACCESS' = 'PREVIEW';
 
+  showDeleteConfirm = false;
+  deleteConfirmText = '';
+  deletingApp = false;
+  deleteError = '';
+
   // Theme pulled from localStorage (set on domain home)
   themeColor = '#1a1a2e';
   appThemes = APP_THEMES;
@@ -169,6 +174,10 @@ export class AppHomeComponent implements OnInit {
     return this.isOwnerContext() || this.appPermissions.includes('APP_WRITE');
   }
 
+  get canEnterManageMode(): boolean {
+    return this.canEditMode || this.canManageApp;
+  }
+
   get canAccessManager(): boolean {
     return this.isOwnerContext() || this.appPermissions.includes('APP_EXECUTE');
   }
@@ -178,10 +187,59 @@ export class AppHomeComponent implements OnInit {
   }
 
   enterEditMode() {
-    if (!this.canEditMode) {
+    if (!this.canEnterManageMode) {
       return;
     }
     this.mode = 'EDIT';
+  }
+
+  get deleteExpectedPhrase(): string {
+    return `delete ${this.app?.name || ''}`;
+  }
+
+  get canConfirmDelete(): boolean {
+    return this.deleteConfirmText.trim() === this.deleteExpectedPhrase;
+  }
+
+  openDeleteConfirm() {
+    if (!this.canManageApp) {
+      return;
+    }
+    this.showDeleteConfirm = true;
+    this.deleteConfirmText = '';
+    this.deleteError = '';
+  }
+
+  cancelDeleteConfirm() {
+    if (this.deletingApp) {
+      return;
+    }
+    this.showDeleteConfirm = false;
+    this.deleteConfirmText = '';
+    this.deleteError = '';
+  }
+
+  confirmDeleteApplication() {
+    if (!this.canManageApp) {
+      return;
+    }
+    if (!this.canConfirmDelete) {
+      return;
+    }
+
+    this.deletingApp = true;
+    this.deleteError = '';
+    this.domainService.deleteApplication(this.domainSlug, this.appSlug).subscribe({
+      next: () => {
+        this.deletingApp = false;
+        this.showDeleteConfirm = false;
+        this.router.navigate(['/domain', this.domainSlug]);
+      },
+      error: (err) => {
+        this.deletingApp = false;
+        this.deleteError = err?.error?.message || 'Failed to delete application';
+      }
+    });
   }
 
   enterAccessManagerMode() {
