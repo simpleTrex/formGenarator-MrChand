@@ -4,8 +4,74 @@
   gap: 1.25rem;
 }
 
+/* ── Nav ─────────────────────────────────────────────────────────────────────── */
+.pl-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 2rem;
+  background: white;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.pl-nav-back {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.1);
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  border-radius: 50rem;
+  cursor: pointer;
+  transition: all 150ms;
+  flex-shrink: 0;
+}
+.pl-nav-back:hover { 
+  background: var(--theme-color, #1e293b); 
+  color: white; 
+  border-color: var(--theme-color, #1e293b); 
+}
+
+.pl-nav-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.pl-nav-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 .process-card {
   display: block;
+  transition: all 160ms;
+}
+
+.process-card.p-cursor {
+  cursor: pointer;
+}
+
+.process-card.p-cursor:hover {
+  border-color: var(--theme-color, #1a1a2e);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+  transform: translateY(-2px);
+}
+
+.pl-card-arrow {
+  transition: transform 160ms, color 160ms;
+}
+
+.process-card.p-cursor:hover .pl-card-arrow {
+  transform: translateX(4px);
+  color: var(--theme-color, #1a1a2e);
 }
 
 .card-header-row {

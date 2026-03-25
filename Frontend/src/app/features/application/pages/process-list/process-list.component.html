@@ -1,14 +1,23 @@
-<div class="app-container fade-in">
+<div class="fade-in" [style.--theme-color]="themeColor" [style.--accent-neon]="themeColor" [style.--btn-primary-text]="'#ffffff'">
 
-  <!-- Header -->
-  <div class="page-actions">
-    <button class="back-btn" (click)="goBack()">← Back to App</button>
-    <button class="back-btn" (click)="viewInstances()">View Instances</button>
-    <button class="back-btn" (click)="createNew()">+ New Process</button>
-  </div>
+  <!-- Nav -->
+  <nav class="pl-nav">
+    <button class="pl-nav-back" (click)="goBack()">← Back</button>
+    <div style="flex: 1">
+      <h1 class="pl-nav-title">Process Manager</h1>
+    </div>
+    <div class="pl-nav-actions">
+      <app-modern-button variant="outline" size="sm" (click)="viewInstances()">
+        Instances
+      </app-modern-button>
+      <app-modern-button variant="primary" size="sm" (click)="createNew()">
+        + Process
+      </app-modern-button>
+    </div>
+  </nav>
 
-  <h2 class="section-title">Processes</h2>
-  <p class="info-text">Build and manage process definitions for this application.</p>
+  <div class="app-container">
+    <p class="info-text mt-3">Build and manage process workflows for this application.</p>
 
   <!-- Loading -->
   <div *ngIf="loading" class="loading-state">
@@ -31,7 +40,7 @@
 
   <!-- Process cards -->
   <div class="process-grid mt-4" *ngIf="!loading && processes.length > 0">
-    <app-modern-card *ngFor="let item of processes" theme="light" class="process-card">
+    <app-modern-card *ngFor="let item of processes" theme="light" class="process-card p-cursor" (click)="editProcess(item.definition.slug)">
 
       <!-- Card header -->
       <div class="card-header-row">
@@ -43,8 +52,9 @@
           </span>
           <span class="badge ml-1">v{{ item.definition.version }}</span>
         </div>
-        <div class="meta-text">
-          {{ item.nodeCount }} nodes · {{ item.edgeCount }} edges
+        <div class="meta-text" style="display: flex; flex-direction: column; align-items: flex-end;">
+          <span>{{ item.nodeCount }} nodes · {{ item.edgeCount }} edges</span>
+          <span class="pl-card-arrow mt-2" style="font-size: 1.2rem; color: #94a3b8;">→</span>
         </div>
       </div>
 
@@ -53,54 +63,9 @@
         {{ item.definition.description }}
       </p>
 
-      <!-- Per-card error -->
-      <div *ngIf="actionError[item.definition.slug]" class="error-alert mt-2">
-        {{ actionError[item.definition.slug] }}
-      </div>
-
-      <!-- Actions -->
-      <div class="card-actions mt-3">
-
-        <!-- DRAFT actions -->
-        <ng-container *ngIf="item.definition.status === 'DRAFT'">
-          <app-modern-button variant="outline" size="sm"
-            [loading]="!!actionLoading[item.definition.slug]"
-            (click)="editProcess(item.definition.slug)">
-            Edit
-          </app-modern-button>
-          <app-modern-button variant="primary" size="sm"
-            [loading]="!!actionLoading[item.definition.slug]"
-            (click)="publishProcess(item.definition.slug)">
-            Publish
-          </app-modern-button>
-          <app-modern-button variant="outline" size="sm"
-            [loading]="!!actionLoading[item.definition.slug]"
-            (click)="deleteProcess(item.definition.slug)">
-            Delete
-          </app-modern-button>
-        </ng-container>
-
-        <!-- PUBLISHED actions -->
-        <ng-container *ngIf="item.definition.status === 'PUBLISHED'">
-          <app-modern-button variant="primary" size="sm"
-            [loading]="!!actionLoading[item.definition.slug]"
-            (click)="startProcess(item.definition.slug)">
-            ▶ Start
-          </app-modern-button>
-          <app-modern-button variant="outline" size="sm"
-            [loading]="!!actionLoading[item.definition.slug]"
-            (click)="archiveProcess(item.definition.slug)">
-            Archive
-          </app-modern-button>
-        </ng-container>
-
-        <!-- ARCHIVED -->
-        <ng-container *ngIf="item.definition.status === 'ARCHIVED'">
-          <span class="info-text">Archived — no actions available</span>
-        </ng-container>
-
-      </div>
     </app-modern-card>
+  </div>
+
   </div>
 
 </div>

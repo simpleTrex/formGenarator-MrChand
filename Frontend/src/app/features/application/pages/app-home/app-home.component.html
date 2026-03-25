@@ -25,10 +25,25 @@
       <h1 class="ah-landing-name">{{ app?.name }}</h1>
       <p *ngIf="app?.description" class="ah-landing-desc">{{ app.description }}</p>
       <div *ngIf="startError" class="ah-alert ah-alert-error">{{ startError }}</div>
-      <button class="ah-start-btn" [disabled]="startingProcess" (click)="startProcess()">
-        <span *ngIf="!startingProcess">Get Started →</span>
-        <span *ngIf="startingProcess" class="ah-spinner"></span>
-      </button>
+      
+      <div *ngIf="processesLoading" class="ah-loading mt-4">
+        <div class="ah-spinner-dark"></div> Loading Processes…
+      </div>
+      <div *ngIf="!processesLoading && processes.length === 0" class="ah-alert ah-alert-info mt-4">
+        No published processes available yet.
+      </div>
+      <div *ngIf="!processesLoading && processes.length > 0" class="process-grid mt-4" style="display: grid; gap: 1rem;">
+        <div *ngFor="let proc of processes" class="ah-manage-card" style="align-items: center; background: white; border: 1px solid var(--border-light); padding: 1.25rem;">
+          <div class="ah-manage-body" style="flex: 1;">
+            <strong style="font-size: 1.1rem; color: var(--text-dark);">{{ proc.definition?.name }}</strong>
+            <span *ngIf="proc.definition?.description" style="display: block; color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">{{ proc.definition?.description }}</span>
+          </div>
+          <button class="ah-start-btn-sm" [disabled]="startingProcess[proc.definition?.slug]" (click)="startProcess(proc.definition?.slug)" style="margin: 0; min-width: 100px;">
+            <span *ngIf="!startingProcess[proc.definition?.slug]">Start →</span>
+            <span *ngIf="startingProcess[proc.definition?.slug]" class="ah-spinner"></span>
+          </button>
+        </div>
+      </div>
     </div>
 
   </ng-container>
@@ -52,12 +67,24 @@
 
       <div *ngIf="startError" class="ah-alert ah-alert-error">{{ startError }}</div>
 
-      <!-- Start button -->
-      <button class="ah-start-btn-sm" [disabled]="startingProcess" (click)="startProcess()">
-        <span *ngIf="!startingProcess">▶ Start Process</span>
-        <span *ngIf="startingProcess" class="ah-spinner"></span>
-      </button>
-
+      <div *ngIf="processesLoading" class="ah-loading mt-4" style="text-align: left;">
+        <div class="ah-spinner-dark"></div> Loading Processes…
+      </div>
+      <div *ngIf="!processesLoading && processes.length === 0" class="ah-alert ah-alert-info mt-4">
+        No published processes available yet.
+      </div>
+      <div *ngIf="!processesLoading && processes.length > 0" class="process-grid mt-4" style="display: grid; gap: 1rem;">
+        <div *ngFor="let proc of processes" class="ah-manage-card" style="align-items: center; justify-content: space-between; border-radius: 12px; background: white; border: 1px solid var(--border-light);">
+          <div class="ah-manage-body" style="flex: 1;">
+            <strong style="font-weight: 600;">{{ proc.definition?.name }}</strong>
+            <span *ngIf="proc.definition?.description" style="display: block; color: var(--text-muted); font-size: 0.85rem;">{{ proc.definition?.description }}</span>
+          </div>
+          <button class="ah-start-btn-sm" [disabled]="startingProcess[proc.definition?.slug]" (click)="startProcess(proc.definition?.slug)" style="margin: 0;">
+            <span *ngIf="!startingProcess[proc.definition?.slug]">▶ Start</span>
+            <span *ngIf="startingProcess[proc.definition?.slug]" class="ah-spinner"></span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- ── MANAGE / EDIT ── -->
@@ -67,11 +94,11 @@
 
       <ng-container *ngIf="canEditMode">
         <div class="ah-manage-grid mt-3">
-          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'process']" class="ah-manage-card">
-            <div class="ah-manage-icon-wrap">PB</div>
+          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'processes']" class="ah-manage-card">
+            <div class="ah-manage-icon-wrap">PM</div>
             <div class="ah-manage-body">
-              <strong>Process Builder</strong>
-              <span>Design and publish the workflow</span>
+              <strong>Process Manager</strong>
+              <span>Manage all application workflows</span>
             </div>
             <span class="ah-manage-arrow">→</span>
           </a>

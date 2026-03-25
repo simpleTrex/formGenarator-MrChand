@@ -45,7 +45,10 @@ export class AppHomeComponent implements OnInit {
   draggedUser: any = null;
   draggedFromGroupId: string | null = null;
 
-  startingProcess = false;
+  processes: any[] = [];
+  processesLoading = false;
+  
+  startingProcess: Record<string, boolean> = {};
   startError = '';
 
   domainAccess = { permissions: [] as string[], groups: [] as string[] };
@@ -102,6 +105,7 @@ export class AppHomeComponent implements OnInit {
           this.selectedAppThemeId = appTheme;
           this.themeColor = this.resolveThemeColor(appTheme);
         }
+        this.loadProcesses();
         this.initializeAccess();
       },
       error: (err) => this.error = err?.error?.message || 'Application not found'
@@ -132,21 +136,32 @@ export class AppHomeComponent implements OnInit {
     }
   }
 
+  private loadProcesses() {
+    this.processesLoading = true;
+    this.processService.listProcesses(this.domainSlug, this.appSlug).subscribe({
+      next: (res: any) => {
+        this.processes = Array.isArray(res) ? res.filter((p: any) => p.definition?.status === 'PUBLISHED') : [];
+        this.processesLoading = false;
+      },
+      error: () => this.processesLoading = false
+    });
+  }
+
   goBackToDomain() {
     this.router.navigate(['/domain', this.domainSlug]);
   }
 
-  startProcess(): void {
-    this.startingProcess = true;
+  startProcess(slug: string): void {
+    this.startingProcess[slug] = true;
     this.startError = '';
-    this.processService.startProcess(this.domainSlug, this.appSlug).subscribe({
+    this.processService.startProcess(this.domainSlug, this.appSlug, slug).subscribe({
       next: (res) => {
-        this.startingProcess = false;
+        this.startingProcess[slug] = false;
         const instanceId = res.instance.id;
         this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'instances', instanceId]);
       },
       error: (err: any) => {
-        this.startingProcess = false;
+        this.startingProcess[slug] = false;
         this.startError = err?.error?.message || 'Failed to start process';
       }
     });

@@ -32,6 +32,10 @@ import com.adaptivebp.modules.formbuilder.port.ModelRecordQueryPort;
 import com.adaptivebp.modules.process.repository.ProcessDefinitionRepository;
 import com.adaptivebp.modules.process.repository.ProcessInstanceRepository;
 
+import com.adaptivebp.modules.appmanagement.port.AppGroupQueryPort;
+import com.adaptivebp.modules.organisation.service.PermissionService;
+import com.adaptivebp.modules.appmanagement.permission.AppPermission;
+
 @Service
 public class ProcessEngineService {
 
@@ -50,19 +54,24 @@ public class ProcessEngineService {
     @Autowired
     private ModelRecordQueryPort modelRecordQueryPort;
 
+    @Autowired
+    private AppGroupQueryPort appGroupQueryPort;
+
+    @Autowired
+    private PermissionService permissionService;
+
     // ── Public API ────────────────────────────────────────────────────────────
 
     /**
      * Starts a new process instance from a PUBLISHED definition.
      * Auto-advances past START to the first interactive node.
      */
-    public ProcessInstanceResponse startProcess(String domainId, String appId, String userId) {
-        // Each app has exactly one process — find the PUBLISHED one
+    public ProcessInstanceResponse startProcess(String domainId, String appId, String processSlug, String userId) {
+        // Find the published definition for this specific process slug
         ProcessDefinition def = definitionRepository
-                .findByDomainIdAndAppIdAndStatus(domainId, appId, ProcessStatus.PUBLISHED)
-                .stream().findFirst()
+                .findByDomainIdAndAppIdAndSlugAndStatus(domainId, appId, processSlug, ProcessStatus.PUBLISHED)
                 .orElseThrow(() -> new ProcessNotFoundException(
-                        "No published process found for this application"));
+                        "No published process found for this slug"));
 
         ProcessNode startNode = def.findStartNode();
         if (startNode == null) {
@@ -133,6 +142,11 @@ public class ProcessEngineService {
                 if (action == null || action.isBlank()) {
                     throw new InvalidNodeSubmissionException("APPROVAL node requires an action (approve/reject)");
                 }
+                
+                if (!isApprover(node, instance, userId)) {
+                    throw new InsufficientProcessPermissionException("You are not the designated approver for this node");
+                }
+                
                 // Merge any approval form data
                 if (formData != null) {
                     for (Map.Entry<String, Object> entry : formData.entrySet()) {
@@ -195,7 +209,12 @@ public class ProcessEngineService {
                 view.setAvailableActions(List.of("submit"));
             }
             case APPROVAL -> {
-                view.setAvailableActions(extractApprovalActions(node));
+                if (isApprover(node, instance, userId)) {
+                    view.setAvailableActions(extractApprovalActions(node));
+                } else {
+                    view.setAvailableActions(List.of());
+                    view.setCompletionMessage("Waiting for approval");
+                }
                 // Provide a summary of instance data for context
                 view.setPrefilledData(new HashMap<>(instance.getData()));
             }
@@ -223,6 +242,51 @@ public class ProcessEngineService {
                 } else {
                     view.setRecords(List.of());
                 }
+                view.setAvailableActions(List.of("next"));
+            }
+            case TASK_VIEW -> {
+                @SuppressWarnings("unchecked")
+                List<String> displayFields = (List<String>) node.getConfig().get("displayFields");
+                List<ProcessInstance> activeInstances = instanceRepository.findByDomainIdAndAppIdAndStatus(
+                        instance.getDomainId(), instance.getAppId(), InstanceStatus.ACTIVE);
+                
+                List<Map<String, Object>> recordData = new java.util.ArrayList<>();
+                for (ProcessInstance pInstance : activeInstances) {
+                    if (pInstance.getCurrentNodeId() == null) continue;
+                    
+                    definitionRepository.findById(pInstance.getProcessDefinitionId()).ifPresent(processDef -> {
+                        processDef.getNodes().stream()
+                            .filter(n -> n.getId().equals(pInstance.getCurrentNodeId()))
+                            .findFirst()
+                            .ifPresent(cNode -> {
+                                if (cNode.getType() == NodeType.APPROVAL && isApprover(cNode, pInstance, userId)) {
+                                    Map<String, Object> row = new java.util.LinkedHashMap<>();
+                                    row.put("_id", pInstance.getId().toString());
+                                    if (displayFields != null && !displayFields.isEmpty()) {
+                                        for (String field : displayFields) {
+                                            if ("processName".equals(field)) row.put(field, processDef.getName());
+                                            else if ("startedAt".equals(field)) row.put(field, pInstance.getStartedAt());
+                                            else if ("startedBy".equals(field)) row.put(field, pInstance.getStartedBy());
+                                            else if (field.startsWith("data.")) {
+                                                String dataKey = field.substring(5);
+                                                // Find any matching key in data map (ignoring node prefix)
+                                                Object val = pInstance.getData().entrySet().stream()
+                                                    .filter(e -> e.getKey().endsWith("." + dataKey) || e.getKey().equals(dataKey))
+                                                    .map(Map.Entry::getValue)
+                                                    .findFirst().orElse(null);
+                                                row.put(field, val);
+                                            }
+                                        }
+                                    } else {
+                                        row.put("processName", processDef.getName());
+                                        row.put("startedAt", pInstance.getStartedAt());
+                                    }
+                                    recordData.add(row);
+                                }
+                            });
+                    });
+                }
+                view.setRecords(recordData);
                 view.setAvailableActions(List.of("next"));
             }
             case END -> {
@@ -606,6 +670,22 @@ public class ProcessEngineService {
             }
         }
         return actions.isEmpty() ? List.of("approve", "reject") : actions;
+    }
+
+    private boolean isApprover(ProcessNode node, ProcessInstance instance, String userId) {
+        if (permissionService.hasAppPermission(instance.getAppId(), AppPermission.APP_MANAGE_PROCESSES)) {
+            return true;
+        }
+
+        Map<String, Object> config = node.getConfig();
+        if (config == null) return true;
+
+        String approverGroupId = (String) config.get("approverGroupId");
+        if (approverGroupId == null || approverGroupId.isBlank()) {
+            return true;
+        }
+
+        return appGroupQueryPort.isMemberOfAppGroup(approverGroupId, userId);
     }
 
     private void appendHistory(ProcessInstance instance, String nodeId, String action,

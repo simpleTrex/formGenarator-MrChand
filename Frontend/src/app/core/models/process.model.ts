@@ -2,7 +2,7 @@
 
 export type NodeType =
   | 'START' | 'FORM_PAGE' | 'DATA_VIEW' | 'DATA_ACTION'
-  | 'CONDITION' | 'APPROVAL' | 'NOTIFICATION' | 'END';
+  | 'CONDITION' | 'APPROVAL' | 'NOTIFICATION' | 'TASK_VIEW' | 'END';
 
 export type ProcessStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export type InstanceStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PAUSED';
@@ -132,6 +132,7 @@ export const NODE_TYPE_OPTIONS: { value: NodeType; label: string; description: s
   { value: 'CONDITION',    label: 'Condition',    description: 'Branches based on data' },
   { value: 'APPROVAL',     label: 'Approval',     description: 'Pause for approve/reject' },
   { value: 'NOTIFICATION', label: 'Notification', description: 'Sends a notification (Phase 2)' },
+  { value: 'TASK_VIEW',    label: 'Task View',    description: 'Custom inbox for pending approvals' },
   { value: 'END',          label: 'End',          description: 'Terminal node' },
 ];
 

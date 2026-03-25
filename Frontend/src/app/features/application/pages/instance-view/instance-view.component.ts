@@ -156,13 +156,17 @@ export class InstanceViewComponent implements OnInit {
     this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug]);
   }
 
+  openTask(processInstanceId: string): void {
+    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'instances', processInstanceId]);
+  }
+
   get formElements(): FormField[] {
     if (!this.nodeView?.config?.['elements']) return [];
     return this.nodeView.config['elements'] as FormField[];
   }
 
   get approvalActions(): string[] {
-    return this.nodeView?.availableActions || ['approve', 'reject'];
+    return this.nodeView?.availableActions || [];
   }
 
   isVisible(el: FormField): boolean {

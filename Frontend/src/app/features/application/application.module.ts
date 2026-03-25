@@ -13,7 +13,7 @@ import { ProcessListComponent } from './pages/process-list/process-list.componen
 const routes: Routes = [
     { path: ':appSlug',                          component: AppHomeComponent },
     { path: ':appSlug/models',                   component: AppModelsComponent },
-    { path: ':appSlug/process',                  component: ProcessBuilderComponent },
+    { path: ':appSlug/process/:processSlug',     component: ProcessBuilderComponent },
     { path: ':appSlug/processes',                component: ProcessListComponent },
     { path: ':appSlug/instances',                component: InstanceListComponent },
     { path: ':appSlug/instances/:instanceId',     component: InstanceViewComponent },

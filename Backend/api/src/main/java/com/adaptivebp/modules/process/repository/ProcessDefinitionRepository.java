@@ -16,6 +16,8 @@ public interface ProcessDefinitionRepository extends MongoRepository<ProcessDefi
     Optional<ProcessDefinition> findByDomainIdAndAppIdAndSlugAndVersion(
             String domainId, String appId, String slug, int version);
 
+    List<ProcessDefinition> findByDomainIdAndAppIdAndSlug(String domainId, String appId, String slug);
+
     List<ProcessDefinition> findByDomainIdAndAppId(String domainId, String appId);
 
     Optional<ProcessDefinition> findTopByDomainIdAndAppIdOrderByVersionDesc(String domainId, String appId);

@@ -1,4 +1,4 @@
-<div class="app-container fade-in">
+<div class="app-container fade-in" [style.--theme-color]="themeColor" [style.--accent-neon]="themeColor" [style.--btn-primary-text]="'#ffffff'">
 
   <!-- Header -->
   <div class="page-actions">
@@ -378,7 +378,7 @@
       <app-modern-card theme="light" class="mt-2">
         <div class="section-header">
           <h3>Nodes</h3>
-          <app-modern-button *ngIf="isDraft" variant="outline" size="sm" (click)="openAddNode()">+ Add Node</app-modern-button>
+          <app-modern-button *ngIf="!isPublished" variant="outline" size="sm" (click)="openAddNode()">+ Add Node</app-modern-button>
         </div>
         <p class="info-text">Each node is a step in the process. START and END nodes are required.</p>
 
@@ -589,6 +589,41 @@
             <p *ngIf="!dvModelId" class="info-text mt-2">Select a linked model to pick display fields.</p>
           </div>
 
+          <!-- ═══════════ TASK_VIEW config ═══════════ -->
+          <div *ngIf="nodeForm.type === 'TASK_VIEW'" class="config-panel mt-3">
+            <span class="config-panel-title">Task View Config</span>
+            <div class="form-group mt-3">
+              <label class="form-label">Context Model</label>
+              <select class="form-input" style="max-width:320px;" [(ngModel)]="tvModelId">
+                <option value="">— select a linked model —</option>
+                <option *ngFor="let m of getLinkedModels()" [value]="m.id">{{ m.name }}</option>
+              </select>
+            </div>
+            <div *ngIf="tvModelId" class="mt-2">
+              <label class="form-label">System Fields to Display</label>
+              <div class="field-checkbox-grid mt-1">
+                <label class="checkbox-label">
+                  <input type="checkbox" [checked]="isTvFieldSelected('processName')" (change)="toggleTvField('processName')" /> Process Name
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" [checked]="isTvFieldSelected('startedBy')" (change)="toggleTvField('startedBy')" /> Started By
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" [checked]="isTvFieldSelected('startedAt')" (change)="toggleTvField('startedAt')" /> Started At
+                </label>
+              </div>
+              
+              <label class="form-label mt-2">Model Fields to Display</label>
+              <div class="field-checkbox-grid mt-1">
+                <label *ngFor="let f of getModelFields(tvModelId)" class="checkbox-label">
+                  <input type="checkbox" [checked]="isTvFieldSelected('data.' + f.key)" (change)="toggleTvField('data.' + f.key)" />
+                  {{ f.key }} <span class="type-chip-xs">{{ f.type }}</span>
+                </label>
+              </div>
+            </div>
+            <p *ngIf="!tvModelId" class="info-text mt-2">Select a context model to pick display fields.</p>
+          </div>
+
           <!-- ═══════════ CONDITION config ═══════════ -->
           <div *ngIf="nodeForm.type === 'CONDITION'" class="config-panel mt-3">
             <div class="config-panel-header">
@@ -634,6 +669,14 @@
 
           <!-- ═══════════ APPROVAL config ═══════════ -->
           <div *ngIf="nodeForm.type === 'APPROVAL'" class="config-panel mt-3">
+            <div class="form-group mt-2 mb-3">
+              <label class="form-label">Approver Group</label>
+              <select class="form-input" style="max-width:320px;" [(ngModel)]="approverGroupId">
+                <option value="">— anyone can approve —</option>
+                <option *ngFor="let g of appGroups" [value]="g.id">{{ g.name }}</option>
+              </select>
+              <p class="info-text mt-1">If blank, any user can approve.</p>
+            </div>
             <div class="config-panel-header">
               <span class="config-panel-title">Approval Actions</span>
               <app-modern-button variant="outline" size="sm" (click)="addApprovalAction()">+ Add Action</app-modern-button>
@@ -662,10 +705,10 @@
               <span class="node-type-badge">{{ node.type }}</span>
               <span class="node-name">{{ node.name }}</span>
               <span *ngIf="node.type === 'FORM_PAGE'" class="node-meta">
-                {{ node.config?.['elements']?.length || 0 }} field(s)
+                {{ node.config['elements']?.length || 0 }} field(s)
               </span>
             </div>
-            <div class="node-actions" *ngIf="isDraft">
+            <div class="node-actions" *ngIf="!isPublished">
               <button class="icon-btn" title="Edit" (click)="openEditNode(i)">✏️</button>
               <button class="icon-btn danger" title="Remove"
                 [disabled]="node.type === 'START' || node.type === 'END'"
@@ -682,7 +725,7 @@
       <app-modern-card theme="light" class="mt-2">
         <div class="section-header">
           <h3>Edges</h3>
-          <app-modern-button *ngIf="isDraft" variant="outline" size="sm" (click)="openAddEdge()">+ Add Edge</app-modern-button>
+          <app-modern-button *ngIf="!isPublished" variant="outline" size="sm" (click)="openAddEdge()">+ Add Edge</app-modern-button>
         </div>
         <p class="info-text">Edges connect nodes — each arrow between steps is one edge.</p>
 
@@ -734,7 +777,7 @@
               <span *ngIf="edge.label" class="badge">{{ edge.label }}</span>
               <span *ngIf="edge.conditionRef" class="badge secondary">ref: {{ edge.conditionRef }}</span>
             </div>
-            <div class="node-actions" *ngIf="isDraft">
+            <div class="node-actions" *ngIf="!isPublished">
               <button class="icon-btn" (click)="openEditEdge(i)">✏️</button>
               <button class="icon-btn danger" (click)="removeEdge(i)">🗑</button>
             </div>
@@ -833,21 +876,24 @@
 
     <!-- ── Save / Publish / Archive bar ── -->
     <div class="save-bar mt-4">
-      <!-- DRAFT / new: can save -->
-      <app-modern-button *ngIf="isDraft" variant="primary" size="md" [loading]="saving" (click)="save()">
-        {{ hasExisting ? 'Save Changes' : 'Create Process' }}
+      <!-- DRAFT or ARCHIVED: can save -->
+      <app-modern-button *ngIf="isDraft || isArchived" variant="primary" size="md" [loading]="saving" (click)="save()">
+        {{ hasExisting && !isArchived ? 'Save Changes' : 'Save Changes' }}
       </app-modern-button>
-      <!-- DRAFT: can publish -->
-      <app-modern-button *ngIf="isDraft && hasExisting" variant="outline" size="md" [loading]="saving" (click)="publish()">
+      
+      <!-- DRAFT or ARCHIVED: can publish -->
+      <app-modern-button *ngIf="(isDraft && hasExisting) || isArchived" variant="outline" size="md" [loading]="saving" (click)="publish()">
         Publish
       </app-modern-button>
-      <!-- PUBLISHED: can only archive -->
+      
+      <!-- DRAFT: can delete -->
+      <app-modern-button *ngIf="isDraft && hasExisting" variant="outline" size="md" [loading]="saving" (click)="deleteDraft()">
+        Delete
+      </app-modern-button>
+
+      <!-- PUBLISHED: can archive -->
       <app-modern-button *ngIf="isPublished" variant="outline" size="md" [loading]="saving" (click)="archive()">
         Archive
-      </app-modern-button>
-      <!-- ARCHIVED: auto-create failed — let user retry manually -->
-      <app-modern-button *ngIf="isArchived" variant="primary" size="md" [loading]="saving" (click)="createNewDraft()">
-        Create New Draft
       </app-modern-button>
 
       <app-modern-button variant="outline" size="md" (click)="goBack()">Back to App</app-modern-button>
@@ -855,9 +901,6 @@
 
     <p *ngIf="isPublished" class="info-text mt-2">
       This process is published. Archive it to edit (active instances keep running).
-    </p>
-    <p *ngIf="isArchived" class="info-text mt-2">
-      This process is archived. Click "Create New Draft" to start a new editable version.
     </p>
 
   </div>

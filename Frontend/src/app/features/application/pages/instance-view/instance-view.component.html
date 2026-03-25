@@ -105,32 +105,40 @@
           </div>
         </div>
 
-        <div class="iv-field">
-          <label class="iv-label">Your Decision <span class="iv-req">*</span></label>
-          <div class="iv-action-row">
-            <button *ngFor="let action of approvalActions"
-              [class]="'iv-action-btn action-' + action + (selectedAction === action ? ' selected' : '')"
-              (click)="selectedAction = action">
-              <span *ngIf="action === 'approve'">✓</span>
-              <span *ngIf="action === 'reject'">✕</span>
-              {{ action | titlecase }}
+        <ng-container *ngIf="approvalActions.length > 0">
+          <div class="iv-field">
+            <label class="iv-label">Your Decision <span class="iv-req">*</span></label>
+            <div class="iv-action-row">
+              <button *ngFor="let action of approvalActions"
+                [class]="'iv-action-btn action-' + action + (selectedAction === action ? ' selected' : '')"
+                (click)="selectedAction = action">
+                <span *ngIf="action === 'approve'">✓</span>
+                <span *ngIf="action === 'reject'">✕</span>
+                {{ action | titlecase }}
+              </button>
+            </div>
+          </div>
+
+          <div class="iv-field">
+            <label class="iv-label">Comment <span class="iv-optional">(optional)</span></label>
+            <textarea class="iv-input iv-textarea" rows="2"
+              placeholder="Reason or note…"
+              [(ngModel)]="comment"></textarea>
+          </div>
+
+          <div class="iv-form-actions">
+            <button class="iv-submit-btn" [disabled]="submitting || !selectedAction" (click)="submit()">
+              <span *ngIf="!submitting">Submit Decision →</span>
+              <span *ngIf="submitting" class="iv-spinner-sm"></span>
             </button>
           </div>
-        </div>
+        </ng-container>
 
-        <div class="iv-field">
-          <label class="iv-label">Comment <span class="iv-optional">(optional)</span></label>
-          <textarea class="iv-input iv-textarea" rows="2"
-            placeholder="Reason or note…"
-            [(ngModel)]="comment"></textarea>
-        </div>
-
-        <div class="iv-form-actions">
-          <button class="iv-submit-btn" [disabled]="submitting || !selectedAction" (click)="submit()">
-            <span *ngIf="!submitting">Submit Decision →</span>
-            <span *ngIf="submitting" class="iv-spinner-sm"></span>
-          </button>
-        </div>
+        <ng-container *ngIf="approvalActions.length === 0">
+          <div class="iv-alert iv-alert-info" style="margin-top: 1rem; text-align: center; border-radius: 6px;">
+            <span style="font-size: 1.1rem;">⏳</span> {{ nodeView.completionMessage || 'Waiting for approval' }}
+          </div>
+        </ng-container>
       </div>
 
       <!-- ── DATA_VIEW ── -->
@@ -159,6 +167,35 @@
             <span *ngIf="submitting" class="iv-spinner-sm"></span>
           </button>
         </div>
+      </div>
+
+      <!-- ── TASK_VIEW ── -->
+      <div *ngIf="nodeView.nodeType === 'TASK_VIEW'" class="iv-card">
+        <div *ngIf="nodeView.records && nodeView.records.length > 0" class="iv-table-wrap">
+          <table class="iv-table">
+            <thead>
+              <tr>
+                <th *ngFor="let col of getRecordColumns(nodeView.records)">{{ formatColumnName(col) }}</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of nodeView.records">
+                <td *ngFor="let col of getRecordColumns(nodeView.records)">
+                  <span *ngIf="col === 'startedAt'">{{ row[col] | date:'MMM d, h:mm a' }}</span>
+                  <span *ngIf="col !== 'startedAt'">{{ row[col] ?? '—' }}</span>
+                </td>
+                <td>
+                  <button class="iv-submit-btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" (click)="openTask(row['_id'])">Open Task</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="iv-record-count">{{ nodeView.records.length }} task(s) pending</p>
+        </div>
+        <p *ngIf="!nodeView.records || nodeView.records.length === 0" class="iv-empty-text">
+          🎉 No pending tasks! You are all caught up.
+        </p>
       </div>
 
     </ng-container>

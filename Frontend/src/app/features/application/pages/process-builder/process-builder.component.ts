@@ -84,9 +84,11 @@ export class ProcessBuilderComponent implements OnInit {
 
   domainSlug = '';
   appSlug = '';
+  processSlug = '';
 
   hasExisting = false;
   processStatus: string | null = null;
+  themeColor = '#1e293b';
 
   // Definition fields
   name = '';
@@ -139,6 +141,12 @@ export class ProcessBuilderComponent implements OnInit {
 
   // ── APPROVAL config state ──────────────────────────────────────────────────
   approvalActions: ApprovalAction[] = [];
+  approverGroupId = '';
+  appGroups: any[] = [];
+
+  // ── TASK_VIEW config state ──────────────────────────────────────────────────
+  tvModelId = '';
+  tvDisplayFields: string[] = [];
 
   // ── Ancestor field refs (for DATA_ACTION / CONDITION dropdowns) ────────────
   ancestorFieldRefs: { ref: string; label: string }[] = [];
@@ -165,17 +173,32 @@ export class ProcessBuilderComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.domainSlug = this.route.snapshot.params['slug'];
-    this.appSlug    = this.route.snapshot.params['appSlug'];
+    this.domainSlug  = this.route.snapshot.params['slug'];
+    this.appSlug     = this.route.snapshot.params['appSlug'];
+    this.processSlug = this.route.snapshot.params['processSlug'];
+    this.loadTheme();
     this.loadModels();
     this.load();
+  }
+
+  private loadTheme() {
+    const THEME_MAP: Record<string, string> = {
+      midnight: '#1a1a2e', ocean: '#0c4a6e', forest: '#14532d', ember: '#7f1d1d',
+      violet: '#3b0764', steel: '#1e293b', rose: '#881337', amber: '#78350f',
+      teal: '#134e4a', indigo: '#312e81', slate: '#0f172a', plum: '#4a044e',
+      pine: '#052e16', crimson: '#450a0a', navy: '#1e3a5f', graphite: '#374151',
+    };
+    const appKey = `at-${this.domainSlug}-${this.appSlug}`;
+    const domKey = `dt-${this.domainSlug}`;
+    const id = localStorage.getItem(appKey) || localStorage.getItem(domKey) || 'midnight';
+    this.themeColor = THEME_MAP[id] ?? '#1e293b';
   }
 
   // ── Load process ───────────────────────────────────────────────────────────
 
   load(): void {
     this.loading = true;
-    this.processService.getProcess(this.domainSlug, this.appSlug).subscribe({
+    this.processService.getProcess(this.domainSlug, this.appSlug, this.processSlug).subscribe({
       next: (res) => {
         const d = res.definition;
         this.name           = d.name;
@@ -215,6 +238,10 @@ export class ProcessBuilderComponent implements OnInit {
     this.domainService.getDomainModels(this.domainSlug, this.appSlug).subscribe({
       next: (models: any[]) => { this.availableModels = models || []; this.modelsLoading = false; },
       error: () => { this.modelsLoading = false; }
+    });
+    this.domainService.getAppGroups(this.domainSlug, this.appSlug).subscribe({
+      next: (groups: any[]) => { this.appGroups = groups || []; },
+      error: () => {}
     });
   }
 
@@ -299,6 +326,12 @@ export class ProcessBuilderComponent implements OnInit {
 
       case 'APPROVAL':
         this.approvalActions = (c['actions'] || []).map((a: any) => ({ ...a }));
+        this.approverGroupId = c['approverGroupId'] || '';
+        break;
+
+      case 'TASK_VIEW':
+        this.tvModelId = c['modelId'] || '';
+        this.tvDisplayFields = [...(c['displayFields'] || [])];
         break;
     }
   }
@@ -314,7 +347,9 @@ export class ProcessBuilderComponent implements OnInit {
       case 'CONDITION':
         return { rules: this.conditionRules, defaultEdgeId: this.conditionDefaultEdge };
       case 'APPROVAL':
-        return { actions: this.approvalActions };
+        return { actions: this.approvalActions, approverGroupId: this.approverGroupId };
+      case 'TASK_VIEW':
+        return { modelId: this.tvModelId, displayFields: this.tvDisplayFields };
       default:
         return {};
     }
@@ -335,6 +370,9 @@ export class ProcessBuilderComponent implements OnInit {
     this.conditionRules     = [];
     this.conditionDefaultEdge = '';
     this.approvalActions    = [];
+    this.approverGroupId    = '';
+    this.tvModelId          = '';
+    this.tvDisplayFields    = [];
     this.ancestorFieldRefs  = [];
   }
 
@@ -493,6 +531,14 @@ export class ProcessBuilderComponent implements OnInit {
 
   // ── CONDITION ─────────────────────────────────────────────────────────────
 
+  isTvFieldSelected(key: string): boolean { return this.tvDisplayFields.includes(key); }
+
+  toggleTvField(key: string): void {
+    this.tvDisplayFields = this.isTvFieldSelected(key)
+      ? this.tvDisplayFields.filter(f => f !== key)
+      : [...this.tvDisplayFields, key];
+  }
+
   addConditionRule(): void {
     this.conditionRules = [...this.conditionRules, {
       conditions: [{ field: '', operator: 'EQUALS', value: '' }],
@@ -569,6 +615,10 @@ export class ProcessBuilderComponent implements OnInit {
 
   save(): void {
     if (this.isPublished) return;
+    if (this.isArchived) {
+      this.saveArchivedAsDraft(false);
+      return;
+    }
     if (!this.name.trim()) { this.error = 'Process name is required'; return; }
     this.saving = true;
     this.error = '';
@@ -585,8 +635,8 @@ export class ProcessBuilderComponent implements OnInit {
     };
 
     const req$ = this.hasExisting
-      ? this.processService.updateProcess(this.domainSlug, this.appSlug, payload)
-      : this.processService.createProcess(this.domainSlug, this.appSlug, payload);
+      ? this.processService.updateProcess(this.domainSlug, this.appSlug, this.processSlug, payload)
+      : this.processService.createProcess(this.domainSlug, this.appSlug, this.processSlug, payload);
 
     req$.subscribe({
       next: (res) => {
@@ -606,10 +656,14 @@ export class ProcessBuilderComponent implements OnInit {
 
   publish(): void {
     if (this.isPublished) return;
+    if (this.isArchived) {
+      this.saveArchivedAsDraft(true);
+      return;
+    }
     this.saving = true;
     this.error = '';
     this.successMsg = '';
-    this.processService.publishProcess(this.domainSlug, this.appSlug).subscribe({
+    this.processService.publishProcess(this.domainSlug, this.appSlug, this.processSlug).subscribe({
       next: (res) => {
         this.saving = false;
         this.processStatus = res.definition.status;
@@ -627,7 +681,7 @@ export class ProcessBuilderComponent implements OnInit {
     this.saving = true;
     this.error = '';
     this.successMsg = '';
-    this.processService.archiveProcess(this.domainSlug, this.appSlug).subscribe({
+    this.processService.archiveProcess(this.domainSlug, this.appSlug, this.processSlug).subscribe({
       next: () => {
         // Immediately create a new DRAFT with current content so editing continues seamlessly
         const payload = {
@@ -638,7 +692,7 @@ export class ProcessBuilderComponent implements OnInit {
           edges: this.edges,
           settings: this.settings,
         };
-        this.processService.createProcess(this.domainSlug, this.appSlug, payload).subscribe({
+        this.processService.createProcess(this.domainSlug, this.appSlug, this.processSlug, payload).subscribe({
           next: (res) => {
             this.saving = false;
             this.hasExisting   = true;
@@ -659,28 +713,45 @@ export class ProcessBuilderComponent implements OnInit {
     });
   }
 
-  createNewDraft(): void {
+  deleteDraft(): void {
+    if (!confirm('Delete this draft? This cannot be undone.')) return;
+    this.saving = true;
+    this.processService.deleteProcess(this.domainSlug, this.appSlug, this.processSlug).subscribe({
+      next: () => {
+        this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'processes']);
+      },
+      error: (err: any) => {
+        this.saving = false;
+        this.error = err?.error?.message || 'Delete failed';
+      }
+    });
+  }
+
+  saveArchivedAsDraft(autoPublish: boolean): void {
+    if (!this.name.trim()) { this.error = 'Process name is required'; return; }
     this.saving = true;
     this.error = '';
     this.successMsg = '';
     const payload = {
-      name: this.name,
+      name: this.name.trim(),
       description: this.description,
       linkedModelIds: this.linkedModelIds,
       nodes: this.nodes,
       edges: this.edges,
       settings: this.settings,
     };
-    this.processService.createProcess(this.domainSlug, this.appSlug, payload).subscribe({
+    this.processService.createProcess(this.domainSlug, this.appSlug, this.processSlug, payload).subscribe({
       next: (res) => {
         this.saving = false;
         this.hasExisting   = true;
         this.processStatus = res.definition.status;
-        this.successMsg    = 'New draft created. You can now edit and publish.';
+        this.successMsg    = 'Saved changes as a new draft.';
+        if (!res.valid) this.successMsg += ' (Fix validation issues before publishing.)';
+        if (autoPublish) this.publish();
       },
       error: (err: any) => {
         this.saving = false;
-        this.error = err?.error?.message || 'Failed to create new draft';
+        this.error = err?.error?.message || 'Failed to auto-draft changes';
       }
     });
   }

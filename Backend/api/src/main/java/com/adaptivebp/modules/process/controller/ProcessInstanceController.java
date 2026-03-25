@@ -51,15 +51,15 @@ public class ProcessInstanceController {
 
     // ── Runtime endpoints ─────────────────────────────────────────────────────
 
-    // Any authenticated domain user can start a process
-    @PostMapping("/instances/start")
-    public ResponseEntity<?> startProcess(@PathVariable String slug, @PathVariable String appSlug) {
+    // Any authenticated domain user can start a specific process
+    @PostMapping("/processes/{processSlug}/instances/start")
+    public ResponseEntity<?> startProcess(@PathVariable String slug, @PathVariable String appSlug, @PathVariable String processSlug) {
         Context ctx = resolve(slug, appSlug);
         requireAuthenticated();
 
         String userId = currentUserId();
         ProcessInstanceResponse response = engineService.startProcess(
-                ctx.domain().getId(), ctx.app().getId(), userId);
+                ctx.domain().getId(), ctx.app().getId(), processSlug, userId);
         return ResponseEntity.ok(response);
     }
 

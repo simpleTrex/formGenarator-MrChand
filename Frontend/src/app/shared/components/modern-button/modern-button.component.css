@@ -50,7 +50,7 @@
 /* Primary: Neon Green background, Dark text */
 .btn-primary {
   background-color: var(--accent-neon);
-  color: var(--bg-dark);
+  color: var(--btn-primary-text, var(--bg-dark));
   border-color: var(--accent-neon);
 }
 

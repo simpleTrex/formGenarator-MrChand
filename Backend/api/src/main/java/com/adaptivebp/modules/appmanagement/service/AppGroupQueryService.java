@@ -47,4 +47,9 @@ public class AppGroupQueryService implements AppGroupQueryPort {
         }
         return permissions;
     }
+
+    @Override
+    public boolean isMemberOfAppGroup(String groupId, String userId) {
+        return appGroupMemberRepository.findByGroupIdAndUserId(groupId, userId).isPresent();
+    }
 }

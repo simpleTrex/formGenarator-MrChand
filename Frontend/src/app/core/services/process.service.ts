@@ -19,38 +19,38 @@ export class ProcessService {
 
   // ── Process Definition (1 per app) ───────────────────────────────────────
 
-  getProcess(slug: string, appSlug: string): Observable<ProcessDefinitionResponse> {
-    return this.api.get(`${this.base(slug, appSlug)}/process`, true);
+  getProcess(slug: string, appSlug: string, processSlug: string): Observable<ProcessDefinitionResponse> {
+    return this.api.get(`${this.base(slug, appSlug)}/processes/${processSlug}`, true);
   }
 
   listProcesses(slug: string, appSlug: string): Observable<ProcessDefinitionResponse[]> {
-    return this.getProcess(slug, appSlug).pipe(map(res => [res]));
+    return this.api.get(`${this.base(slug, appSlug)}/processes`, true);
   }
 
-  createProcess(slug: string, appSlug: string, payload: any): Observable<ProcessDefinitionResponse> {
-    return this.api.post(`${this.base(slug, appSlug)}/process`, true, payload);
+  createProcess(slug: string, appSlug: string, processSlug: string, payload: any): Observable<ProcessDefinitionResponse> {
+    return this.api.post(`${this.base(slug, appSlug)}/processes/${processSlug}`, true, payload);
   }
 
-  updateProcess(slug: string, appSlug: string, payload: any): Observable<ProcessDefinitionResponse> {
-    return this.api.put(`${this.base(slug, appSlug)}/process`, true, payload);
+  updateProcess(slug: string, appSlug: string, processSlug: string, payload: any): Observable<ProcessDefinitionResponse> {
+    return this.api.put(`${this.base(slug, appSlug)}/processes/${processSlug}`, true, payload);
   }
 
-  deleteProcess(slug: string, appSlug: string): Observable<any> {
-    return this.api.delete(`${this.base(slug, appSlug)}/process`, true, null);
+  deleteProcess(slug: string, appSlug: string, processSlug: string): Observable<any> {
+    return this.api.delete(`${this.base(slug, appSlug)}/processes/${processSlug}`, true, null);
   }
 
-  publishProcess(slug: string, appSlug: string): Observable<ProcessDefinitionResponse> {
-    return this.api.post(`${this.base(slug, appSlug)}/process/publish`, true, {});
+  publishProcess(slug: string, appSlug: string, processSlug: string): Observable<ProcessDefinitionResponse> {
+    return this.api.post(`${this.base(slug, appSlug)}/processes/${processSlug}/publish`, true, {});
   }
 
-  archiveProcess(slug: string, appSlug: string): Observable<any> {
-    return this.api.post(`${this.base(slug, appSlug)}/process/archive`, true, {});
+  archiveProcess(slug: string, appSlug: string, processSlug: string): Observable<any> {
+    return this.api.post(`${this.base(slug, appSlug)}/processes/${processSlug}/archive`, true, {});
   }
 
   // ── Process Instances ─────────────────────────────────────────────────────
 
-  startProcess(slug: string, appSlug: string): Observable<ProcessInstanceResponse> {
-    return this.api.post(`${this.base(slug, appSlug)}/instances/start`, true, {});
+  startProcess(slug: string, appSlug: string, processSlug: string): Observable<ProcessInstanceResponse> {
+    return this.api.post(`${this.base(slug, appSlug)}/processes/${processSlug}/instances/start`, true, {});
   }
 
   listInstances(slug: string, appSlug: string): Observable<ProcessInstance[]> {

@@ -8,5 +8,6 @@ public enum NodeType {
     CONDITION,
     APPROVAL,
     NOTIFICATION,
+    TASK_VIEW,
     END
 }

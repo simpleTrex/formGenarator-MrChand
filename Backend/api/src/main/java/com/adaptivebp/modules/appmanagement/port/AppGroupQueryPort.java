@@ -15,4 +15,9 @@ public interface AppGroupQueryPort {
      * all app groups they are a member of for the given application.
      */
     Set<AppPermission> getAppPermissions(String appId, String userId);
+
+    /**
+     * Checks whether a user is a member of the given app group.
+     */
+    boolean isMemberOfAppGroup(String groupId, String userId);
 }
