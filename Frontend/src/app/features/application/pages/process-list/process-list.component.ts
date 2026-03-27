@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcessService } from '../../../../core/services/process.service';
+import { DomainService } from '../../../../core/services/domain.service';
 import { ProcessDefinitionResponse, ProcessDefinition, STATUS_BADGE_CLASS } from '../../../../core/models/process.model';
 
 @Component({
@@ -25,6 +26,7 @@ export class ProcessListComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private processService: ProcessService,
+    private domainService: DomainService,
   ) {}
 
   ngOnInit(): void {
@@ -52,7 +54,8 @@ export class ProcessListComponent implements OnInit {
   }
 
   createNew(): void {
-    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'processes', 'new']);
+    // Navigate to process builder where users can choose templates or start from scratch
+    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'process']);
   }
 
   editProcess(slug: string): void {

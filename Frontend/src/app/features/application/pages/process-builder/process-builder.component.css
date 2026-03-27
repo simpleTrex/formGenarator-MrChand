@@ -710,12 +710,56 @@
 .inline-form h4 { font-size: 1rem; font-weight: 700; color: var(--text-dark); margin: 0 0 0.5rem; }
 
 /* ── Flow preview ─────────────────────────────────────────────────────────── */
-.flow-canvas {
-  overflow-x: auto;
+/* ── Flow canvas with zoom controls ───────────────────────────────────────── */
+.flow-canvas-wrap {
+  position: relative;
   border: 1px solid rgba(0,0,0,0.07);
   border-radius: 8px;
   background: #f8fafc;
-  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.flow-controls {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.25rem;
+  z-index: 10;
+  background: white;
+  border-radius: 6px;
+  padding: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.flow-ctrl-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.flow-ctrl-btn:hover {
+  background: rgba(99,102,241,0.08);
+  color: #4f46e5;
+}
+
+.flow-ctrl-btn:active {
+  transform: scale(0.95);
+}
+
+.flow-canvas {
+  overflow: auto;
+  padding: 1rem;
 }
 
 .flow-legend {
@@ -768,3 +812,127 @@
 .mt-2 { margin-top: 0.75rem; }
 .mt-3 { margin-top: 1rem; }
 .mt-4 { margin-top: 1.5rem; }
+
+/* ── Template Selector Modal ─────────────────────────────────────────────── */
+.template-modal {
+  max-width: 900px;
+  width: 90vw;
+  max-height: 80vh;
+}
+
+.template-body {
+  padding: 20px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.template-card {
+  background: #fff;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  position: relative;
+}
+
+.template-card:hover {
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.template-card.scratch-card {
+  border-color: #28a745;
+  background: linear-gradient(135deg, #f8fff9 0%, #e9f7ea 100%);
+}
+
+.template-card.scratch-card:hover {
+  border-color: #20c997;
+  background: linear-gradient(135deg, #f0fff2 0%, #d1f2d4 100%);
+}
+
+.template-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.template-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.template-desc {
+  font-size: 14px;
+  color: #6c757d;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.template-category {
+  display: inline-block;
+  background: #e9ecef;
+  color: #495057;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.template-nodes-count {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #007bff;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.empty-templates {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.empty-templates h4 {
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.empty-templates p {
+  margin-bottom: 24px;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}

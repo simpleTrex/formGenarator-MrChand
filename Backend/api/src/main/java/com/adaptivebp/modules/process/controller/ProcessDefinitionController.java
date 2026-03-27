@@ -1,5 +1,8 @@
 package com.adaptivebp.modules.process.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +27,8 @@ import com.adaptivebp.modules.process.dto.ProcessDefinitionResponse;
 import com.adaptivebp.modules.process.dto.UpdateProcessRequest;
 import com.adaptivebp.modules.process.dto.ValidationResult;
 import com.adaptivebp.modules.process.model.ProcessDefinition;
+import com.adaptivebp.modules.process.model.ProcessTemplate;
+import com.adaptivebp.modules.process.repository.ProcessTemplateRepository;
 import com.adaptivebp.modules.process.service.ProcessDefinitionService;
 import com.adaptivebp.modules.process.service.ProcessValidationService;
 import com.adaptivebp.shared.security.AdaptiveUserDetails;
@@ -46,6 +51,7 @@ public class ProcessDefinitionController {
     @Autowired private PermissionService permissionService;
     @Autowired private ProcessDefinitionService definitionService;
     @Autowired private ProcessValidationService validationService;
+    @Autowired private ProcessTemplateRepository templateRepository;
 
     /** GET /process — get this app's process definition (latest version) */
     @GetMapping
@@ -115,6 +121,50 @@ public class ProcessDefinitionController {
         ProcessDefinition archived = definitionService.archiveProcess(
                 ctx.domain().getId(), ctx.app().getId(), appSlug);
         return ResponseEntity.ok(archived);
+    }
+
+    // ── Process Templates ─────────────────────────────────────────────────────
+
+    /** GET /process/templates — list all available process templates */
+    @GetMapping("/templates")
+    public ResponseEntity<?> listTemplates(@PathVariable String slug, @PathVariable String appSlug) {
+        Context ctx = resolve(slug, appSlug);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_PROCESSES);
+
+        List<ProcessTemplate> templates = templateRepository.findAll();
+        return ResponseEntity.ok(templates);
+    }
+
+    /** POST /process/from-template — create process from template */
+    @PostMapping("/from-template")
+    public ResponseEntity<?> createFromTemplate(@PathVariable String slug, @PathVariable String appSlug,
+            @RequestBody Map<String, Object> body) {
+        Context ctx = resolve(slug, appSlug);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_PROCESSES);
+
+        String templateId = (String) body.get("templateId");
+        if (templateId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "templateId is required");
+        }
+
+        // Extract linkedModelIds if provided
+        @SuppressWarnings("unchecked")
+        List<String> linkedModelIds = (List<String>) body.get("linkedModelIds");
+
+        ProcessTemplate template = templateRepository.findById(templateId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Template not found"));
+
+        // Create a new process definition from the template
+        ProcessDefinition process = definitionService.createFromTemplate(
+                ctx.domain().getId(),
+                ctx.app().getId(),
+                appSlug,
+                template,
+                linkedModelIds,
+                currentUserId()
+        );
+
+        return ResponseEntity.ok(ProcessDefinitionResponse.of(process, false));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

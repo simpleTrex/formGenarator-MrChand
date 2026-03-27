@@ -20,7 +20,10 @@
     <app-modern-card theme="light">
       <div class="panel-header">
         <h3>Models</h3>
-        <app-modern-button variant="outline" size="sm" (click)="newModel()" [disabled]="!canManageModels">+ New</app-modern-button>
+        <div class="button-group">
+          <app-modern-button variant="outline" size="sm" (click)="newFromTemplate()" [disabled]="!canManageModels">📋 Templates</app-modern-button>
+          <app-modern-button variant="outline" size="sm" (click)="newModel()" [disabled]="!canManageModels">+ New</app-modern-button>
+        </div>
       </div>
 
       <div *ngIf="models.length === 0" class="info-text">No models yet.</div>
@@ -111,4 +114,63 @@
       </form>
     </app-modern-card>
   </div>
+
+  <!-- ── MODEL TEMPLATE SELECTOR MODAL ─────────────────────────────────────────── -->
+  <div class="template-overlay" *ngIf="showTemplateModal" (click)="closeTemplateModal()">
+    <div class="template-modal" (click)="$event.stopPropagation()">
+
+      <!-- Modal header -->
+      <div class="template-header">
+        <div>
+          <h3 class="template-title">Choose Data Model Template</h3>
+          <p class="template-subtitle">Start with a pre-built model or create from scratch</p>
+        </div>
+        <button class="template-close" (click)="closeTemplateModal()">×</button>
+      </div>
+
+      <!-- Modal body -->
+      <div class="template-body">
+
+        <!-- Loading state -->
+        <div *ngIf="templatesLoading" class="loading-state">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p>Loading model templates...</p>
+        </div>
+
+        <!-- Templates grid -->
+        <div *ngIf="!templatesLoading" class="templates-grid">
+
+          <!-- Start from scratch option -->
+          <div class="template-card scratch-card" (click)="startFromScratch()">
+            <div class="template-icon">🔧</div>
+            <h4 class="template-name">Start from Scratch</h4>
+            <p class="template-desc">Create a custom data model with your own fields</p>
+            <div class="template-category">Custom</div>
+          </div>
+
+          <!-- Template options -->
+          <div *ngFor="let template of modelTemplates"
+               class="template-card"
+               (click)="selectModelTemplate(template)">
+            <div class="template-icon">📊</div>
+            <h4 class="template-name">{{ template.name }}</h4>
+            <p class="template-desc">{{ template.description }}</p>
+            <div class="template-category">{{ template.category }}</div>
+            <div class="template-fields-count">{{ (template.fields || []).length }} fields</div>
+          </div>
+
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="!templatesLoading && modelTemplates.length === 0" class="empty-templates">
+          <div class="empty-icon">📊</div>
+          <h4>No Templates Available</h4>
+          <p>No model templates are available. You can start from scratch.</p>
+          <button class="btn-primary" (click)="startFromScratch()">Start from Scratch</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </div>

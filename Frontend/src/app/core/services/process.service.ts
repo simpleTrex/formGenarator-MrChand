@@ -47,6 +47,20 @@ export class ProcessService {
     return this.api.post(`${this.base(slug, appSlug)}/process/archive`, true, {});
   }
 
+  // ── Process Templates ─────────────────────────────────────────────────────
+
+  listTemplates(slug: string, appSlug: string): Observable<any[]> {
+    return this.api.get(`${this.base(slug, appSlug)}/process/templates`, true);
+  }
+
+  createFromTemplate(slug: string, appSlug: string, templateId: string, linkedModelIds?: string[]): Observable<ProcessDefinitionResponse> {
+    const payload: any = { templateId };
+    if (linkedModelIds && linkedModelIds.length > 0) {
+      payload.linkedModelIds = linkedModelIds;
+    }
+    return this.api.post(`${this.base(slug, appSlug)}/process/from-template`, true, payload);
+  }
+
   // ── Process Instances ─────────────────────────────────────────────────────
 
   startProcess(slug: string, appSlug: string): Observable<ProcessInstanceResponse> {

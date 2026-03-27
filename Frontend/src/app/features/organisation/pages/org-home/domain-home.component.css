@@ -300,6 +300,16 @@
 }
 .d-outline-btn:hover { border-color: var(--tp, #1a1a2e); color: var(--tp, #1a1a2e); }
 
+.d-quick-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.d-quick-actions .d-outline-btn {
+  font-size: 0.875rem;
+}
+
 .d-outline-full-btn {
   width: 100%;
   background: transparent;

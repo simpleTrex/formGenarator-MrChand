@@ -23,6 +23,7 @@ export type DomainFieldType =
   | 'DATE'
   | 'DATETIME'
   | 'REFERENCE'
+  | 'EMPLOYEE_REFERENCE'
   | 'OBJECT'
   | 'ARRAY';
 
@@ -156,6 +157,54 @@ export class DomainService {
 
   deleteDomainModel(domainSlug: string, appSlug: string, modelSlug: string): Observable<any> {
     return this.baseService.delete(`${this.adaptive}/domains/${domainSlug}/models/${encodeURIComponent(modelSlug)}?appSlug=${encodeURIComponent(appSlug)}`, true, {});
+  }
+
+  // Employee Management (Domain-scoped)
+  getEmployeeModel(domainSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/models/employees`, true);
+  }
+
+  getEmployees(domainSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/models/employees/records`, true);
+  }
+
+  createEmployee(domainSlug: string, employeeData: any): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${domainSlug}/models/employees/records`, true, employeeData);
+  }
+
+  updateEmployee(domainSlug: string, recordId: string, employeeData: any): Observable<any> {
+    return this.baseService.put(`${this.adaptive}/domains/${domainSlug}/models/employees/records/${recordId}`, true, employeeData);
+  }
+
+  deleteEmployee(domainSlug: string, recordId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${domainSlug}/models/employees/records/${recordId}`, true, {});
+  }
+
+  // Model Templates
+  listModelTemplates(domainSlug: string, appSlug: string): Observable<any[]> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/models/templates?appSlug=${encodeURIComponent(appSlug)}`, true);
+  }
+
+  // Model Templates
+  getModelTemplates(domainSlug: string, appSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/models/templates?appSlug=${encodeURIComponent(appSlug)}`, true);
+  }
+
+  createModelFromTemplate(domainSlug: string, appSlug: string, templateId: string, modelSlug: string, modelName: string): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${domainSlug}/models/from-template?appSlug=${encodeURIComponent(appSlug)}`, true, {
+      templateId,
+      modelSlug,
+      modelName
+    });
+  }
+
+  // Process Templates
+  getProcessTemplates(domainSlug: string, appSlug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/process/templates`, true);
+  }
+
+  createProcessFromTemplate(domainSlug: string, appSlug: string, templateId: string): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${domainSlug}/apps/${appSlug}/process/from-template`, true, { templateId });
   }
 }
 

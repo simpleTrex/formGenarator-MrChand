@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { ProcessService } from '../../../../core/services/process.service';
 import { DomainService } from '../../../../core/services/domain.service';
 import {
@@ -100,6 +101,11 @@ export class ProcessBuilderComponent implements OnInit {
   availableModels: any[] = [];
   modelsLoading = false;
 
+  // Process templates
+  processTemplates: any[] = [];
+  templatesLoading = false;
+  showTemplateModal = false;
+
   // UI state
   loading = false;
   saving = false;
@@ -147,6 +153,9 @@ export class ProcessBuilderComponent implements OnInit {
   flowNodes: FlowLayoutNode[] = [];
   flowEdges: FlowLayoutEdge[] = [];
   disconnectedNodeIds: string[] = [];
+  flowZoom = 1;
+  flowPanX = 0;
+  flowPanY = 0;
 
   // Edge form
   showEdgeForm = false;
@@ -192,7 +201,7 @@ export class ProcessBuilderComponent implements OnInit {
         if (err?.status === 404) {
           this.hasExisting   = false;
           this.processStatus = null;
-          this.seedDefaults();
+          this.showTemplateSelector();
         } else {
           this.error = err?.error?.message || 'Failed to load process';
         }
@@ -208,13 +217,281 @@ export class ProcessBuilderComponent implements OnInit {
     ];
   }
 
+  // ── Template Selection ─────────────────────────────────────────────────────
+
+  private showTemplateSelector(): void {
+    this.templatesLoading = true;
+    this.processService.listTemplates(this.domainSlug, this.appSlug).subscribe({
+      next: (templates) => {
+        this.processTemplates = templates || [];
+        this.templatesLoading = false;
+        this.showTemplateModal = true;
+      },
+      error: (err) => {
+        console.error('Failed to load templates:', err);
+        this.templatesLoading = false;
+        // Fall back to default when template loading fails
+        this.seedDefaults();
+      }
+    });
+  }
+
+  selectTemplate(template: any): void {
+    if (!template) return;
+
+    // Check if template has required models
+    if (template.requiredModels && template.requiredModels.length > 0) {
+      this.checkAndCreateRequiredModels(template);
+    } else {
+      // No required models, proceed directly
+      this.createProcessFromTemplate(template);
+    }
+  }
+
+  private checkAndCreateRequiredModels(template: any): void {
+    const requiredModelSlugs = Array.from(new Set(
+      (template.requiredModels || []).map((slug: string) => this.normalizeSlug(slug)).filter(Boolean)
+    ));
+    const existingModelSlugs = this.availableModels
+      .map(m => this.normalizeSlug(m?.slug))
+      .filter(Boolean);
+    const missingModels = requiredModelSlugs.filter((slug: string) => !existingModelSlugs.includes(slug));
+    const existingRequiredIds = this.getModelIdsForSlugs(requiredModelSlugs);
+
+    if (missingModels.length === 0) {
+      // All required models exist, link them and proceed
+      this.linkedModelIds = Array.from(new Set([...this.linkedModelIds, ...existingRequiredIds]));
+      this.createProcessFromTemplate(template);
+      return;
+    }
+
+    // Some models are missing, ask user if they want to create them
+    const modelList = missingModels.join(', ');
+    const confirmed = confirm(
+      `This workflow template requires the following data models that don't exist yet:\n\n` +
+      `Missing models: ${modelList}\n\n` +
+      `Would you like to create these models automatically?\n\n` +
+      `(You can always edit them later in the Models section)`
+    );
+
+    if (!confirmed) {
+      this.showTemplateModal = true; // Show modal again
+      return;
+    }
+
+    // User agreed to create missing models
+    this.createMissingModels(missingModels, template, requiredModelSlugs, existingRequiredIds);
+  }
+
+  private createMissingModels(
+    missingModelSlugs: string[],
+    template: any,
+    requiredModelSlugs: string[],
+    existingRequiredIds: string[]
+  ): void {
+    this.saving = true;
+    this.error = '';
+
+    console.log('=== START: Creating missing models ===');
+    console.log('Domain:', this.domainSlug, 'App:', this.appSlug);
+    console.log('Missing model slugs:', missingModelSlugs);
+
+    // Create models sequentially using the model template system
+    const createPromises = missingModelSlugs.map(slug => {
+      console.log(`[${slug}] Calling createModelFromTemplate API...`);
+      return this.domainService.createModelFromTemplate(
+        this.domainSlug,
+        this.appSlug,
+        slug, // template ID matches the slug
+        slug, // model slug
+        this.formatModelName(slug) // user-friendly name
+      ).toPromise().then(createdModel => {
+        console.log(`[${slug}] SUCCESS: Model created:`, createdModel);
+        if (!createdModel || !createdModel.id) {
+          console.error(`[${slug}] WARNING: Created model has no ID:`, createdModel);
+        }
+        return createdModel;
+      }).catch(error => {
+        console.error(`[${slug}] ERROR: Failed to create model:`, error);
+        console.error(`[${slug}] Error details:`, {
+          status: error?.status,
+          statusText: error?.statusText,
+          message: error?.error?.message,
+          error: error?.error
+        });
+        throw error;
+      });
+    });
+
+    Promise.all(createPromises).then((createdModels) => {
+      console.log('=== All models created ===');
+      console.log('Created models:', createdModels);
+
+      // Add created model IDs to linkedModelIds so they show up as linked
+      const newModelIds = createdModels
+        .filter(model => model && model.id)
+        .map(model => model.id);
+
+      console.log('New model IDs to link:', newModelIds);
+
+      const combinedModelIds = Array.from(new Set([...existingRequiredIds, ...newModelIds]));
+
+      if (combinedModelIds.length === 0) {
+        console.error('WARNING: No model IDs were returned from creation!');
+        this.saving = false;
+        this.error = 'Models were created but no IDs were returned. Please refresh the page.';
+        return;
+      }
+
+      this.linkedModelIds = Array.from(new Set([...this.linkedModelIds, ...combinedModelIds]));
+      console.log('Updated linkedModelIds:', this.linkedModelIds);
+
+      // Refresh available models to show them in the UI
+      console.log('Reloading models list...');
+      this.loadModels();
+
+      // Small delay to ensure models are loaded before creating process
+      setTimeout(() => {
+        console.log('Available models after reload:', this.availableModels.length, 'models');
+        const resolvedRequiredIds = this.getModelIdsForSlugs(requiredModelSlugs);
+        if (resolvedRequiredIds.length > 0) {
+          this.linkedModelIds = Array.from(new Set([...this.linkedModelIds, ...resolvedRequiredIds]));
+        }
+        console.log('Creating process from template...');
+        this.createProcessFromTemplate(template);
+      }, 1000); // Increased delay to 1 second
+    }).catch((err) => {
+      this.saving = false;
+      console.error('=== FAILED: Error creating models ===');
+      console.error('Error object:', err);
+      this.error = `Failed to create required models: ${err?.error?.message || err?.message || 'Unknown error'}. Check browser console for details.`;
+      alert(this.error); // Show alert to make error visible
+    });
+  }
+
+  private createProcessFromTemplate(template: any): void {
+    this.showTemplateModal = false;
+    this.saving = true;
+
+    console.log('[createProcessFromTemplate] Template:', template.name);
+    console.log('[createProcessFromTemplate] Linked model IDs to pass:', this.linkedModelIds);
+
+    this.processService.createFromTemplate(this.domainSlug, this.appSlug, template.id, this.linkedModelIds).subscribe({
+      next: (res) => {
+        const d = res.definition;
+        this.name           = d.name;
+        this.description    = d.description || '';
+        // Keep the linkedModelIds we just populated from created models
+        // and merge with any that might come from template
+        const templateModelIds = d.linkedModelIds || [];
+        this.linkedModelIds = Array.from(new Set([...this.linkedModelIds, ...templateModelIds]));
+        this.nodes          = d.nodes || [];
+        this.edges          = d.edges || [];
+        this.settings       = d.settings || { allowSaveDraft: false, requireAuth: true };
+        this.processStatus  = d.status;
+        this.hasExisting    = true;
+
+        // If we have linked models from created models, save the process to persist the links
+        if (this.linkedModelIds.length > 0) {
+          this.saveProcess().subscribe({
+            next: () => {
+              this.saving = false;
+              this.successMsg = `Process created from template: ${template.name}. Required models created and linked successfully!`;
+            },
+            error: (saveErr) => {
+              this.saving = false;
+              this.error = 'Process created but failed to link models: ' + (saveErr?.error?.message || saveErr.message);
+            }
+          });
+        } else {
+          this.saving = false;
+          this.successMsg = `Process created from template: ${template.name}`;
+        }
+      },
+      error: (err) => {
+        this.saving = false;
+        this.error = err?.error?.message || 'Failed to create process from template';
+        this.showTemplateModal = true; // Show modal again on error
+      }
+    });
+  }
+
+  private formatModelName(slug: string): string {
+    // Convert slug to user-friendly name (e.g., "leave-request" -> "Leave Request")
+    return slug.split('-').map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  }
+
+  private normalizeSlug(input: string): string {
+    return (input || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+/, '')
+      .replace(/-+$/, '');
+  }
+
+  private getModelIdsForSlugs(slugs: string[]): string[] {
+    const slugToId = new Map<string, string>();
+    this.availableModels.forEach(m => {
+      const normalized = this.normalizeSlug(m?.slug);
+      if (normalized && m?.id) {
+        slugToId.set(normalized, m.id);
+      }
+    });
+    return slugs
+      .map(slug => slugToId.get(this.normalizeSlug(slug)))
+      .filter((id): id is string => !!id);
+  }
+
+  startFromScratch(): void {
+    this.showTemplateModal = false;
+    this.seedDefaults();
+  }
+
+  openTemplateModal(): void {
+    this.showTemplateModal = true;
+    this.loadProcessTemplates();
+  }
+
+  loadProcessTemplates(): void {
+    this.templatesLoading = true;
+    this.processService.listTemplates(this.domainSlug, this.appSlug).subscribe({
+      next: (templates: any[]) => {
+        this.processTemplates = templates || [];
+        this.templatesLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load process templates:', err);
+        this.templatesLoading = false;
+        this.error = 'Failed to load process templates';
+      }
+    });
+  }
+
+  closeTemplateModal(): void {
+    this.showTemplateModal = false;
+    // Navigate back to app if user closes without selecting
+    this.goBack();
+  }
+
   // ── Models ─────────────────────────────────────────────────────────────────
 
   loadModels(): void {
     this.modelsLoading = true;
+    console.log('[loadModels] Fetching models for domain:', this.domainSlug, 'app:', this.appSlug);
     this.domainService.getDomainModels(this.domainSlug, this.appSlug).subscribe({
-      next: (models: any[]) => { this.availableModels = models || []; this.modelsLoading = false; },
-      error: () => { this.modelsLoading = false; }
+      next: (models: any[]) => {
+        console.log('[loadModels] SUCCESS: Received', models?.length || 0, 'models');
+        console.log('[loadModels] Models:', models);
+        this.availableModels = models || [];
+        this.modelsLoading = false;
+      },
+      error: (err: any) => {
+        console.error('[loadModels] ERROR: Failed to load models:', err);
+        this.modelsLoading = false;
+      }
     });
   }
 
@@ -462,6 +739,7 @@ export class ProcessBuilderComponent implements OnInit {
     const map: Record<string, string> = {
       STRING: 'TEXT_INPUT', NUMBER: 'NUMBER_INPUT',
       BOOLEAN: 'CHECKBOX',  DATE: 'DATE_PICKER', DATETIME: 'DATE_PICKER',
+      EMPLOYEE_REFERENCE: 'EMPLOYEE_PICKER',
     };
     return map[type] || 'TEXT_INPUT';
   }
@@ -566,6 +844,26 @@ export class ProcessBuilderComponent implements OnInit {
   get isPublished(): boolean { return this.processStatus === 'PUBLISHED'; }
   get isArchived(): boolean  { return this.processStatus === 'ARCHIVED'; }
   get isDraft(): boolean     { return this.processStatus === 'DRAFT' || this.processStatus === null; }
+
+  // Method that returns an Observable (used for chaining)
+  saveProcess(): Observable<any> {
+    if (!this.name.trim()) {
+      throw new Error('Process name is required');
+    }
+
+    const payload = {
+      name: this.name.trim(),
+      description: this.description,
+      linkedModelIds: this.linkedModelIds,
+      nodes: this.nodes,
+      edges: this.edges,
+      settings: this.settings,
+    };
+
+    return this.hasExisting
+      ? this.processService.updateProcess(this.domainSlug, this.appSlug, payload)
+      : this.processService.createProcess(this.domainSlug, this.appSlug, payload);
+  }
 
   save(): void {
     if (this.isPublished) return;
@@ -729,11 +1027,12 @@ export class ProcessBuilderComponent implements OnInit {
   // ── Flow preview ──────────────────────────────────────────────────────────
 
   readonly FLOW_NODE_W = 160;
-  readonly FLOW_NODE_H = 50;
+  readonly FLOW_NODE_H = 60;
 
   computeFlowLayout(): void {
     const W = this.FLOW_NODE_W, H = this.FLOW_NODE_H;
-    const H_GAP = 240, V_GAP = 80;
+    const LEVEL_GAP = 140;  // Vertical spacing between levels
+    const NODE_GAP = 40;     // Horizontal spacing between nodes in same level
 
     // BFS reachability from START (for disconnected detection)
     const startNode = this.nodes.find(n => n.type === 'START');
@@ -771,7 +1070,7 @@ export class ProcessBuilderComponent implements OnInit {
       }
     }
 
-    // Disconnected nodes get a separate column on the right
+    // Disconnected nodes get a separate bottom level
     const maxLevel = Math.max(0, ...Array.from(levelMap.values()));
     const byLevel = new Map<number, string[]>();
     for (const n of this.nodes) {
@@ -780,9 +1079,16 @@ export class ProcessBuilderComponent implements OnInit {
       byLevel.get(level)!.push(n.id);
     }
 
+    // Compute positions (vertical flow: level → Y, center nodes horizontally)
     const posMap = new Map<string, { x: number; y: number }>();
     for (const [level, ids] of byLevel.entries()) {
-      ids.forEach((id, idx) => posMap.set(id, { x: level * H_GAP + 20, y: idx * V_GAP + 20 }));
+      const y = level * LEVEL_GAP + 20;
+      const totalWidth = ids.length * W + (ids.length - 1) * NODE_GAP;
+      const startX = 20;  // Left padding
+      ids.forEach((id, idx) => {
+        const x = startX + idx * (W + NODE_GAP);
+        posMap.set(id, { x, y });
+      });
     }
 
     this.flowNodes = this.nodes.map(n => {
@@ -794,7 +1100,7 @@ export class ProcessBuilderComponent implements OnInit {
       const from = this.flowNodes.find(n => n.id === e.fromNodeId);
       const to   = this.flowNodes.find(n => n.id === e.toNodeId);
       if (!from || !to || from === to) return [];
-      return [{ id: e.id, label: e.label, path: this.edgePath(from, to), midX: (from.x + from.width + to.x) / 2, midY: (from.y + from.height / 2 + to.y + to.height / 2) / 2 }];
+      return [{ id: e.id, label: e.label, path: this.edgePath(from, to), midX: (from.x + from.width / 2 + to.x + to.width / 2) / 2, midY: (from.y + from.height + to.y) / 2 }];
     });
 
     this.disconnectedNodeIds = this.nodes.filter(n => !reachable.has(n.id)).map(n => n.id);
@@ -802,19 +1108,39 @@ export class ProcessBuilderComponent implements OnInit {
 
   private edgePath(from: FlowLayoutNode, to: FlowLayoutNode): string {
     const W = this.FLOW_NODE_W, H = this.FLOW_NODE_H;
-    if (to.x >= from.x + W) {
-      // Forward edge: exit right → enter left
-      const x1 = from.x + W, y1 = from.y + H / 2;
-      const x2 = to.x, y2 = to.y + H / 2;
-      const cx = (x1 + x2) / 2;
-      return `M ${x1} ${y1} C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;
-    } else {
-      // Backward or same-column: route below
+
+    // Vertical flow: primary direction is top-to-bottom
+    if (to.y >= from.y + H) {
+      // Forward edge: exit bottom → enter top
       const x1 = from.x + W / 2, y1 = from.y + H;
       const x2 = to.x + W / 2, y2 = to.y;
-      const cy = Math.max(y1, y2) + 50;
+      const cy = (y1 + y2) / 2;
       return `M ${x1} ${y1} C ${x1} ${cy} ${x2} ${cy} ${x2} ${y2}`;
+    } else {
+      // Backward or same-row: route sideways
+      const x1 = from.x, y1 = from.y + H / 2;
+      const x2 = to.x + W, y2 = to.y + H / 2;
+      const cx = Math.min(x1, x2) - 40;
+      return `M ${x1} ${y1} C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;
     }
+  }
+
+  zoomIn(): void {
+    this.flowZoom = Math.min(this.flowZoom + 0.2, 2);
+  }
+
+  zoomOut(): void {
+    this.flowZoom = Math.max(this.flowZoom - 0.2, 0.5);
+  }
+
+  resetZoom(): void {
+    this.flowZoom = 1;
+    this.flowPanX = 0;
+    this.flowPanY = 0;
+  }
+
+  get flowTransform(): string {
+    return `translate(${this.flowPanX}, ${this.flowPanY}) scale(${this.flowZoom})`;
   }
 
   nodeTypeFill(type: string): string {
@@ -828,10 +1154,10 @@ export class ProcessBuilderComponent implements OnInit {
   }
 
   get svgViewBox(): string {
-    if (this.flowNodes.length === 0) return '0 0 800 300';
-    const maxX = Math.max(...this.flowNodes.map(n => n.x + n.width)) + 40;
-    const maxY = Math.max(...this.flowNodes.map(n => n.y + n.height)) + 40;
-    return `0 0 ${maxX} ${Math.max(maxY, 200)}`;
+    if (this.flowNodes.length === 0) return '0 0 800 400';
+    const maxX = Math.max(...this.flowNodes.map(n => n.x + n.width)) + 60;
+    const maxY = Math.max(...this.flowNodes.map(n => n.y + n.height)) + 60;
+    return `0 0 ${Math.max(maxX, 600)} ${Math.max(maxY, 400)}`;
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────

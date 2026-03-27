@@ -62,7 +62,7 @@ public class ProcessEngineService {
                 .findByDomainIdAndAppIdAndStatus(domainId, appId, ProcessStatus.PUBLISHED)
                 .stream().findFirst()
                 .orElseThrow(() -> new ProcessNotFoundException(
-                        "No published process found for this application"));
+                        "This application has no published workflow. Contact your administrator to publish the process first."));
 
         ProcessNode startNode = def.findStartNode();
         if (startNode == null) {

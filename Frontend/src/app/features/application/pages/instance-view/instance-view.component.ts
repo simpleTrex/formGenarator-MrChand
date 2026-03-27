@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcessService } from '../../../../core/services/process.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { DomainService } from '../../../../core/services/domain.service';
 import {
   ProcessInstance, NodeViewResponse, ProcessInstanceResponse,
 } from '../../../../core/models/process.model';
@@ -45,6 +46,8 @@ export class InstanceViewComponent implements OnInit {
   selectedAction = '';
   comment = '';
 
+  domainEmployees: any[] = [];
+
   objectKeys = Object.keys;
   themeColor = '#1a1a2e';
 
@@ -52,6 +55,7 @@ export class InstanceViewComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private processService: ProcessService,
+    private domainService: DomainService,
     public auth: AuthService,
   ) {}
 
@@ -60,6 +64,7 @@ export class InstanceViewComponent implements OnInit {
     this.appSlug     = this.route.snapshot.params['appSlug'];
     this.instanceId  = this.route.snapshot.params['instanceId'];
     this.loadTheme();
+    this.loadEmployees();
     this.load();
   }
 
@@ -195,5 +200,28 @@ export class InstanceViewComponent implements OnInit {
       .replace(/([A-Z])/g, ' $1')
       .replace(/\b\w/g, c => c.toUpperCase())
       .trim();
+  }
+
+  private loadEmployees(): void {
+    // Load domain employees for EMPLOYEE_PICKER fields
+    this.domainService.getEmployees(this.domainSlug).subscribe({
+      next: (employees) => {
+        this.domainEmployees = employees || [];
+      },
+      error: (err) => {
+        console.warn('Failed to load employees for EMPLOYEE_PICKER fields:', err);
+      }
+    });
+  }
+
+  getEmployeeDisplayName(employee: any): string {
+    const data = employee.data || {};
+    const firstName = data.firstName || '';
+    const lastName = data.lastName || '';
+
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    }
+    return data.employeeId || 'Unknown Employee';
   }
 }

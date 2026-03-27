@@ -1,6 +1,7 @@
 package com.adaptivebp.modules.formbuilder.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,7 +23,10 @@ import com.adaptivebp.modules.appmanagement.port.ApplicationLookupPort;
 import com.adaptivebp.modules.formbuilder.dto.request.CreateDomainModelRequest;
 import com.adaptivebp.modules.formbuilder.dto.request.UpdateDomainModelRequest;
 import com.adaptivebp.modules.formbuilder.model.DomainModel;
+import com.adaptivebp.modules.formbuilder.model.ModelRecord;
+import com.adaptivebp.modules.formbuilder.model.ModelTemplate;
 import com.adaptivebp.modules.formbuilder.repository.DomainModelRepository;
+import com.adaptivebp.modules.formbuilder.repository.ModelTemplateRepository;
 import com.adaptivebp.modules.formbuilder.service.ModelRecordService;
 import com.adaptivebp.modules.organisation.model.Organisation;
 import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
@@ -36,6 +40,7 @@ public class DomainModelController {
 
     @Autowired private OrganisationLookupPort organisationLookupPort;
     @Autowired private DomainModelRepository domainModelRepository;
+    @Autowired private ModelTemplateRepository modelTemplateRepository;
     @Autowired private ApplicationLookupPort applicationLookupPort;
     @Autowired private PermissionService permissionService;
     @Autowired private ModelRecordService modelRecordService;
@@ -133,6 +138,153 @@ public class DomainModelController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Model not found"));
         domainModelRepository.delete(model);
         return ResponseEntity.noContent().build();
+    }
+
+    // ── Employee Management Endpoints ─────────────────────────────────────────
+
+    @GetMapping("/employees")
+    public ResponseEntity<?> getEmployeeModel(@PathVariable String slug) {
+        Organisation domain = requireDomain(slug);
+        DomainModel employeeModel = domainModelRepository.findByDomainIdAndSlug(domain.getId(), "employees")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee model not found"));
+        return ResponseEntity.ok(employeeModel);
+    }
+
+    @GetMapping("/employees/records")
+    public ResponseEntity<?> listEmployees(@PathVariable String slug) {
+        Organisation domain = requireDomain(slug);
+        DomainModel employeeModel = domainModelRepository.findByDomainIdAndSlug(domain.getId(), "employees")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee model not found"));
+
+        List<ModelRecord> employees = modelRecordService.findAllByModelId(employeeModel.getId());
+        return ResponseEntity.ok(employees);
+    }
+
+    @PostMapping("/employees/records")
+    public ResponseEntity<?> createEmployee(@PathVariable String slug, @RequestBody ModelRecord employeeData) {
+        Organisation domain = requireDomain(slug);
+        DomainModel employeeModel = domainModelRepository.findByDomainIdAndSlug(domain.getId(), "employees")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee model not found"));
+
+        employeeData.setModelId(employeeModel.getId());
+        employeeData.setDomainId(domain.getId());
+        ModelRecord saved = modelRecordService.save(employeeData);
+        return ResponseEntity.ok(saved);
+    }
+
+    @PutMapping("/employees/records/{recordId}")
+    public ResponseEntity<?> updateEmployee(@PathVariable String slug, @PathVariable String recordId, @RequestBody ModelRecord employeeData) {
+        Organisation domain = requireDomain(slug);
+        ModelRecord existing = modelRecordService.findById(recordId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
+
+        if (!existing.getDomainId().equals(domain.getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        employeeData.setId(recordId);
+        employeeData.setModelId(existing.getModelId());
+        employeeData.setDomainId(domain.getId());
+        ModelRecord saved = modelRecordService.save(employeeData);
+        return ResponseEntity.ok(saved);
+    }
+
+    @DeleteMapping("/employees/records/{recordId}")
+    public ResponseEntity<?> deleteEmployee(@PathVariable String slug, @PathVariable String recordId) {
+        Organisation domain = requireDomain(slug);
+        ModelRecord existing = modelRecordService.findById(recordId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
+
+        if (!existing.getDomainId().equals(domain.getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        modelRecordService.deleteById(recordId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Model Templates ───────────────────────────────────────────────────────
+
+    /** GET /models/templates — list all available model templates */
+    @GetMapping("/templates")
+    public ResponseEntity<?> listModelTemplates(@PathVariable String slug, @RequestParam(name = "appSlug") String appSlug) {
+        Organisation domain = requireDomain(slug);
+        Application app = requireApplication(domain.getId(), appSlug);
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_WRITE)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        List<ModelTemplate> templates = modelTemplateRepository.findAll();
+        return ResponseEntity.ok(templates);
+    }
+
+    /** POST /models/from-template — create model from template */
+    @PostMapping("/from-template")
+    public ResponseEntity<?> createFromTemplate(@PathVariable String slug, @RequestParam(name = "appSlug") String appSlug,
+            @RequestBody Map<String, String> body) {
+        Organisation domain = requireDomain(slug);
+        Application app = requireApplication(domain.getId(), appSlug);
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_WRITE)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        String templateId = body.get("templateId");
+        String modelSlug = body.get("modelSlug");
+        String modelName = body.get("modelName");
+
+        if (templateId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "templateId is required");
+        }
+        if (modelSlug == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "modelSlug is required");
+        }
+        if (modelName == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "modelName is required");
+        }
+
+        ModelTemplate template = modelTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Template not found"));
+
+        String normalizedSlug = slugify(modelSlug);
+        if (domainModelRepository.existsByDomainIdAndSlug(domain.getId(), normalizedSlug)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Model slug already exists");
+        }
+
+        // Create new model from template
+        DomainModel model = new DomainModel();
+        model.setDomainId(domain.getId());
+        model.setSlug(normalizedSlug);
+        model.setName(modelName);
+        model.setDescription(template.getDescription() + " (from template: " + template.getName() + ")");
+        model.setSharedWithAllApps(false); // Default to THIS_APP only
+
+        // Add the current app to allowedAppIds so it can access this model
+        model.getAllowedAppIds().clear();
+        model.getAllowedAppIds().add(app.getId());
+
+        // Copy fields from template with deep clone
+        if (template.getFields() != null) {
+            List<com.adaptivebp.modules.formbuilder.model.DomainModelField> copiedFields = new java.util.ArrayList<>();
+            for (com.adaptivebp.modules.formbuilder.model.DomainModelField templateField : template.getFields()) {
+                com.adaptivebp.modules.formbuilder.model.DomainModelField field = new com.adaptivebp.modules.formbuilder.model.DomainModelField();
+                field.setKey(templateField.getKey());
+                field.setType(templateField.getType());
+                field.setRequired(templateField.isRequired());
+                field.setUnique(templateField.isUnique());
+                // Handle null config safely
+                if (templateField.getConfig() != null) {
+                    field.setConfig(new java.util.HashMap<>(templateField.getConfig()));
+                } else {
+                    field.setConfig(new java.util.HashMap<>());
+                }
+                copiedFields.add(field);
+            }
+            model.setFields(copiedFields);
+        } else {
+            model.setFields(new java.util.ArrayList<>());
+        }
+
+        return ResponseEntity.ok(domainModelRepository.save(model));
     }
 
     private Application requireApplication(String domainId, String appSlug) {

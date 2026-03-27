@@ -4,21 +4,75 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.adaptivebp.modules.formbuilder.model.DomainFieldType;
+import com.adaptivebp.modules.formbuilder.model.DomainModel;
 import com.adaptivebp.modules.formbuilder.model.DomainModelField;
 import com.adaptivebp.modules.formbuilder.model.ModelRecord;
 import com.adaptivebp.modules.formbuilder.port.ModelRecordQueryPort;
+import com.adaptivebp.modules.formbuilder.repository.DomainModelRepository;
 import com.adaptivebp.modules.formbuilder.repository.ModelRecordRepository;
 
 @Service
 public class ModelRecordService implements ModelRecordQueryPort {
 
     @Autowired private ModelRecordRepository recordRepository;
+    @Autowired private DomainModelRepository modelRepository;
 
     // ── CRUD ─────────────────────────────────────────────────────────────────
+
+    public ModelRecord save(ModelRecord record) {
+        validateRecord(record);
+        if (record.getId() == null) {
+            record.setCreatedAt(Instant.now());
+        }
+        record.setUpdatedAt(Instant.now());
+        return recordRepository.save(record);
+    }
+
+    public Optional<ModelRecord> findById(String recordId) {
+        return recordRepository.findById(recordId);
+    }
+
+    public List<ModelRecord> findAllByModelId(String modelId) {
+        return recordRepository.findByModelId(modelId);
+    }
+
+    public void deleteById(String recordId) {
+        recordRepository.deleteById(recordId);
+    }
+
+    /**
+     * Validates a ModelRecord before saving.
+     * Checks EMPLOYEE_REFERENCE fields to ensure they point to valid employee records.
+     */
+    private void validateRecord(ModelRecord record) {
+        if (record.getModelId() == null || record.getData() == null) {
+            return;
+        }
+
+        DomainModel model = modelRepository.findById(record.getModelId()).orElse(null);
+        if (model == null || model.getFields() == null) {
+            return;
+        }
+
+        for (DomainModelField field : model.getFields()) {
+            if (field.getType() == DomainFieldType.EMPLOYEE_REFERENCE) {
+                Object value = record.getData().get(field.getKey());
+                if (value != null) {
+                    String employeeId = value.toString();
+                    boolean employeeExists = recordRepository.findById(employeeId).isPresent();
+                    if (!employeeExists) {
+                        throw new IllegalArgumentException("Employee reference not found: " + employeeId);
+                    }
+                }
+            }
+        }
+    }
 
     public ModelRecord create(String modelId, String domainId, String appId,
             String instanceId, String createdBy, Map<String, Object> data) {

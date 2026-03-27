@@ -59,6 +59,10 @@ export const FIELD_TYPES = [
         value: 'model',
         label: 'Custom Model'
     },
+    {
+        value: 'EMPLOYEE_REFERENCE',
+        label: 'Employee Reference'
+    },
 ];
 
 export class CustomRegularExpression {

@@ -71,6 +71,13 @@
                 <option *ngFor="let opt of getOptions(el)" [value]="opt.value">{{ opt.label }}</option>
               </select>
 
+              <select *ngIf="el.type === 'EMPLOYEE_PICKER'" class="iv-input iv-select" [(ngModel)]="formData[el.id]">
+                <option value="">— select employee —</option>
+                <option *ngFor="let emp of domainEmployees" [value]="emp.id">
+                  {{ getEmployeeDisplayName(emp) }} ({{ emp.data?.employeeId }})
+                </option>
+              </select>
+
               <div *ngIf="el.type === 'RADIO'" class="iv-radio-group">
                 <label *ngFor="let opt of getOptions(el)" class="iv-radio-label">
                   <input type="radio" [name]="el.id" [value]="opt.value" [(ngModel)]="formData[el.id]" />

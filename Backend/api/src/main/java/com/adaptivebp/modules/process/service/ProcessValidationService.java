@@ -24,6 +24,7 @@ public class ProcessValidationService {
         List<String> errors = new ArrayList<>();
         List<ProcessNode> nodes = def.getNodes();
         List<ProcessEdge> edges = def.getEdges();
+        boolean isDraft = "DRAFT".equals(def.getStatus()) || def.getStatus() == null;
 
         if (nodes == null || nodes.isEmpty()) {
             errors.add("Process must have at least one node");
@@ -135,7 +136,7 @@ public class ProcessValidationService {
         // 9 — CONDITION nodes: defaultEdgeId present and all targetEdgeIds map to real edges
         for (ProcessNode n : nodes) {
             if (n.getType() == NodeType.CONDITION) {
-                validateConditionNode(n, edgeIds, outgoing, errors);
+                validateConditionNode(n, edgeIds, outgoing, errors, isDraft);
             }
         }
 
@@ -143,14 +144,14 @@ public class ProcessValidationService {
         Set<String> linkedModels = new HashSet<>(def.getLinkedModelIds() == null ? List.of() : def.getLinkedModelIds());
         for (ProcessNode n : nodes) {
             if (n.getType() == NodeType.FORM_PAGE) {
-                validateFormPageNode(n, linkedModels, errors);
+                validateFormPageNode(n, linkedModels, errors, isDraft);
             }
         }
 
-        // 11 — DATA_ACTION nodes: modelId in linkedModelIds
+        // 11 — DATA_ACTION nodes: modelId in linkedModelIds (relaxed for DRAFT)
         for (ProcessNode n : nodes) {
             if (n.getType() == NodeType.DATA_ACTION) {
-                validateDataActionNode(n, linkedModels, errors);
+                validateDataActionNode(n, linkedModels, errors, isDraft);
             }
         }
 
@@ -161,15 +162,15 @@ public class ProcessValidationService {
 
     @SuppressWarnings("unchecked")
     private void validateConditionNode(ProcessNode n, Set<String> edgeIds,
-            Map<String, List<ProcessEdge>> outgoing, List<String> errors) {
+            Map<String, List<ProcessEdge>> outgoing, List<String> errors, boolean isDraft) {
         Map<String, Object> config = n.getConfig();
         if (config == null) {
-            errors.add("CONDITION node '" + n.getId() + "' has no config");
+            if (!isDraft) errors.add("CONDITION node '" + n.getId() + "' has no config");
             return;
         }
         String defaultEdgeId = (String) config.get("defaultEdgeId");
         if (defaultEdgeId == null || defaultEdgeId.isBlank()) {
-            errors.add("CONDITION node '" + n.getId() + "' missing defaultEdgeId");
+            if (!isDraft) errors.add("CONDITION node '" + n.getId() + "' missing defaultEdgeId");
         } else if (!edgeIds.contains(defaultEdgeId)) {
             errors.add("CONDITION node '" + n.getId() + "' defaultEdgeId '" + defaultEdgeId + "' not found");
         }
@@ -185,7 +186,7 @@ public class ProcessValidationService {
     }
 
     @SuppressWarnings("unchecked")
-    private void validateFormPageNode(ProcessNode n, Set<String> linkedModels, List<String> errors) {
+    private void validateFormPageNode(ProcessNode n, Set<String> linkedModels, List<String> errors, boolean isDraft) {
         Map<String, Object> config = n.getConfig();
         if (config == null) return;
         List<Map<String, Object>> elements = (List<Map<String, Object>>) config.get("elements");
@@ -195,23 +196,26 @@ public class ProcessValidationService {
             if (binding != null) {
                 String modelId = (String) binding.get("modelId");
                 if (modelId != null && !linkedModels.contains(modelId)) {
-                    errors.add("FORM_PAGE node '" + n.getId() + "' element binding.modelId '" + modelId
-                            + "' is not in linkedModelIds");
+                    if (!isDraft) {
+                        errors.add("FORM_PAGE node '" + n.getId() + "' element binding.modelId '" + modelId
+                                + "' is not in linkedModelIds");
+                    }
                 }
             }
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void validateDataActionNode(ProcessNode n, Set<String> linkedModels, List<String> errors) {
+    private void validateDataActionNode(ProcessNode n, Set<String> linkedModels, List<String> errors, boolean isDraft) {
         Map<String, Object> config = n.getConfig();
         if (config == null) {
-            errors.add("DATA_ACTION node '" + n.getId() + "' has no config");
+            if (!isDraft) errors.add("DATA_ACTION node '" + n.getId() + "' has no config");
             return;
         }
         String modelId = (String) config.get("modelId");
         if (modelId == null || modelId.isBlank()) {
-            errors.add("DATA_ACTION node '" + n.getId() + "' missing modelId");
+            // Allow missing modelId in DRAFT mode - user can configure it later
+            if (!isDraft) errors.add("DATA_ACTION node '" + n.getId() + "' missing modelId");
         } else if (!linkedModels.contains(modelId)) {
             errors.add("DATA_ACTION node '" + n.getId() + "' modelId '" + modelId + "' is not in linkedModelIds");
         }

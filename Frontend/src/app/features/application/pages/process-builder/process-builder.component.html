@@ -12,6 +12,9 @@
     <button class="guide-btn" (click)="showGuide = true; guideSection = 'overview'">
       Workflow Guide
     </button>
+    <button class="guide-btn" (click)="openTemplateModal()" *ngIf="!hasExisting">
+      📋 Start from Template
+    </button>
   </div>
 
   <!-- ── WORKFLOW GUIDE MODAL ─────────────────────────────────────────────── -->
@@ -283,6 +286,64 @@
 
     </div><!-- /guide-modal -->
   </div><!-- /guide-overlay -->
+
+  <!-- ── TEMPLATE SELECTOR MODAL ─────────────────────────────────────────────── -->
+  <div class="guide-overlay" *ngIf="showTemplateModal" (click)="closeTemplateModal()">
+    <div class="guide-modal template-modal" (click)="$event.stopPropagation()">
+
+      <!-- Modal header -->
+      <div class="guide-header">
+        <div>
+          <h3 class="guide-title">Choose Workflow Template</h3>
+          <p class="guide-subtitle">Start with a pre-built template or create from scratch</p>
+        </div>
+        <button class="guide-close" (click)="closeTemplateModal()">×</button>
+      </div>
+
+      <!-- Modal body -->
+      <div class="template-body">
+
+        <!-- Loading state -->
+        <div *ngIf="templatesLoading" class="loading-state">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p>Loading templates...</p>
+        </div>
+
+        <!-- Templates grid -->
+        <div *ngIf="!templatesLoading" class="templates-grid">
+
+          <!-- Start from scratch option -->
+          <div class="template-card scratch-card" (click)="startFromScratch()">
+            <div class="template-icon">⚡</div>
+            <h4 class="template-name">Start from Scratch</h4>
+            <p class="template-desc">Create a custom workflow with basic start and end nodes</p>
+            <div class="template-category">Custom</div>
+          </div>
+
+          <!-- Template options -->
+          <div *ngFor="let template of processTemplates"
+               class="template-card"
+               (click)="selectTemplate(template)">
+            <div class="template-icon">📋</div>
+            <h4 class="template-name">{{ template.name }}</h4>
+            <p class="template-desc">{{ template.description }}</p>
+            <div class="template-category">{{ template.category }}</div>
+            <div class="template-nodes-count">{{ (template.nodes || []).length }} nodes</div>
+          </div>
+
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="!templatesLoading && processTemplates.length === 0" class="empty-templates">
+          <div class="empty-icon">📋</div>
+          <h4>No Templates Available</h4>
+          <p>No workflow templates are available. You can start from scratch.</p>
+          <button class="btn-primary" (click)="startFromScratch()">Start from Scratch</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <!-- Loading -->
   <div *ngIf="loading" class="loading-state">
@@ -780,41 +841,53 @@
 
         <div *ngIf="flowNodes.length === 0" class="info-text mt-3">No nodes to display. Add nodes first.</div>
 
-        <!-- SVG canvas -->
-        <div *ngIf="flowNodes.length > 0" class="flow-canvas mt-3">
-          <svg [attr.viewBox]="svgViewBox" style="width:100%;height:auto;min-height:220px;display:block;">
-            <defs>
-              <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-                <path d="M 0 0 L 8 3 L 0 6 Z" fill="#718096" />
-              </marker>
-            </defs>
+        <!-- SVG canvas with zoom controls -->
+        <div *ngIf="flowNodes.length > 0" class="flow-canvas-wrap mt-3">
+          <!-- Zoom controls -->
+          <div class="flow-controls">
+            <button class="flow-ctrl-btn" (click)="zoomIn()" title="Zoom In">+</button>
+            <button class="flow-ctrl-btn" (click)="zoomOut()" title="Zoom Out">−</button>
+            <button class="flow-ctrl-btn" (click)="resetZoom()" title="Reset">⟲</button>
+          </div>
 
-            <!-- Edges -->
-            <g *ngFor="let fe of flowEdges">
-              <path [attr.d]="fe.path" fill="none" stroke="#a0aec0" stroke-width="1.5"
-                    marker-end="url(#arr)" />
-              <text *ngIf="fe.label"
-                    [attr.x]="fe.midX" [attr.y]="fe.midY - 4"
-                    text-anchor="middle" font-size="9" fill="#718096">{{ fe.label }}</text>
-            </g>
+          <div class="flow-canvas">
+            <svg [attr.viewBox]="svgViewBox" style="width:100%;height:auto;min-height:400px;display:block;">
+              <defs>
+                <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                  <path d="M 0 0 L 8 3 L 0 6 Z" fill="#718096" />
+                </marker>
+              </defs>
 
-            <!-- Nodes -->
-            <g *ngFor="let fn of flowNodes">
-              <rect [attr.x]="fn.x" [attr.y]="fn.y"
-                    [attr.width]="fn.width" [attr.height]="fn.height"
-                    rx="6"
-                    [attr.fill]="nodeTypeFill(fn.type)"
-                    [attr.stroke]="fn.isDisconnected ? '#e53e3e' : '#cbd5e0'"
-                    [attr.stroke-width]="fn.isDisconnected ? 2 : 1.5"
-                    [attr.stroke-dasharray]="fn.isDisconnected ? '4 3' : 'none'" />
-              <text [attr.x]="fn.x + fn.width / 2" [attr.y]="fn.y + 17"
-                    text-anchor="middle" font-size="9" fill="#718096">{{ fn.type }}</text>
-              <text [attr.x]="fn.x + fn.width / 2" [attr.y]="fn.y + 34"
-                    text-anchor="middle" font-size="11" font-weight="600" fill="#1a202c">
-                {{ fn.name.length > 16 ? (fn.name | slice:0:15) + '…' : fn.name }}
-              </text>
-            </g>
-          </svg>
+              <!-- Zoomable/pannable group -->
+              <g [attr.transform]="flowTransform">
+                <!-- Edges -->
+                <g *ngFor="let fe of flowEdges">
+                  <path [attr.d]="fe.path" fill="none" stroke="#a0aec0" stroke-width="2"
+                        marker-end="url(#arr)" />
+                  <text *ngIf="fe.label"
+                        [attr.x]="fe.midX" [attr.y]="fe.midY - 4"
+                        text-anchor="middle" font-size="10" fill="#718096" font-weight="500">{{ fe.label }}</text>
+                </g>
+
+                <!-- Nodes -->
+                <g *ngFor="let fn of flowNodes">
+                  <rect [attr.x]="fn.x" [attr.y]="fn.y"
+                        [attr.width]="fn.width" [attr.height]="fn.height"
+                        rx="8"
+                        [attr.fill]="nodeTypeFill(fn.type)"
+                        [attr.stroke]="fn.isDisconnected ? '#e53e3e' : '#cbd5e0'"
+                        [attr.stroke-width]="fn.isDisconnected ? 2.5 : 1.5"
+                        [attr.stroke-dasharray]="fn.isDisconnected ? '5 3' : 'none'" />
+                  <text [attr.x]="fn.x + fn.width / 2" [attr.y]="fn.y + 20"
+                        text-anchor="middle" font-size="9" fill="#718096" font-weight="500">{{ fn.type }}</text>
+                  <text [attr.x]="fn.x + fn.width / 2" [attr.y]="fn.y + 38"
+                        text-anchor="middle" font-size="12" font-weight="600" fill="#1a202c">
+                    {{ fn.name.length > 16 ? (fn.name | slice:0:15) + '…' : fn.name }}
+                  </text>
+                </g>
+              </g>
+            </svg>
+          </div>
         </div>
 
         <!-- Legend -->

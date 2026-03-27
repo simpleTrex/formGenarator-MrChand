@@ -1,6 +1,8 @@
 package com.adaptivebp.modules.process.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,9 @@ import com.adaptivebp.modules.process.dto.ValidationResult;
 import com.adaptivebp.modules.process.exception.ProcessNotFoundException;
 import com.adaptivebp.modules.process.exception.ProcessValidationException;
 import com.adaptivebp.modules.process.model.ProcessDefinition;
+import com.adaptivebp.modules.process.model.ProcessEdge;
+import com.adaptivebp.modules.process.model.ProcessNode;
+import com.adaptivebp.modules.process.model.ProcessTemplate;
 import com.adaptivebp.modules.process.model.enums.InstanceStatus;
 import com.adaptivebp.modules.process.model.enums.ProcessStatus;
 import com.adaptivebp.modules.process.repository.ProcessDefinitionRepository;
@@ -161,6 +166,78 @@ public class ProcessDefinitionService {
     public void deleteProcess(String domainId, String appId, String appSlug) {
         ProcessDefinition def = requireDraft(domainId, appId);
         definitionRepository.delete(def);
+    }
+
+    /**
+     * Creates a new process definition from a template.
+     * The template's nodes and edges are copied to a new DRAFT process.
+     */
+    public ProcessDefinition createFromTemplate(String domainId, String appId, String appSlug,
+            ProcessTemplate template, List<String> linkedModelIds, String createdBy) {
+
+        // Check if there's already an active process for this app
+        Optional<ProcessDefinition> existing = definitionRepository
+                .findTopByDomainIdAndAppIdOrderByVersionDesc(domainId, appId);
+
+        if (existing.filter(d -> d.getStatus() == ProcessStatus.DRAFT
+                            || d.getStatus() == ProcessStatus.PUBLISHED).isPresent()) {
+            throw new IllegalStateException(
+                    "This application already has a process definition. Archive it first to use a template.");
+        }
+
+        // Calculate next version number
+        int nextVersion = existing.map(d -> d.getVersion() + 1).orElse(1);
+
+        // Create new process definition from template
+        ProcessDefinition definition = new ProcessDefinition();
+        definition.setDomainId(domainId);
+        definition.setAppId(appId);
+        definition.setSlug(appSlug);
+        definition.setName(template.getName() + " (from template)");
+        definition.setDescription(template.getDescription());
+        definition.setVersion(nextVersion);
+        definition.setStatus(ProcessStatus.DRAFT);
+        definition.setCreatedBy(createdBy);
+        definition.setCreatedAt(Instant.now());
+
+        // Set linkedModelIds if provided from frontend (created models)
+        if (linkedModelIds != null && !linkedModelIds.isEmpty()) {
+            definition.setLinkedModelIds(new ArrayList<>(linkedModelIds));
+        } else {
+            definition.setLinkedModelIds(new ArrayList<>());
+        }
+
+        // Copy nodes from template
+        List<ProcessNode> nodes = new ArrayList<>();
+        if (template.getNodes() != null) {
+            for (ProcessNode templateNode : template.getNodes()) {
+                ProcessNode node = new ProcessNode();
+                node.setId(templateNode.getId());
+                node.setType(templateNode.getType());
+                node.setName(templateNode.getName());
+                node.setConfig(templateNode.getConfig() != null ?
+                    new java.util.HashMap<>(templateNode.getConfig()) : new java.util.HashMap<>());
+                nodes.add(node);
+            }
+        }
+        definition.setNodes(nodes);
+
+        // Copy edges from template
+        List<ProcessEdge> edges = new ArrayList<>();
+        if (template.getEdges() != null) {
+            for (ProcessEdge templateEdge : template.getEdges()) {
+                ProcessEdge edge = new ProcessEdge();
+                edge.setId(templateEdge.getId());
+                edge.setFromNodeId(templateEdge.getFromNodeId());
+                edge.setToNodeId(templateEdge.getToNodeId());
+                edge.setLabel(templateEdge.getLabel());
+                edge.setConditionRef(templateEdge.getConditionRef());
+                edges.add(edge);
+            }
+        }
+        definition.setEdges(edges);
+
+        return definitionRepository.save(definition);
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────

@@ -1,0 +1,119 @@
+<div class="employees-container fade-in">
+  <div class="page-actions">
+    <button class="back-btn" (click)="goBackToDomain()">← Back to Domain</button>
+  </div>
+
+  <div class="employees-info-section">
+    <h2 class="section-title">Employee Management</h2>
+    <p class="info-text">Manage employee records for this domain. These employees can be referenced in workflows and forms.</p>
+    <p class="info-text" *ngIf="domain"><strong>Domain:</strong> {{ domain?.name }} <span class="badge">{{ domain?.slug }}</span></p>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Loading...</p>
+  </div>
+  <div *ngIf="error" class="error-alert">{{ error }}</div>
+  <div *ngIf="message" class="success-alert">{{ message }}</div>
+
+  <div class="grid" *ngIf="!loading">
+    <app-modern-card theme="light">
+      <div class="panel-header">
+        <h3>Employees ({{ employees.length }})</h3>
+        <app-modern-button variant="outline" size="sm" (click)="newEmployee()" [disabled]="!canManageEmployees">+ Add Employee</app-modern-button>
+      </div>
+
+      <div *ngIf="employees.length === 0" class="info-text">No employees yet. Add your first employee to get started.</div>
+
+      <div class="employee-list">
+        <button type="button" class="employee-item" *ngFor="let emp of employees"
+             [class.active]="selectedEmployee?.id === emp.id"
+             (click)="selectEmployee(emp)">
+          <div class="employee-item-top">
+            <strong class="employee-name">{{ getEmployeeName(emp) }}</strong>
+            <span class="badge employee-id">{{ emp.data?.employeeId }}</span>
+          </div>
+          <div class="employee-details">
+            <span class="employee-email" *ngIf="getEmployeeEmail(emp)">{{ getEmployeeEmail(emp) }}</span>
+            <span class="employee-dept" *ngIf="getEmployeeDepartment(emp) !== 'N/A'">{{ getEmployeeDepartment(emp) }}</span>
+          </div>
+          <div class="employee-tags">
+            <span class="tag status-tag" [class.status-active]="getEmployeeStatus(emp) === 'ACTIVE'" [class.status-inactive]="getEmployeeStatus(emp) !== 'ACTIVE'">
+              {{ getEmployeeStatus(emp) }}
+            </span>
+          </div>
+        </button>
+      </div>
+    </app-modern-card>
+
+    <app-modern-card theme="light">
+      <div class="panel-header">
+        <h3>{{ selectedEmployee ? 'Edit Employee' : 'Add Employee' }}</h3>
+      </div>
+
+      <form [formGroup]="employeeForm" class="form">
+        <div class="row">
+          <label>Employee ID <span class="req">*</span></label>
+          <input class="input" formControlName="employeeId" placeholder="e.g., EMP001" />
+          <small class="hint" *ngIf="selectedEmployee">Employee ID cannot be changed.</small>
+        </div>
+
+        <div class="form-row">
+          <div class="row half">
+            <label>First Name <span class="req">*</span></label>
+            <input class="input" formControlName="firstName" placeholder="e.g., John" />
+          </div>
+          <div class="row half">
+            <label>Last Name <span class="req">*</span></label>
+            <input class="input" formControlName="lastName" placeholder="e.g., Doe" />
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Email Address <span class="req">*</span></label>
+          <input class="input" type="email" formControlName="email" placeholder="e.g., john.doe@company.com" />
+        </div>
+
+        <div class="form-row">
+          <div class="row half">
+            <label>Department</label>
+            <input class="input" formControlName="department" placeholder="e.g., Engineering" />
+          </div>
+          <div class="row half">
+            <label>Position</label>
+            <input class="input" formControlName="position" placeholder="e.g., Software Engineer" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="row half">
+            <label>Hire Date</label>
+            <input class="input" type="date" formControlName="hireDate" />
+          </div>
+          <div class="row half">
+            <label>Status <span class="req">*</span></label>
+            <select class="input" formControlName="status">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="ON_LEAVE">On Leave</option>
+              <option value="TERMINATED">Terminated</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <app-modern-button variant="primary" type="button" (click)="save()" [disabled]="!canManageEmployees">
+            {{ selectedEmployee ? 'Update Employee' : 'Create Employee' }}
+          </app-modern-button>
+          <button class="danger-outline-btn" type="button" (click)="deleteSelected()" [disabled]="!selectedEmployee || !canManageEmployees">
+            Delete Employee
+          </button>
+        </div>
+
+        <div *ngIf="!canManageEmployees" class="info-text">
+          You can view employees, but you don't have permission to create/edit them.
+        </div>
+      </form>
+    </app-modern-card>
+  </div>
+</div>

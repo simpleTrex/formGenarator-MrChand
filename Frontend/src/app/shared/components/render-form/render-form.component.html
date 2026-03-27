@@ -30,6 +30,19 @@
                 <model-render [element]="element">{{element.value}}</model-render>
             </div><br>
         </ng-container>
+        <ng-container *ngIf="element.elementType === 'EMPLOYEE_REFERENCE'">
+            <div class="form-group">
+                <label for="formName">{{element.name}}</label>
+                <select class="form-control" [(ngModel)]="element.value" [disabled]="loadingEmployees">
+                    <option value="">Select Employee</option>
+                    <option *ngFor="let employee of employees" [value]="employee.id">
+                        {{getEmployeeName(employee)}} ({{employee.data?.employeeId}})
+                    </option>
+                </select>
+                <small *ngIf="loadingEmployees" class="text-muted">Loading employees...</small>
+                <small *ngIf="!loadingEmployees && employees.length === 0" class="text-muted">No employees available</small>
+            </div><br>
+        </ng-container>
         <ng-container *ngIf="element.elementType === 'checkBox'">
             <label for="formName">{{element.name}}</label>
             <div *ngFor="let option of element.options" class="form-check">

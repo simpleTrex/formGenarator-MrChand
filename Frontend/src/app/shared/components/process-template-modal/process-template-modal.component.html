@@ -1,0 +1,79 @@
+<div class="modal-overlay" *ngIf="isVisible" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Create New Process</h2>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="creation-options">
+        <!-- Start from scratch option -->
+        <div class="creation-card" (click)="createBlank()">
+          <div class="creation-icon">🔧</div>
+          <h3 class="creation-title">Start from Scratch</h3>
+          <p class="creation-description">Build a completely custom workflow from the beginning.</p>
+          <div class="creation-footer">
+            <span class="creation-link">Create Blank Process →</span>
+          </div>
+        </div>
+
+        <!-- Templates section -->
+        <div class="templates-section">
+          <div class="templates-header">
+            <div class="creation-icon">📋</div>
+            <h3 class="creation-title">Use Template</h3>
+            <p class="creation-description">Start with a pre-built workflow template and customize it.</p>
+          </div>
+
+          <!-- Loading state -->
+          <div *ngIf="loading" class="loading-state">
+            <div class="spinner-sm"></div>
+            <span>Loading templates...</span>
+          </div>
+
+          <!-- Error state -->
+          <div *ngIf="error" class="error-alert">{{ error }}</div>
+
+          <!-- Templates grid -->
+          <div *ngIf="!loading && !error" class="templates-grid">
+            <div *ngIf="templates.length === 0" class="empty-templates">
+              <p class="info-text">No templates available. You can still start from scratch above.</p>
+            </div>
+
+            <div *ngFor="let template of templates"
+                 class="template-card"
+                 [class.selected]="selectedTemplate?.id === template.id"
+                 (click)="selectTemplate(template)">
+
+              <div class="template-header">
+                <span class="template-category-icon">{{ getCategoryIcon(template.category) }}</span>
+                <div class="template-meta">
+                  <h4 class="template-name">{{ template.name }}</h4>
+                  <span class="template-category">{{ template.category }}</span>
+                </div>
+                <div class="template-check" *ngIf="selectedTemplate?.id === template.id">✓</div>
+              </div>
+
+              <p class="template-description">{{ getTemplateDescription(template) }}</p>
+
+              <div class="template-stats">
+                <span class="template-stat">{{ template.nodes?.length || 0 }} steps</span>
+                <span class="template-stat">{{ template.edges?.length || 0 }} connections</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Create from template button -->
+          <div class="template-actions" *ngIf="!loading && templates.length > 0">
+            <button class="btn-primary"
+                    [disabled]="!selectedTemplate"
+                    (click)="createFromTemplate()">
+              Create from Template
+            </button>
+            <p class="action-hint" *ngIf="!selectedTemplate">Select a template above to continue</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
