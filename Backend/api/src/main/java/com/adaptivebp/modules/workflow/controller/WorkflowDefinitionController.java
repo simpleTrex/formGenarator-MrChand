@@ -1,327 +1,193 @@
 package com.adaptivebp.modules.workflow.controller;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
-import com.adaptivebp.modules.workflow.dto.response.WorkflowMessageResponse;
+import com.adaptivebp.modules.appmanagement.model.Application;
+import com.adaptivebp.modules.appmanagement.permission.AppPermission;
+import com.adaptivebp.modules.appmanagement.port.ApplicationLookupPort;
+import com.adaptivebp.modules.organisation.model.Organisation;
+import com.adaptivebp.modules.organisation.permission.DomainPermission;
+import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
+import com.adaptivebp.modules.organisation.service.PermissionService;
+import com.adaptivebp.modules.workflow.dto.request.CreateWorkflowRequest;
+import com.adaptivebp.modules.workflow.dto.request.UpdateWorkflowRequest;
+import com.adaptivebp.modules.workflow.dto.response.WorkflowDefinitionResponse;
 import com.adaptivebp.modules.workflow.model.WorkflowDefinition;
-import com.adaptivebp.modules.workflow.model.WorkflowInstance;
-import com.adaptivebp.modules.workflow.model.WorkflowTransition;
 import com.adaptivebp.modules.workflow.service.WorkflowDefinitionService;
-import com.adaptivebp.modules.workflow.service.WorkflowEngineService;
+import com.adaptivebp.modules.workflow.service.WorkflowValidationService;
 import com.adaptivebp.shared.security.AdaptiveUserDetails;
 
 import jakarta.validation.Valid;
 
-/**
- * REST Controller for Workflow Definition management
- */
 @RestController
-@RequestMapping("/custom_form/workflows")
+@RequestMapping("/adaptive/domains/{slug}/apps/{appSlug}/workflows")
 public class WorkflowDefinitionController {
 
     @Autowired
-    private WorkflowDefinitionService workflowService;
+    private OrganisationLookupPort organisationLookupPort;
 
     @Autowired
-    private WorkflowEngineService engineService;
+    private ApplicationLookupPort applicationLookupPort;
 
-    /**
-     * Create a new workflow definition
-     */
-    @PostMapping("")
-    public ResponseEntity<?> createWorkflow(@Valid @RequestBody WorkflowDefinition workflow) {
-        try {
-            AdaptiveUserDetails principal = currentAdaptivePrincipal();
-            if (principal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
+    @Autowired
+    private PermissionService permissionService;
 
-            String domainId;
-            if (principal.getDomainId() != null) {
-                domainId = principal.getDomainId();
-            } else if (workflow.getDomainId() != null) {
-                domainId = workflow.getDomainId();
-            } else {
-                return ResponseEntity.badRequest()
-                        .body(new WorkflowMessageResponse("Error: domainId is required"));
-            }
+    @Autowired
+    private WorkflowDefinitionService definitionService;
 
-            workflow.setDomainId(domainId);
-            workflow.setCreatedBy(principal.getId());
+    @Autowired
+    private WorkflowValidationService validationService;
 
-            WorkflowDefinition created = workflowService.createWorkflow(workflow);
-            return ResponseEntity.ok(created);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
+    @PostMapping
+    public ResponseEntity<WorkflowDefinitionResponse> createWorkflow(
+            @PathVariable String slug,
+            @PathVariable String appSlug,
+            @Valid @RequestBody CreateWorkflowRequest request) {
+        Context ctx = resolve(slug, appSlug);
+        requireDefinitionManagePermission(ctx);
+
+        WorkflowDefinition created = definitionService.createWorkflow(
+                ctx.domain().getId(),
+                ctx.app().getId(),
+                request,
+                currentUserId());
+
+        return ResponseEntity.ok(WorkflowDefinitionResponse.of(created, validationService.validate(created)));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<WorkflowDefinition>> listWorkflows(
+            @PathVariable String slug,
+            @PathVariable String appSlug) {
+        Context ctx = resolve(slug, appSlug);
+        requireViewPermission(ctx.app().getId());
+        return ResponseEntity.ok(definitionService.listWorkflows(ctx.domain().getId(), ctx.app().getId()));
+    }
+
+    @GetMapping("/{wfSlug}")
+    public ResponseEntity<WorkflowDefinitionResponse> getWorkflow(
+            @PathVariable String slug,
+            @PathVariable String appSlug,
+            @PathVariable String wfSlug,
+            @RequestParam(required = false) Integer version) {
+        Context ctx = resolve(slug, appSlug);
+        requireViewPermission(ctx.app().getId());
+
+        WorkflowDefinition workflow = definitionService.getWorkflow(
+                ctx.domain().getId(),
+                ctx.app().getId(),
+                wfSlug,
+                version);
+
+        return ResponseEntity.ok(WorkflowDefinitionResponse.of(workflow, validationService.validate(workflow)));
+    }
+
+    @PutMapping("/{wfSlug}")
+    public ResponseEntity<WorkflowDefinitionResponse> updateWorkflow(
+            @PathVariable String slug,
+            @PathVariable String appSlug,
+            @PathVariable String wfSlug,
+            @RequestBody UpdateWorkflowRequest request) {
+        Context ctx = resolve(slug, appSlug);
+        requireDefinitionManagePermission(ctx);
+
+        WorkflowDefinition updated = definitionService.updateWorkflow(
+                ctx.domain().getId(),
+                ctx.app().getId(),
+                wfSlug,
+                request);
+
+        return ResponseEntity.ok(WorkflowDefinitionResponse.of(updated, validationService.validate(updated)));
+    }
+
+    @DeleteMapping("/{wfSlug}")
+    public ResponseEntity<Void> deleteWorkflow(
+            @PathVariable String slug,
+            @PathVariable String appSlug,
+            @PathVariable String wfSlug) {
+        Context ctx = resolve(slug, appSlug);
+        requireDefinitionManagePermission(ctx);
+
+        definitionService.deleteWorkflow(ctx.domain().getId(), ctx.app().getId(), wfSlug);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{wfSlug}/publish")
+    public ResponseEntity<WorkflowDefinitionResponse> publishWorkflow(
+            @PathVariable String slug,
+            @PathVariable String appSlug,
+            @PathVariable String wfSlug) {
+        Context ctx = resolve(slug, appSlug);
+        requireDefinitionManagePermission(ctx);
+
+        WorkflowDefinition published = definitionService.publishWorkflow(ctx.domain().getId(), ctx.app().getId(), wfSlug);
+        return ResponseEntity.ok(WorkflowDefinitionResponse.of(published, validationService.validate(published)));
+    }
+
+    @PostMapping("/{wfSlug}/archive")
+    public ResponseEntity<WorkflowDefinition> archiveWorkflow(
+            @PathVariable String slug,
+            @PathVariable String appSlug,
+            @PathVariable String wfSlug) {
+        Context ctx = resolve(slug, appSlug);
+        requireDefinitionManagePermission(ctx);
+
+        WorkflowDefinition archived = definitionService.archiveWorkflow(ctx.domain().getId(), ctx.app().getId(), wfSlug);
+        return ResponseEntity.ok(archived);
+    }
+
+    private record Context(Organisation domain, Application app) {
+    }
+
+    private Context resolve(String slug, String appSlug) {
+        Organisation domain = organisationLookupPort.findBySlug(slug)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Domain not found"));
+
+        Application app = applicationLookupPort.findByDomainIdAndSlug(domain.getId(), appSlug)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));
+
+        return new Context(domain, app);
+    }
+
+    private void requireDefinitionManagePermission(Context ctx) {
+        boolean hasDomainPermission = permissionService.hasDomainPermission(
+                ctx.domain().getId(),
+                DomainPermission.DOMAIN_MANAGE_WORKFLOWS);
+        boolean hasAppPermission = permissionService.hasAppPermission(
+                ctx.app().getId(),
+                AppPermission.APP_MANAGE_WORKFLOWS);
+
+        if (!hasDomainPermission && !hasAppPermission) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient permissions");
         }
     }
 
-    /**
-     * Get all workflows for current domain
-     */
-    @GetMapping("")
-    public ResponseEntity<?> getWorkflows(@RequestParam(required = false) String domainId) {
-        AdaptiveUserDetails principal = currentAdaptivePrincipal();
-        if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        String effectiveDomainId;
-        if (principal.getDomainId() != null) {
-            effectiveDomainId = principal.getDomainId();
-        } else if (domainId != null) {
-            effectiveDomainId = domainId;
-        } else {
-            return ResponseEntity.badRequest()
-                    .body(new WorkflowMessageResponse("Error: domainId query parameter is required for OWNER"));
-        }
-
-        List<WorkflowDefinition> workflows = workflowService.getWorkflowsByDomain(effectiveDomainId);
-        return ResponseEntity.ok(workflows);
-    }
-
-    /**
-     * Get a specific workflow by ID
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getWorkflow(@PathVariable String id, @RequestParam(required = false) String domainId) {
-        AdaptiveUserDetails principal = currentAdaptivePrincipal();
-        if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        String effectiveDomainId;
-        if (principal.getDomainId() != null) {
-            effectiveDomainId = principal.getDomainId();
-        } else if (domainId != null) {
-            effectiveDomainId = domainId;
-        } else {
-            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: domainId is required"));
-        }
-
-        Optional<WorkflowDefinition> workflow = workflowService.getWorkflowById(id, effectiveDomainId);
-
-        if (workflow.isPresent()) {
-            return ResponseEntity.ok(workflow.get());
-        } else {
-            return ResponseEntity.notFound().build();
+    private void requireViewPermission(String appId) {
+        if (!permissionService.hasAppPermission(appId, AppPermission.APP_VIEW_WORKFLOWS)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient permissions");
         }
     }
 
-    /**
-     * Update a workflow definition
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateWorkflow(@PathVariable String id, @Valid @RequestBody WorkflowDefinition workflow) {
-        try {
-            AdaptiveUserDetails principal = currentAdaptivePrincipal();
-            if (principal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
-            String effectiveDomainId;
-            if (principal.getDomainId() != null) {
-                effectiveDomainId = principal.getDomainId();
-            } else if (workflow.getDomainId() != null) {
-                effectiveDomainId = workflow.getDomainId();
-            } else {
-                return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: domainId is required"));
-            }
-
-            WorkflowDefinition updated = workflowService.updateWorkflow(id, effectiveDomainId, workflow);
-            return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Delete a workflow definition
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteWorkflow(@PathVariable String id, @RequestParam(required = false) String domainId) {
-        try {
-            AdaptiveUserDetails principal = currentAdaptivePrincipal();
-            if (principal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
-            String effectiveDomainId;
-            if (principal.getDomainId() != null) {
-                effectiveDomainId = principal.getDomainId();
-            } else if (domainId != null) {
-                effectiveDomainId = domainId;
-            } else {
-                return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: domainId is required"));
-            }
-
-            workflowService.deleteWorkflow(id, effectiveDomainId);
-            return ResponseEntity.ok(new WorkflowMessageResponse("Workflow deleted successfully"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Create a new workflow instance
-     */
-    @PostMapping("/{workflowId}/instances")
-    public ResponseEntity<?> createInstance(@PathVariable String workflowId,
-            @RequestBody Map<String, Object> request) {
-        try {
-            AdaptiveUserDetails principal = currentAdaptivePrincipal();
-            if (principal == null || principal.getDomainId() == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
-            String recordId = (String) request.get("recordId");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> initialData = (Map<String, Object>) request.get("data");
-
-            WorkflowInstance instance = engineService.createInstance(
-                    workflowId,
-                    principal.getDomainId(),
-                    recordId,
-                    initialData != null ? initialData : Map.of(),
-                    principal.getId());
-
-            return ResponseEntity.ok(instance);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Execute a transition on a workflow instance
-     */
-    @PostMapping("/instances/{instanceId}/transitions/{transitionId}")
-    public ResponseEntity<?> executeTransition(@PathVariable String instanceId,
-            @PathVariable String transitionId,
-            @RequestBody(required = false) Map<String, Object> request) {
-        try {
-            AdaptiveUserDetails principal = currentAdaptivePrincipal();
-            if (principal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
-            String comment = request != null ? (String) request.get("comment") : null;
-            @SuppressWarnings("unchecked")
-            Map<String, Object> additionalData = request != null ? (Map<String, Object>) request.get("data") : null;
-
-            WorkflowInstance instance = engineService.executeTransition(
-                    instanceId,
-                    transitionId,
-                    principal.getId(),
-                    comment,
-                    additionalData);
-
-            return ResponseEntity.ok(instance);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Seed default workflows for the domain
-     */
-    @PostMapping("/seed")
-    public ResponseEntity<?> seedWorkflows(@RequestParam(required = false) String domainId) {
-        try {
-            AdaptiveUserDetails principal = currentAdaptivePrincipal();
-            if (principal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
-            String effectiveDomainId;
-            if (principal.getDomainId() != null) {
-                effectiveDomainId = principal.getDomainId();
-            } else if (domainId != null) {
-                effectiveDomainId = domainId;
-            } else {
-                return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: domainId is required"));
-            }
-
-            workflowService.seedDefaultWorkflows(effectiveDomainId, principal.getId());
-            return ResponseEntity.ok(new WorkflowMessageResponse("Default workflows created successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Get available transitions for a workflow instance
-     */
-    @GetMapping("/instances/{instanceId}/actions")
-    public ResponseEntity<?> getAvailableActions(@PathVariable String instanceId) {
-        try {
-            List<WorkflowTransition> transitions = engineService.getAvailableTransitions(instanceId);
-            return ResponseEntity.ok(Map.of("availableTransitions", transitions));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Get a workflow instance
-     */
-    @GetMapping("/instances/{instanceId}")
-    public ResponseEntity<?> getInstance(@PathVariable String instanceId) {
-        Optional<WorkflowInstance> instance = engineService.getInstance(instanceId);
-
-        if (instance.isPresent()) {
-            return ResponseEntity.ok(instance.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    /**
-     * Get instances for current user
-     */
-    @GetMapping("/instances/my-tasks")
-    public ResponseEntity<?> getMyTasks() {
-        AdaptiveUserDetails principal = currentAdaptivePrincipal();
-        if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        List<WorkflowInstance> instances = engineService.getInstancesByUser(principal.getId());
-        return ResponseEntity.ok(instances);
-    }
-
-    /**
-     * Add comment to workflow instance
-     */
-    @PostMapping("/instances/{instanceId}/comments")
-    public ResponseEntity<?> addComment(@PathVariable String instanceId, @RequestBody Map<String, String> request) {
-        try {
-            AdaptiveUserDetails principal = currentAdaptivePrincipal();
-            if (principal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
-            String text = request.get("text");
-            WorkflowInstance instance = engineService.addComment(instanceId, principal.getId(), text);
-            return ResponseEntity.ok(instance);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new WorkflowMessageResponse("Error: " + e.getMessage()));
-        }
-    }
-
-    // Helper methods
-    private AdaptiveUserDetails currentAdaptivePrincipal() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof AdaptiveUserDetails details) {
-            return details;
+    private String currentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof AdaptiveUserDetails details) {
+            return details.getId();
         }
         return null;
     }

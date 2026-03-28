@@ -1,20 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcessService } from '../../../../core/services/process.service';
-import { AuthService } from '../../../../core/services/auth.service';
-import { DomainService } from '../../../../core/services/domain.service';
 import {
-  ProcessInstance, NodeViewResponse, ProcessInstanceResponse,
+  DomainModelField,
+  ProcessInstance,
+  StepEdgeView,
+  StepViewResponse,
 } from '../../../../core/models/process.model';
-
-interface FormField {
-  id: string;
-  type: string;
-  label: string;
-  required?: boolean;
-  config?: Record<string, any>;
-  validation?: Record<string, any>;
-}
 
 const THEME_MAP: Record<string, string> = {
   midnight: '#1a1a2e', ocean: '#0c4a6e', forest: '#14532d', ember: '#7f1d1d',
@@ -35,7 +27,7 @@ export class InstanceViewComponent implements OnInit {
   instanceId = '';
 
   instance: ProcessInstance | null = null;
-  nodeView: NodeViewResponse | null = null;
+  stepView: StepViewResponse | null = null;
 
   loading = false;
   submitting = false;
@@ -43,10 +35,8 @@ export class InstanceViewComponent implements OnInit {
   successMsg = '';
 
   formData: Record<string, any> = {};
-  selectedAction = '';
+  selectedEdgeId = '';
   comment = '';
-
-  domainEmployees: any[] = [];
 
   objectKeys = Object.keys;
   themeColor = '#1a1a2e';
@@ -55,16 +45,13 @@ export class InstanceViewComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private processService: ProcessService,
-    private domainService: DomainService,
-    public auth: AuthService,
   ) {}
 
   ngOnInit(): void {
-    this.domainSlug  = this.route.snapshot.params['slug'];
-    this.appSlug     = this.route.snapshot.params['appSlug'];
-    this.instanceId  = this.route.snapshot.params['instanceId'];
+    this.domainSlug = this.route.snapshot.params['slug'];
+    this.appSlug = this.route.snapshot.params['appSlug'];
+    this.instanceId = this.route.snapshot.params['instanceId'];
     this.loadTheme();
-    this.loadEmployees();
     this.load();
   }
 
@@ -75,153 +62,248 @@ export class InstanceViewComponent implements OnInit {
     this.themeColor = THEME_MAP[id] ?? '#1a1a2e';
   }
 
-  /** True if user is owner or has APP_WRITE — used to show admin-only UI bits */
-  get isAdmin(): boolean {
-    const ctx = this.auth.getContext();
-    return !!(ctx && ctx.principalType === 'OWNER');
-  }
-
   load(): void {
     this.loading = true;
     this.error = '';
+    this.successMsg = '';
 
     this.processService.getInstance(this.domainSlug, this.appSlug, this.instanceId).subscribe({
-      next: (inst) => {
-        this.instance = inst;
-        if (inst.status === 'ACTIVE') {
-          this.loadNodeView();
+      next: (instance) => {
+        this.instance = instance;
+        if (instance.status === 'ACTIVE') {
+          this.loadStepView();
         } else {
+          this.stepView = null;
           this.loading = false;
         }
       },
       error: (err: any) => {
-        this.error = err?.error?.message || 'Failed to load instance';
+        this.error = err?.error?.message || 'Failed to load workflow instance';
         this.loading = false;
       }
     });
   }
 
-  loadNodeView(): void {
-    this.processService.getNodeView(this.domainSlug, this.appSlug, this.instanceId).subscribe({
+  loadStepView(): void {
+    this.processService.getStepView(this.domainSlug, this.appSlug, this.instanceId).subscribe({
       next: (view) => {
-        this.nodeView = view;
-        this.formData = { ...(view.prefilledData || {}) };
-        this.selectedAction = view.availableActions?.[0] || '';
+        this.stepView = view;
+        this.formData = this.toEditableMap(view.currentData || {});
+        this.mergeReferencedData(view);
+        this.mergeMappedData(view);
+
+        const firstAvailable = (view.availableEdges || []).find(e => !e.disabled);
+        this.selectedEdgeId = firstAvailable?.id || '';
+
         this.loading = false;
       },
       error: (err: any) => {
-        this.error = err?.error?.message || 'Failed to load current step';
+        this.error = err?.error?.message || 'Failed to load current workflow step';
         this.loading = false;
       }
     });
   }
 
-  submit(): void {
-    if (!this.nodeView) return;
+  executeEdge(): void {
+    if (!this.stepView || !this.selectedEdgeId) {
+      return;
+    }
+
     this.submitting = true;
     this.error = '';
     this.successMsg = '';
 
     const payload = {
-      nodeId: this.nodeView.nodeId,
-      formData: this.formData,
-      action: this.nodeView.nodeType === 'APPROVAL' ? this.selectedAction : undefined,
+      edgeId: this.selectedEdgeId,
+      formData: this.normalizePayloadByFieldType(this.formData),
       comment: this.comment || undefined,
     };
 
-    this.processService.submitNode(this.domainSlug, this.appSlug, this.instanceId, payload).subscribe({
-      next: (res: ProcessInstanceResponse) => {
+    this.processService.executeEdge(this.domainSlug, this.appSlug, this.instanceId, payload).subscribe({
+      next: () => {
         this.submitting = false;
-        this.successMsg = '';
-        this.instance = res.instance;
         this.comment = '';
-        this.formData = {};
-        if (res.instance.status === 'ACTIVE') {
-          this.loadNodeView();
-        } else {
-          this.nodeView = null;
-        }
+        this.successMsg = 'Workflow action executed successfully.';
+        this.load();
       },
       error: (err: any) => {
         this.submitting = false;
-        this.error = err?.error?.message || 'Submission failed';
+        this.error = err?.error?.message || 'Failed to execute workflow edge';
       }
-    });
-  }
-
-  cancel(): void {
-    if (!confirm('Cancel this process instance? This cannot be undone.')) return;
-    this.processService.cancelInstance(this.domainSlug, this.appSlug, this.instanceId).subscribe({
-      next: () => this.load(),
-      error: (err: any) => this.error = err?.error?.message || 'Failed to cancel',
     });
   }
 
   goBackToApp(): void {
-    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug]);
+    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'tasks']);
   }
 
-  get formElements(): FormField[] {
-    if (!this.nodeView?.config?.['elements']) return [];
-    return this.nodeView.config['elements'] as FormField[];
+  get availableEdges(): StepEdgeView[] {
+    return this.stepView?.availableEdges || [];
   }
 
-  get approvalActions(): string[] {
-    return this.nodeView?.availableActions || ['approve', 'reject'];
+  get modelFields(): DomainModelField[] {
+    return this.stepView?.modelFields || [];
   }
 
-  isVisible(el: FormField): boolean {
-    const rule = el.config?.['visibilityRule'] || (el as any).visibilityRule;
-    if (!rule) return true;
-    const depVal = this.formData[rule.dependsOn];
-    const actual = depVal == null ? '' : String(depVal);
-    const expected = rule.value == null ? '' : String(rule.value);
-    switch (rule.operator) {
-      case 'EQUALS': return actual === expected;
-      case 'NOT_EQUALS': return actual !== expected;
-      case 'IS_EMPTY': return actual === '';
-      case 'IS_NOT_EMPTY': return actual !== '';
-      default: return true;
+  get historyRows() {
+    return this.stepView?.history || this.instance?.history || [];
+  }
+
+  isReadOnlyField(key: string): boolean {
+    return !!this.stepView?.readOnlyFields?.includes(key);
+  }
+
+  getEdgeDisabledReason(edgeId: string): string {
+    const edge = this.availableEdges.find(e => e.id === edgeId);
+    return edge?.disabledReason || '';
+  }
+
+  fieldInputType(field: DomainModelField): string {
+    if (field.type === 'NUMBER') {
+      return 'number';
+    }
+    if (field.type === 'DATE') {
+      return 'date';
+    }
+    if (field.type === 'DATETIME') {
+      return 'datetime-local';
+    }
+    return 'text';
+  }
+
+  fieldIsCheckbox(field: DomainModelField): boolean {
+    return field.type === 'BOOLEAN';
+  }
+
+  fieldIsJson(field: DomainModelField): boolean {
+    return field.type === 'OBJECT' || field.type === 'ARRAY';
+  }
+
+  valueAsJsonText(key: string): string {
+    const value = this.formData[key];
+    if (value == null) {
+      return '';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return String(value);
     }
   }
 
-  getOptions(el: FormField): { label: string; value: string }[] {
-    return el.config?.['options'] || [];
+  updateJsonField(key: string, value: string): void {
+    this.formData[key] = value;
   }
 
-  getRecordColumns(records: Record<string, any>[]): string[] {
-    if (!records || records.length === 0) return [];
-    return Object.keys(records[0]).filter(k => k !== '_id');
-  }
-
-  formatColumnName(key: string): string {
-    return key
-      .replace(/_/g, ' ')
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/\b\w/g, c => c.toUpperCase())
-      .trim();
-  }
-
-  private loadEmployees(): void {
-    // Load domain employees for EMPLOYEE_PICKER fields
-    this.domainService.getEmployees(this.domainSlug).subscribe({
-      next: (employees) => {
-        this.domainEmployees = employees || [];
-      },
-      error: (err) => {
-        console.warn('Failed to load employees for EMPLOYEE_PICKER fields:', err);
+  prettyValue(value: any): string {
+    if (value == null || value === '') {
+      return '—';
+    }
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
       }
-    });
+    }
+    return String(value);
   }
 
-  getEmployeeDisplayName(employee: any): string {
-    const data = employee.data || {};
-    const firstName = data.firstName || '';
-    const lastName = data.lastName || '';
-
-    if (firstName && lastName) {
-      return `${firstName} ${lastName}`;
+  private toEditableMap(data: Record<string, any>): Record<string, any> {
+    const map: Record<string, any> = {};
+    for (const field of this.modelFields) {
+      const value = data[field.key];
+      map[field.key] = value == null ? this.defaultValue(field) : value;
     }
-    return data.employeeId || 'Unknown Employee';
+    return map;
+  }
+
+  private mergeReferencedData(view: StepViewResponse): void {
+    const readOnlyFields = view.readOnlyFields || [];
+    const referenced = view.referencedData || {};
+
+    for (const key of readOnlyFields) {
+      if (this.formData[key] === '' || this.formData[key] == null) {
+        if (referenced[key] !== undefined) {
+          this.formData[key] = referenced[key];
+        }
+      }
+    }
+  }
+
+  private mergeMappedData(view: StepViewResponse): void {
+    const mapped = view.mappedData || {};
+    for (const key of Object.keys(mapped)) {
+      const existing = this.formData[key];
+      if (existing == null || (typeof existing === 'string' && existing.trim() === '')) {
+        this.formData[key] = mapped[key];
+      }
+    }
+  }
+
+  private defaultValue(field: DomainModelField): any {
+    if (field.type === 'BOOLEAN') {
+      return false;
+    }
+    if (field.type === 'ARRAY') {
+      return '[]';
+    }
+    if (field.type === 'OBJECT') {
+      return '{}';
+    }
+    return '';
+  }
+
+  private normalizePayloadByFieldType(source: Record<string, any>): Record<string, any> {
+    const payload: Record<string, any> = {};
+
+    for (const field of this.modelFields) {
+      const raw = source[field.key];
+
+      if (raw === undefined) {
+        continue;
+      }
+      if (raw === '' && !field.required) {
+        payload[field.key] = raw;
+        continue;
+      }
+
+      switch (field.type) {
+        case 'NUMBER': {
+          const parsed = Number(raw);
+          payload[field.key] = Number.isNaN(parsed) ? raw : parsed;
+          break;
+        }
+        case 'BOOLEAN':
+          payload[field.key] = !!raw;
+          break;
+        case 'ARRAY':
+        case 'OBJECT':
+          payload[field.key] = this.tryParseJson(raw);
+          break;
+        default:
+          payload[field.key] = raw;
+      }
+    }
+
+    return payload;
+  }
+
+  private tryParseJson(value: any): any {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return value;
+    }
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return value;
+    }
   }
 }

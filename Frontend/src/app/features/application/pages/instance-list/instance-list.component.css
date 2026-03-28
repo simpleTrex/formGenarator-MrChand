@@ -65,6 +65,33 @@
   width: 100%;
 }
 
+/* ── Tabs ───────────────────────────────────────────────────────────────────── */
+.il-tabs {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 999px;
+  background: white;
+  margin-bottom: 1.25rem;
+}
+.il-tab {
+  border: none;
+  background: transparent;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.il-tab.is-active {
+  background: var(--tc, #1a1a2e);
+  color: white;
+}
+.il-tab:hover { color: #0f172a; }
+
 /* ── Loading ─────────────────────────────────────────────────────────────────── */
 .il-loading {
   display: flex;

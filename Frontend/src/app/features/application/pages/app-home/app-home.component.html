@@ -25,9 +25,9 @@
       <h1 class="ah-landing-name">{{ app?.name }}</h1>
       <p *ngIf="app?.description" class="ah-landing-desc">{{ app.description }}</p>
       <div *ngIf="startError" class="ah-alert ah-alert-error">{{ startError }}</div>
-      <button class="ah-start-btn" [disabled]="startingProcess" (click)="startProcess()">
-        <span *ngIf="!startingProcess">Get Started →</span>
-        <span *ngIf="startingProcess" class="ah-spinner"></span>
+      <button class="ah-start-btn" [disabled]="startingWorkflow" (click)="startWorkflow()">
+        <span *ngIf="!startingWorkflow">Start Workflow →</span>
+        <span *ngIf="startingWorkflow" class="ah-spinner"></span>
       </button>
     </div>
 
@@ -53,34 +53,46 @@
       <div *ngIf="startError" class="ah-alert ah-alert-error">{{ startError }}</div>
 
       <!-- Start button -->
-      <button class="ah-start-btn-sm" [disabled]="startingProcess" (click)="startProcess()">
-        <span *ngIf="!startingProcess">▶ Start Process</span>
-        <span *ngIf="startingProcess" class="ah-spinner"></span>
+      <button class="ah-start-btn-sm" [disabled]="startingWorkflow" (click)="startWorkflow()">
+        <span *ngIf="!startingWorkflow">▶ Start Workflow</span>
+        <span *ngIf="startingWorkflow" class="ah-spinner"></span>
       </button>
+
+      <div class="ah-manage-grid mt-3">
+        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'tasks']" class="ah-manage-card">
+          <div class="ah-manage-icon-wrap">TQ</div>
+          <div class="ah-manage-body">
+            <strong>My Tasks</strong>
+            <span>Execute pending workflow edges</span>
+          </div>
+          <span class="ah-manage-arrow">→</span>
+        </a>
+      </div>
 
     </div>
 
     <!-- ── MANAGE / EDIT ── -->
     <div *ngIf="mode === 'EDIT'" class="ah-body">
       <h2 class="ah-section-title">Manage Application</h2>
-      <p class="ah-muted">Configure processes, data models, and monitor instances.</p>
+      <p class="ah-muted">Configure the workflow, data models, and monitor instances.</p>
 
       <ng-container *ngIf="canEditMode">
         <div class="ah-manage-grid mt-3">
-          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'process']" class="ah-manage-card">
-            <div class="ah-manage-icon-wrap">PB</div>
+          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'workflows', 'builder']" class="ah-manage-card">
+            <div class="ah-manage-icon-wrap">WB</div>
             <div class="ah-manage-body">
-              <strong>Process Builder</strong>
-              <span>Design and publish the workflow</span>
+              <strong>Workflow Builder</strong>
+              <span>Design the app's single workflow</span>
             </div>
             <span class="ah-manage-arrow">→</span>
           </a>
 
-          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'models']" class="ah-manage-card">
-            <div class="ah-manage-icon-wrap">DM</div>
+
+          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'tasks']" class="ah-manage-card">
+            <div class="ah-manage-icon-wrap">TQ</div>
             <div class="ah-manage-body">
-              <strong>Data Models</strong>
-              <span>Define schemas and fields</span>
+              <strong>My Tasks</strong>
+              <span>View items pending your action</span>
             </div>
             <span class="ah-manage-arrow">→</span>
           </a>
@@ -89,7 +101,7 @@
             <div class="ah-manage-icon-wrap">AI</div>
             <div class="ah-manage-body">
               <strong>All Instances</strong>
-              <span>View and manage running processes</span>
+              <span>View workflow runtime instances</span>
             </div>
             <span class="ah-manage-arrow">→</span>
           </a>

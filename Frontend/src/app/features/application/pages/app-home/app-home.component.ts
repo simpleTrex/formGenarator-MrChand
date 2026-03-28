@@ -21,7 +21,6 @@ const APP_THEMES = [
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomainService } from '../../../../core/services/domain.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { ProcessService } from '../../../../core/services/process.service';
 
 @Component({
   selector: 'app-app-home',
@@ -45,7 +44,7 @@ export class AppHomeComponent implements OnInit {
   draggedUser: any = null;
   draggedFromGroupId: string | null = null;
 
-  startingProcess = false;
+  startingWorkflow = false;
   startError = '';
 
   domainAccess = { permissions: [] as string[], groups: [] as string[] };
@@ -68,7 +67,6 @@ export class AppHomeComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private domainService: DomainService,
-    private processService: ProcessService,
     public auth: AuthService,
   ) { }
 
@@ -136,20 +134,11 @@ export class AppHomeComponent implements OnInit {
     this.router.navigate(['/domain', this.domainSlug]);
   }
 
-  startProcess(): void {
-    this.startingProcess = true;
+  startWorkflow(): void {
+    this.startingWorkflow = true;
     this.startError = '';
-    this.processService.startProcess(this.domainSlug, this.appSlug).subscribe({
-      next: (res) => {
-        this.startingProcess = false;
-        const instanceId = res.instance.id;
-        this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'instances', instanceId]);
-      },
-      error: (err: any) => {
-        this.startingProcess = false;
-        this.startError = err?.error?.message || 'Failed to start process';
-      }
-    });
+    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'start']);
+    this.startingWorkflow = false;
   }
 
   private contextMatchesDomain(): boolean {
@@ -194,11 +183,13 @@ export class AppHomeComponent implements OnInit {
   }
 
   get deleteExpectedPhrase(): string {
-    return `delete ${this.app?.name || ''}`;
+    const appName = this.app?.name || '';
+    return `delete ${appName}`.trim();
   }
 
   get canConfirmDelete(): boolean {
-    return this.deleteConfirmText.trim() === this.deleteExpectedPhrase;
+    return this.normalizeConfirmText(this.deleteConfirmText)
+      === this.normalizeConfirmText(this.deleteExpectedPhrase);
   }
 
   openDeleteConfirm() {
@@ -217,6 +208,13 @@ export class AppHomeComponent implements OnInit {
     this.showDeleteConfirm = false;
     this.deleteConfirmText = '';
     this.deleteError = '';
+  }
+
+  private normalizeConfirmText(value: string): string {
+    return (value || '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   confirmDeleteApplication() {

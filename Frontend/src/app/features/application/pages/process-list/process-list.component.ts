@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcessService } from '../../../../core/services/process.service';
-import { DomainService } from '../../../../core/services/domain.service';
-import { ProcessDefinitionResponse, ProcessDefinition, STATUS_BADGE_CLASS } from '../../../../core/models/process.model';
+import { ProcessDefinition, ProcessDefinitionResponse, STATUS_BADGE_CLASS } from '../../../../core/models/process.model';
 
 @Component({
   selector: 'app-process-list',
@@ -14,7 +13,7 @@ export class ProcessListComponent implements OnInit {
   domainSlug = '';
   appSlug = '';
 
-  processes: ProcessDefinitionResponse[] = [];
+  workflows: ProcessDefinitionResponse[] = [];
   loading = false;
   error = '';
   actionLoading: Record<string, boolean> = {};
@@ -26,63 +25,71 @@ export class ProcessListComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private processService: ProcessService,
-    private domainService: DomainService,
   ) {}
 
   ngOnInit(): void {
     this.domainSlug = this.route.snapshot.params['slug'];
     this.appSlug = this.route.snapshot.params['appSlug'];
-    this.loadProcesses();
+    this.loadWorkflows();
   }
 
-  loadProcesses(): void {
+  loadWorkflows(): void {
     this.loading = true;
     this.error = '';
-    this.processService.listProcesses(this.domainSlug, this.appSlug).subscribe({
-      next: (res: any) => {
-        // API returns array of ProcessDefinition (not wrapped in response)
-        this.processes = Array.isArray(res)
-          ? res.map((d: ProcessDefinition) => ({ definition: d, nodeCount: d.nodes?.length ?? 0, edgeCount: d.edges?.length ?? 0, valid: false }))
+    this.processService.listWorkflows(this.domainSlug, this.appSlug).subscribe({
+      next: (res: ProcessDefinition[]) => {
+        this.workflows = Array.isArray(res)
+          ? res.map((d: ProcessDefinition) => ({
+              workflow: d,
+              stepCount: d.steps?.length ?? 0,
+              valid: false,
+              validationErrors: [],
+            }))
           : [];
         this.loading = false;
       },
       error: (err: any) => {
-        this.error = err?.error?.message || 'Failed to load processes';
+        this.error = err?.error?.message || 'Failed to load workflows';
         this.loading = false;
       }
     });
   }
 
   createNew(): void {
-    // Navigate to process builder where users can choose templates or start from scratch
-    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'process']);
+    if (this.workflows.length > 0) {
+      this.editWorkflow(this.workflows[0].workflow.slug);
+      return;
+    }
+    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'workflows', 'builder']);
   }
 
-  editProcess(slug: string): void {
-    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'processes', slug, 'edit']);
+  editWorkflow(slug: string): void {
+    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'workflows', 'builder'], {
+      queryParams: { wf: slug }
+    });
   }
 
-  startProcess(slug: string): void {
+  startWorkflow(slug: string): void {
     this.setActionLoading(slug, true);
-    this.processService.startProcess(this.domainSlug, this.appSlug).subscribe({
+    this.processService.startWorkflow(this.domainSlug, this.appSlug, slug).subscribe({
       next: (res) => {
         this.setActionLoading(slug, false);
-        const instanceId = res.instance?.id;
+        const instanceId = res.instanceId;
         if (instanceId) {
           this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'instances', instanceId]);
         }
       },
       error: (err: any) => {
         this.setActionLoading(slug, false);
-        this.actionError[slug] = err?.error?.message || 'Failed to start process';
+        this.actionError[slug] = err?.error?.message || 'Failed to start workflow';
       }
     });
   }
 
-  publishProcess(slug: string): void {
+  publishWorkflow(slug: string): void {
     this.setActionLoading(slug, true);
-    this.processService.publishProcess(this.domainSlug, this.appSlug).subscribe({
-      next: () => { this.setActionLoading(slug, false); this.loadProcesses(); },
+    this.processService.publishWorkflow(this.domainSlug, this.appSlug, slug).subscribe({
+      next: () => { this.setActionLoading(slug, false); this.loadWorkflows(); },
       error: (err: any) => {
         this.setActionLoading(slug, false);
         this.actionError[slug] = err?.error?.message || 'Failed to publish';
@@ -90,11 +97,11 @@ export class ProcessListComponent implements OnInit {
     });
   }
 
-  archiveProcess(slug: string): void {
-    if (!confirm('Archive this process? Running instances will continue but no new ones can start.')) return;
+  archiveWorkflow(slug: string): void {
+    if (!confirm('Archive this workflow? Running instances will continue but no new ones can start.')) return;
     this.setActionLoading(slug, true);
-    this.processService.archiveProcess(this.domainSlug, this.appSlug).subscribe({
-      next: () => { this.setActionLoading(slug, false); this.loadProcesses(); },
+    this.processService.archiveWorkflow(this.domainSlug, this.appSlug, slug).subscribe({
+      next: () => { this.setActionLoading(slug, false); this.loadWorkflows(); },
       error: (err: any) => {
         this.setActionLoading(slug, false);
         this.actionError[slug] = err?.error?.message || 'Failed to archive';
@@ -102,11 +109,11 @@ export class ProcessListComponent implements OnInit {
     });
   }
 
-  deleteProcess(slug: string): void {
-    if (!confirm('Delete this draft process? This cannot be undone.')) return;
+  deleteWorkflow(slug: string): void {
+    if (!confirm('Delete this draft workflow? This cannot be undone.')) return;
     this.setActionLoading(slug, true);
-    this.processService.deleteProcess(this.domainSlug, this.appSlug).subscribe({
-      next: () => { this.setActionLoading(slug, false); this.loadProcesses(); },
+    this.processService.deleteWorkflow(this.domainSlug, this.appSlug, slug).subscribe({
+      next: () => { this.setActionLoading(slug, false); this.loadWorkflows(); },
       error: (err: any) => {
         this.setActionLoading(slug, false);
         this.actionError[slug] = err?.error?.message || 'Failed to delete';
@@ -116,6 +123,10 @@ export class ProcessListComponent implements OnInit {
 
   viewInstances(): void {
     this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'instances']);
+  }
+
+  viewTasks(): void {
+    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'tasks']);
   }
 
   goBack(): void {

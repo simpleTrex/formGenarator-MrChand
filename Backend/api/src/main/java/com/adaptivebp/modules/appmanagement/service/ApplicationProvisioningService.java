@@ -31,13 +31,18 @@ public class ApplicationProvisioningService {
             AppGroup admin = buildGroup(application.getId(), "App Admin",
                     EnumSet.of(AppPermission.APP_READ, AppPermission.APP_WRITE, AppPermission.APP_EXECUTE,
                             AppPermission.APP_MANAGE_PROCESSES, AppPermission.APP_START_PROCESS,
-                            AppPermission.APP_VIEW_PROCESSES), true);
+                    AppPermission.APP_VIEW_PROCESSES,
+                    AppPermission.APP_MANAGE_WORKFLOWS, AppPermission.APP_START_WORKFLOW,
+                    AppPermission.APP_VIEW_WORKFLOWS), true);
             AppGroup editor = buildGroup(application.getId(), "App Editor",
                     EnumSet.of(AppPermission.APP_READ, AppPermission.APP_WRITE,
                             AppPermission.APP_MANAGE_PROCESSES, AppPermission.APP_START_PROCESS,
-                            AppPermission.APP_VIEW_PROCESSES), true);
+                    AppPermission.APP_VIEW_PROCESSES,
+                    AppPermission.APP_MANAGE_WORKFLOWS, AppPermission.APP_START_WORKFLOW,
+                    AppPermission.APP_VIEW_WORKFLOWS), true);
             AppGroup viewer = buildGroup(application.getId(), "App Viewer",
-                    EnumSet.of(AppPermission.APP_READ, AppPermission.APP_VIEW_PROCESSES), true);
+                EnumSet.of(AppPermission.APP_READ, AppPermission.APP_VIEW_PROCESSES,
+                    AppPermission.APP_VIEW_WORKFLOWS), true);
             appGroupRepository.saveAll(List.of(admin, editor, viewer));
             if (ownerUserId != null) {
                 assignUser(admin, application.getId(), ownerUserId, ownerUserId);

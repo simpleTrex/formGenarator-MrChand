@@ -13,11 +13,11 @@ export class ArchitectureComponent {
 
   sections = [
     { id: 'overview',      label: 'System Overview' },
-    { id: 'hierarchy',     label: 'Entity Hierarchy' },
-    { id: 'access',        label: 'Access Control' },
-    { id: 'process',       label: 'Process Engine' },
-    { id: 'data',          label: 'Data Storage' },
-    { id: 'api',           label: 'API Structure' },
+    { id: 'workflow-core', label: 'Workflow Core' },
+    { id: 'runtime',       label: 'Runtime Lifecycle' },
+    { id: 'access',        label: 'Access And Tasks' },
+    { id: 'storage',       label: 'Storage Model' },
+    { id: 'api',           label: 'API Surface' },
     { id: 'stack',         label: 'Tech Stack' },
   ];
 

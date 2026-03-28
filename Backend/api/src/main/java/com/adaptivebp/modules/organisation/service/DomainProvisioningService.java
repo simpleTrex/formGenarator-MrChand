@@ -43,7 +43,8 @@ public class DomainProvisioningService {
                     EnumSet.allOf(DomainPermission.class), true);
             DomainGroup contributorGroup = buildGroup(organisation.getId(), "Domain Contributor",
                     EnumSet.of(DomainPermission.DOMAIN_MANAGE_APPS, DomainPermission.DOMAIN_USE_APP,
-                            DomainPermission.DOMAIN_MANAGE_PROCESSES), true);
+                            DomainPermission.DOMAIN_MANAGE_PROCESSES,
+                            DomainPermission.DOMAIN_MANAGE_WORKFLOWS), true);
             domainGroupRepository.saveAll(List.of(adminGroup, contributorGroup));
             if (ownerDomainUserId != null) {
                 assignUser(adminGroup, ownerDomainUserId, ownerDomainUserId);

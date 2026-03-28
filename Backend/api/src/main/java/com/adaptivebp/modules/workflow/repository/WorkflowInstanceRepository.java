@@ -1,30 +1,22 @@
 package com.adaptivebp.modules.workflow.repository;
 
+import java.util.List;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
 
 import com.adaptivebp.modules.workflow.model.WorkflowInstance;
+import com.adaptivebp.modules.workflow.model.enums.InstanceStatus;
 
-import java.util.List;
-import java.util.Optional;
-
-/**
- * Repository for WorkflowInstance entities
- */
-@Repository
 public interface WorkflowInstanceRepository extends MongoRepository<WorkflowInstance, String> {
+    List<WorkflowInstance> findByDomainIdAndAppIdAndStatus(String domainId, String appId, InstanceStatus status);
 
-    List<WorkflowInstance> findByDomainId(String domainId);
+    List<WorkflowInstance> findByDomainIdAndAppId(String domainId, String appId);
 
-    List<WorkflowInstance> findByWorkflowDefinitionId(String workflowDefinitionId);
+    List<WorkflowInstance> findByDomainIdAndAppIdAndStartedBy(String domainId, String appId, String startedBy);
 
-    List<WorkflowInstance> findByCurrentState(String currentState);
+    List<WorkflowInstance> findByStartedByAndStatus(String userId, InstanceStatus status);
 
-    List<WorkflowInstance> findByDomainIdAndCurrentState(String domainId, String currentState);
+    long countByWorkflowDefinitionIdAndStatus(String definitionId, InstanceStatus status);
 
-    Optional<WorkflowInstance> findByRecordId(String recordId);
-
-    List<WorkflowInstance> findByAssignedTo_UserId(String userId);
-
-    Optional<WorkflowInstance> findByIdAndDomainId(String id, String domainId);
+    void deleteByDomainIdAndAppId(String domainId, String appId);
 }

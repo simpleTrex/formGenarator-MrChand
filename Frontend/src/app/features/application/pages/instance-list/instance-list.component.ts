@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcessService } from '../../../../core/services/process.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { ProcessInstance } from '../../../../core/models/process.model';
+import { ProcessInstance, TaskResponse } from '../../../../core/models/process.model';
 
 const THEME_MAP: Record<string, string> = {
   midnight: '#1a1a2e', ocean: '#0c4a6e', forest: '#14532d', ember: '#7f1d1d',
@@ -20,8 +20,12 @@ export class InstanceListComponent implements OnInit {
 
   domainSlug = '';
   appSlug = '';
+  mode: 'tasks' | 'instances' = 'tasks';
+  activeTab: 'tasks' | 'started' = 'tasks';
 
   instances: ProcessInstance[] = [];
+  startedInstances: ProcessInstance[] = [];
+  tasks: TaskResponse[] = [];
   loading = false;
   error = '';
 
@@ -37,12 +41,13 @@ export class InstanceListComponent implements OnInit {
   ngOnInit(): void {
     this.domainSlug = this.route.snapshot.params['slug'];
     this.appSlug    = this.route.snapshot.params['appSlug'];
+    this.mode = this.route.snapshot.data['mode'] || 'tasks';
 
-    // Only owners/admins may view the instance list
     const ctx = this.auth.getContext();
-    if (!ctx || ctx.principalType !== 'OWNER') {
-      // Redirect normal users back to the app home
-      this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug]);
+    const isOwner = !!ctx && ctx.principalType === 'OWNER';
+
+    if (this.mode === 'instances' && !isOwner) {
+      this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'tasks']);
       return;
     }
 
@@ -60,9 +65,63 @@ export class InstanceListComponent implements OnInit {
   load(): void {
     this.loading = true;
     this.error = '';
+
+    if (this.mode === 'tasks') {
+      this.loadTasksAndStarted();
+      return;
+    }
+
     this.processService.listInstances(this.domainSlug, this.appSlug).subscribe({
-      next: (list) => { this.instances = list; this.loading = false; },
-      error: (err: any) => { this.error = err?.error?.message || 'Failed to load instances'; this.loading = false; }
+      next: (list) => {
+        this.instances = list || [];
+        this.loading = false;
+      },
+      error: (err: any) => {
+        this.error = err?.error?.message || 'Failed to load instances';
+        this.loading = false;
+      }
+    });
+  }
+
+  private loadTasksAndStarted(): void {
+    this.loading = true;
+    this.error = '';
+
+    let tasksDone = false;
+    let startedDone = false;
+
+    const finalize = () => {
+      if (tasksDone && startedDone) {
+        this.loading = false;
+      }
+    };
+
+    this.processService.listMyTasks(this.domainSlug, this.appSlug).subscribe({
+      next: (res) => {
+        this.tasks = res?.tasks || [];
+        tasksDone = true;
+        finalize();
+      },
+      error: (err: any) => {
+        this.error = err?.error?.message || 'Failed to load tasks';
+        tasksDone = true;
+        finalize();
+      }
+    });
+
+    this.processService.listMyStartedInstances(this.domainSlug, this.appSlug).subscribe({
+      next: (list) => {
+        this.startedInstances = list || [];
+        startedDone = true;
+        finalize();
+      },
+      error: (err: any) => {
+        if (!this.error) {
+          this.error = err?.error?.message || 'Failed to load your workflows';
+        }
+        startedDone = true;
+        finalize();
+      }
     });
   }
 
@@ -74,8 +133,28 @@ export class InstanceListComponent implements OnInit {
     this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug]);
   }
 
+  goToTasks(): void {
+    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'tasks']);
+  }
+
+  goToInstances(): void {
+    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'instances']);
+  }
+
+  setTab(tab: 'tasks' | 'started'): void {
+    this.activeTab = tab;
+  }
+
   countByStatus(status: string): number {
     return this.instances.filter(i => i.status === status).length;
+  }
+
+  hasTasks(): boolean {
+    return this.tasks.length > 0;
+  }
+
+  hasStarted(): boolean {
+    return this.startedInstances.length > 0;
   }
 
   formatDate(iso?: string): string {
