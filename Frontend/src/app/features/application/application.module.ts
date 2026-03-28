@@ -28,7 +28,6 @@ const routes: Routes = [
     declarations: [
         AppHomeComponent,
         ProcessBuilderComponent,
-        WorkflowExplainerComponent,
         InstanceListComponent,
         InstanceViewComponent,
         StartWorkflowComponent,

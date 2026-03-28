@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 import { ArchitectureComponent } from './features/architecture/architecture.component';
+import { WorkflowExplainerComponent } from './features/application/pages/workflow-explainer/workflow-explainer.component';
 
 const routes: Routes = [
   {
@@ -41,6 +42,7 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   { path: 'architecture', component: ArchitectureComponent },
+  { path: 'workflow', component: WorkflowExplainerComponent },
   { path: '**', redirectTo: '' },
 ];
 

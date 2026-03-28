@@ -67,25 +67,6 @@
 
   <section class="we-card">
     <h2>4. Data Shape (Simplified)</h2>
-    <pre class="we-code">{
-  "workflowDefinition": {
-    "steps": [
-      {
-        "id": "step_1",
-        "fields": [{ "key": "amount", "type": "NUMBER", "required": true }],
-        "edges": [{ "id": "approve", "targetStepId": "step_2", "allowedRoles": ["App Admin"] }]
-      }
-    ]
-  },
-  "workflowInstance": {
-    "currentStepId": "step_2",
-    "stepRecords": {
-      "step_1": { "amount": 1000, "requestor": "testabc123" }
-    },
-    "history": [
-      { "stepId": "step_1", "edgeName": "approve", "performedBy": "testabc123" }
-    ]
-  }
-}</pre>
+    <pre class="we-code" [textContent]="dataShapeExample"></pre>
   </section>
 </div>

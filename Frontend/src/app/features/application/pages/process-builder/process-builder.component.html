@@ -67,13 +67,13 @@
               </div>
               <div class="wb-node-meta">ID: {{ step.id }}</div>
               <div class="wb-node-stats">
-                <span>{{ step.fields?.length || 0 }} fields</span>
+                <span>{{ step.fields.length || 0 }} fields</span>
                 <span>•</span>
-                <span>{{ step.edges?.length || 0 }} edges</span>
+                <span>{{ step.edges.length || 0 }} edges</span>
               </div>
             </button>
 
-            <div class="wb-branch" *ngIf="step.edges?.length">
+            <div class="wb-branch" *ngIf="step.edges.length">
               <div class="wb-branch-spine"></div>
               <div class="wb-branch-list">
                 <div class="wb-edge-chip" *ngFor="let edge of step.edges">
@@ -84,7 +84,7 @@
               </div>
             </div>
 
-            <div class="wb-edge-empty" *ngIf="!step.edges?.length">No outgoing edges</div>
+            <div class="wb-edge-empty" *ngIf="!step.edges.length">No outgoing edges</div>
           </div>
         </div>
       </div>
