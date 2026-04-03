@@ -31,6 +31,12 @@ public class WorkflowInstance {
     private InstanceStatus status = InstanceStatus.ACTIVE;
     private String currentStepId;
     private Map<String, Object> stepRecords = new HashMap<>();
+    /**
+     * The single accumulated record for this workflow instance.
+     * Each step appends its editable-field values here.
+     * Edge statusLabels set the "status" key.
+     */
+    private Map<String, Object> primaryRecord = new HashMap<>();
     private List<InstanceHistory> history = new ArrayList<>();
     private String startedBy;
     private Instant startedAt = Instant.now();
@@ -98,6 +104,15 @@ public class WorkflowInstance {
 
     public void setStepRecords(Map<String, Object> stepRecords) {
         this.stepRecords = stepRecords != null ? stepRecords : new HashMap<>();
+    }
+
+    public Map<String, Object> getPrimaryRecord() {
+        if (primaryRecord == null) primaryRecord = new HashMap<>();
+        return primaryRecord;
+    }
+
+    public void setPrimaryRecord(Map<String, Object> primaryRecord) {
+        this.primaryRecord = primaryRecord != null ? primaryRecord : new HashMap<>();
     }
 
     public List<InstanceHistory> getHistory() {

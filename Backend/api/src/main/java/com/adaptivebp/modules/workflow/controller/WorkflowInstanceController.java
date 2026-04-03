@@ -61,7 +61,7 @@ public class WorkflowInstanceController {
             @PathVariable String wfSlug,
             @RequestBody(required = false) StartWorkflowRequest request) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_START_WORKFLOW);
+        requireAuthenticated();
 
         WorkflowInstance instance = engineService.startWorkflowBySlug(
                 ctx.domain().getId(),

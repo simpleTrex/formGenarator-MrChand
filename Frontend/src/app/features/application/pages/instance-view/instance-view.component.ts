@@ -36,7 +36,6 @@ export class InstanceViewComponent implements OnInit {
 
   formData: Record<string, any> = {};
   selectedEdgeId = '';
-  comment = '';
 
   objectKeys = Object.keys;
   themeColor = '#1a1a2e';
@@ -89,8 +88,6 @@ export class InstanceViewComponent implements OnInit {
       next: (view) => {
         this.stepView = view;
         this.formData = this.toEditableMap(view.currentData || {});
-        this.mergeReferencedData(view);
-        this.mergeMappedData(view);
 
         const firstAvailable = (view.availableEdges || []).find(e => !e.disabled);
         this.selectedEdgeId = firstAvailable?.id || '';
@@ -116,13 +113,11 @@ export class InstanceViewComponent implements OnInit {
     const payload = {
       edgeId: this.selectedEdgeId,
       formData: this.normalizePayloadByFieldType(this.formData),
-      comment: this.comment || undefined,
     };
 
     this.processService.executeEdge(this.domainSlug, this.appSlug, this.instanceId, payload).subscribe({
       next: () => {
         this.submitting = false;
-        this.comment = '';
         this.successMsg = 'Workflow action executed successfully.';
         this.load();
       },
@@ -143,6 +138,18 @@ export class InstanceViewComponent implements OnInit {
 
   get modelFields(): DomainModelField[] {
     return this.stepView?.modelFields || [];
+  }
+
+  get editableFields(): DomainModelField[] {
+    return this.modelFields.filter(f => !this.isReadOnlyField(f.key));
+  }
+
+  get readonlyContextFields(): DomainModelField[] {
+    return this.modelFields.filter(f => this.isReadOnlyField(f.key));
+  }
+
+  get recordStatus(): string {
+    return (this.stepView?.currentData?.['status'] as string) || '';
   }
 
   get historyRows() {
@@ -214,34 +221,12 @@ export class InstanceViewComponent implements OnInit {
 
   private toEditableMap(data: Record<string, any>): Record<string, any> {
     const map: Record<string, any> = {};
+    // Pre-fill ALL visible fields (editable + readonly) from the accumulated record
     for (const field of this.modelFields) {
       const value = data[field.key];
       map[field.key] = value == null ? this.defaultValue(field) : value;
     }
     return map;
-  }
-
-  private mergeReferencedData(view: StepViewResponse): void {
-    const readOnlyFields = view.readOnlyFields || [];
-    const referenced = view.referencedData || {};
-
-    for (const key of readOnlyFields) {
-      if (this.formData[key] === '' || this.formData[key] == null) {
-        if (referenced[key] !== undefined) {
-          this.formData[key] = referenced[key];
-        }
-      }
-    }
-  }
-
-  private mergeMappedData(view: StepViewResponse): void {
-    const mapped = view.mappedData || {};
-    for (const key of Object.keys(mapped)) {
-      const existing = this.formData[key];
-      if (existing == null || (typeof existing === 'string' && existing.trim() === '')) {
-        this.formData[key] = mapped[key];
-      }
-    }
   }
 
   private defaultValue(field: DomainModelField): any {
@@ -260,7 +245,8 @@ export class InstanceViewComponent implements OnInit {
   private normalizePayloadByFieldType(source: Record<string, any>): Record<string, any> {
     const payload: Record<string, any> = {};
 
-    for (const field of this.modelFields) {
+    // Only send editable fields — readonly fields are context only, not submitted
+    for (const field of this.editableFields) {
       const raw = source[field.key];
 
       if (raw === undefined) {

@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,10 +37,8 @@ import com.adaptivebp.modules.workflow.exception.InvalidFormDataException;
 import com.adaptivebp.modules.workflow.exception.WorkflowAlreadyCompletedException;
 import com.adaptivebp.modules.workflow.exception.WorkflowNotFoundException;
 import com.adaptivebp.modules.workflow.model.AutoAction;
-import com.adaptivebp.modules.workflow.model.AutoFetchRule;
 import com.adaptivebp.modules.workflow.model.EdgeCondition;
 import com.adaptivebp.modules.workflow.model.InstanceHistory;
-import com.adaptivebp.modules.workflow.model.StepDataConfig;
 import com.adaptivebp.modules.workflow.model.WorkflowDefinition;
 import com.adaptivebp.modules.workflow.model.WorkflowEdge;
 import com.adaptivebp.modules.workflow.model.WorkflowInstance;
@@ -115,7 +112,10 @@ public class WorkflowEngineService {
         instance.setCurrentStepId(startStep.getId());
         instance.setStartedBy(userId);
         instance.setStartedAt(Instant.now());
+
+        // Seed the primary record with any start-step form data
         if (!payload.isEmpty()) {
+            instance.getPrimaryRecord().putAll(payload);
             putStepRecord(instance, startStep.getId(), new HashMap<>(payload));
         }
 
@@ -163,47 +163,46 @@ public class WorkflowEngineService {
                     "You do not have permission to execute '" + edge.getName() + "'");
         }
 
-        Map<String, Object> currentRecordData = getStepRecordData(definition, currentStep, instance);
         Map<String, Object> payload = formData != null ? new HashMap<>(formData) : new HashMap<>();
-        Map<String, Object> mergedCurrentData = new HashMap<>();
-        if (currentRecordData != null) {
-            mergedCurrentData.putAll(currentRecordData);
-        }
-        mergedCurrentData.putAll(payload);
 
-        if (!conditionsPass(edge.getConditions(), definition, instance, currentStep, mergedCurrentData)) {
+        // Conditions are evaluated against the full primary record merged with the new payload
+        Map<String, Object> mergedForConditions = new HashMap<>(instance.getPrimaryRecord());
+        mergedForConditions.putAll(payload);
+
+        if (!conditionsPass(edge.getConditions(), definition, instance, currentStep, mergedForConditions)) {
             throw new ConditionNotMetException("Conditions for edge '" + edge.getName() + "' are not met");
         }
 
+        // Validate required fields on the step (only editable fields of this step)
         Map<String, Object> existingRecordData = getStepRecordMap(instance, currentStep.getId());
-        StepDataConfig dataConfig = currentStep.getDataConfig();
-        if (dataConfig != null && dataConfig.getReuseFromStepId() != null && !dataConfig.getReuseFromStepId().isBlank()) {
-            Map<String, Object> reusedRecordData = getStepRecordMap(instance, dataConfig.getReuseFromStepId());
-            if (reusedRecordData == null) {
-                throw new IllegalStateException("Reused step record not found for step " + dataConfig.getReuseFromStepId());
-            }
-            existingRecordData = reusedRecordData;
+        boolean requireStepRequiredFields = existingRecordData == null || existingRecordData.isEmpty();
+        Map<String, String> fieldErrors = validateStepData(currentStep, payload, requireStepRequiredFields);
+        validateEdgeRequiredFields(edge, mergedForConditions, fieldErrors);
+        if (!fieldErrors.isEmpty()) {
+            throw new InvalidFormDataException("Invalid form data", fieldErrors);
         }
-        Map<String, Object> recordData;
-        if (dataConfig != null && dataConfig.getReuseFromStepId() != null && !dataConfig.getReuseFromStepId().isBlank()) {
-            recordData = existingRecordData != null ? new HashMap<>(existingRecordData) : new HashMap<>();
-            putStepRecord(instance, currentStep.getId(), recordData);
-        } else {
-            boolean requireStepRequiredFields = existingRecordData == null || existingRecordData.isEmpty();
-            Map<String, String> fieldErrors = validateStepData(currentStep, payload, requireStepRequiredFields);
 
-            validateEdgeRequiredFields(edge, mergedCurrentData, fieldErrors);
-            if (!fieldErrors.isEmpty()) {
-                throw new InvalidFormDataException("Invalid form data", fieldErrors);
-            }
+        // Merge submitted data into per-step record (for history/audit purposes)
+        Map<String, Object> recordData = existingRecordData != null ? new HashMap<>(existingRecordData) : new HashMap<>();
+        recordData.putAll(payload);
+        putStepRecord(instance, currentStep.getId(), recordData);
 
-            if (existingRecordData != null) {
-                recordData = new HashMap<>(existingRecordData);
-                recordData.putAll(payload);
-            } else {
-                recordData = new HashMap<>(payload);
+        // Write ONLY the editable fields of this step into the primary record
+        Set<String> editableKeys = new HashSet<>();
+        if (currentStep.getFields() != null) {
+            for (com.adaptivebp.modules.formbuilder.model.DomainModelField f : currentStep.getFields()) {
+                editableKeys.add(f.getKey());
             }
-            putStepRecord(instance, currentStep.getId(), recordData);
+        }
+        for (Map.Entry<String, Object> entry : payload.entrySet()) {
+            if (editableKeys.isEmpty() || editableKeys.contains(entry.getKey())) {
+                instance.getPrimaryRecord().put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        // Apply statusLabel — edge execution sets the record's current status
+        if (edge.getStatusLabel() != null && !edge.getStatusLabel().isBlank()) {
+            instance.getPrimaryRecord().put("status", edge.getStatusLabel());
         }
 
         if (edge.isTerminal()) {
@@ -266,50 +265,43 @@ public class WorkflowEngineService {
         response.setStepName(step.getName());
         response.setHistory(instance.getHistory());
 
-        response.setModelFields(step.getFields());
-
-        Map<String, Object> currentData = getStepRecordData(definition, step, instance);
-        response.setCurrentData(currentData != null ? currentData : new HashMap<>());
-
-        StepDataConfig dataConfig = step.getDataConfig();
-        if (dataConfig != null) {
-            response.setReadOnlyFields(dataConfig.getReadOnlyFields());
-
-            if (dataConfig.getReuseFromStepId() != null && !dataConfig.getReuseFromStepId().isBlank()) {
-                Map<String, Object> reused = getReusedStepData(definition, instance, dataConfig.getReuseFromStepId());
-                response.setCurrentData(reused);
-                response.setReadOnlyFields(allFieldKeys(step.getFields()));
-            } else if (dataConfig.isReferencePreviousStep()) {
-                Map<String, Object> referenced = loadReferencedData(definition, instance, step, dataConfig);
-                response.setReferencedData(referenced);
-            }
-
-            if (dataConfig.getAutoFetchRules() != null && !dataConfig.getAutoFetchRules().isEmpty()) {
-                Map<String, Object> mappedData = loadMappedData(definition, instance, dataConfig);
-                response.setMappedData(mappedData);
-                mergeIntoCurrentData(response.getCurrentData(), mappedData);
+        // Build visible fields: editable (this step's own fields) + readonly (from prior steps)
+        List<com.adaptivebp.modules.formbuilder.model.DomainModelField> allVisible = new ArrayList<>(
+                step.getFields() != null ? step.getFields() : List.of());
+        List<String> roKeys = step.getReadonlyFieldKeys() != null ? step.getReadonlyFieldKeys() : List.of();
+        Set<String> editableKeys = new HashSet<>();
+        for (com.adaptivebp.modules.formbuilder.model.DomainModelField f : allVisible) {
+            editableKeys.add(f.getKey());
+        }
+        for (String roKey : roKeys) {
+            if (!editableKeys.contains(roKey)) {
+                com.adaptivebp.modules.formbuilder.model.DomainModelField field =
+                        findFieldInDefinition(definition, roKey);
+                if (field != null) allVisible.add(field);
             }
         }
+        response.setModelFields(allVisible);
 
+        // Pre-fill all fields from the accumulated primary record
+        response.setCurrentData(new HashMap<>(instance.getPrimaryRecord()));
+
+        // Mark readonly fields
+        response.setReadOnlyFields(new ArrayList<>(roKeys));
+
+        // Evaluate available edges against the primary record
         Set<String> roles = loadUserRoles(instance.getAppId(), userId);
         List<WorkflowEdge> permittedEdges = collectPermittedEdges(definition, step, roles, userId, instance.getStartedBy());
         List<StepViewResponse.EdgeView> edgeViews = new ArrayList<>();
-
-        Map<String, Object> mergedCurrent = new HashMap<>();
-        if (currentData != null) {
-            mergedCurrent.putAll(currentData);
-        }
+        Map<String, Object> primaryForConditions = new HashMap<>(instance.getPrimaryRecord());
 
         for (WorkflowEdge edge : permittedEdges) {
             StepViewResponse.EdgeView edgeView = new StepViewResponse.EdgeView();
             edgeView.setId(edge.getId());
             edgeView.setName(edge.getName());
-
-            if (!conditionsPass(edge.getConditions(), definition, instance, step, mergedCurrent)) {
+            if (!conditionsPass(edge.getConditions(), definition, instance, step, primaryForConditions)) {
                 edgeView.setDisabled(true);
                 edgeView.setDisabledReason("Condition not met");
             }
-
             edgeViews.add(edgeView);
         }
         response.setAvailableEdges(edgeViews);
@@ -317,40 +309,18 @@ public class WorkflowEngineService {
         return response;
     }
 
-    private Map<String, Object> getReusedStepData(
-            WorkflowDefinition definition,
-            WorkflowInstance instance,
-            String reuseFromStepId) {
-        WorkflowStep reusedStep = definition.findStepById(reuseFromStepId);
-        if (reusedStep == null) {
-            return new HashMap<>();
-        }
-        Map<String, Object> recordData = getStepRecordMap(instance, reuseFromStepId);
-        return recordData != null ? new HashMap<>(recordData) : new HashMap<>();
-    }
-
-    private List<String> allFieldKeys(List<DomainModelField> fields) {
-        List<String> keys = new ArrayList<>();
-        if (fields == null) {
-            return keys;
-        }
-        for (DomainModelField field : fields) {
-            keys.add(field.getKey());
-        }
-        return keys;
-    }
-
-    private void mergeIntoCurrentData(Map<String, Object> currentData, Map<String, Object> mappedData) {
-        if (currentData == null || mappedData == null) {
-            return;
-        }
-        for (Map.Entry<String, Object> entry : mappedData.entrySet()) {
-            Object existing = currentData.get(entry.getKey());
-            if (existing == null || (existing instanceof String str && str.isBlank())) {
-                currentData.put(entry.getKey(), entry.getValue());
+    /** Searches all steps in the definition for a field with the given key. */
+    private com.adaptivebp.modules.formbuilder.model.DomainModelField findFieldInDefinition(
+            WorkflowDefinition definition, String fieldKey) {
+        for (WorkflowStep s : definition.getSteps()) {
+            if (s.getFields() == null) continue;
+            for (com.adaptivebp.modules.formbuilder.model.DomainModelField f : s.getFields()) {
+                if (fieldKey.equals(f.getKey())) return f;
             }
         }
+        return null;
     }
+
 
     public List<WorkflowInstance> listInstances(String domainId, String appId) {
         return instanceRepository.findByDomainIdAndAppId(domainId, appId);
@@ -419,7 +389,7 @@ public class WorkflowEngineService {
 
             List<Map<String, Object>> edges = new ArrayList<>();
             for (WorkflowEdge edge : permitted) {
-                if (conditionsPass(edge.getConditions(), definition, instance, currentStep, getStepRecordData(definition, currentStep, instance))) {
+                if (conditionsPass(edge.getConditions(), definition, instance, currentStep, instance.getPrimaryRecord())) {
                     Map<String, Object> edgeMap = new HashMap<>();
                     edgeMap.put("id", edge.getId());
                     edgeMap.put("name", edge.getName());
@@ -432,7 +402,7 @@ public class WorkflowEngineService {
             }
 
             task.setAvailableEdges(edges);
-            task.setSummary(extractSummary(definition, instance, currentStep));
+            task.setSummary(extractSummaryFromRecord(instance));
             tasks.add(task);
         }
 
@@ -465,26 +435,17 @@ public class WorkflowEngineService {
         }
     }
 
-    private Map<String, Object> extractSummary(
-            WorkflowDefinition definition,
-            WorkflowInstance instance,
-            WorkflowStep step) {
-        Map<String, Object> record = getStepRecordData(definition, step, instance);
+    private Map<String, Object> extractSummaryFromRecord(WorkflowInstance instance) {
+        Map<String, Object> record = instance.getPrimaryRecord();
         if (record == null || record.isEmpty()) {
-            return Collections.emptyMap();
+            return new HashMap<>();
         }
-
         Map<String, Object> summary = new HashMap<>();
         int count = 0;
         for (Map.Entry<String, Object> entry : record.entrySet()) {
-            String key = entry.getKey();
-            if (key.startsWith("_")) {
-                continue;
-            }
-            summary.put(key, entry.getValue());
-            count++;
-            if (count >= 6) {
-                break;
+            if (!entry.getKey().startsWith("_")) {
+                summary.put(entry.getKey(), entry.getValue());
+                if (++count >= 6) break;
             }
         }
         return summary;
@@ -526,9 +487,17 @@ public class WorkflowEngineService {
             Set<String> userRoles,
             String userId,
             String submitterId) {
+        boolean hasRoleRules = edge.getAllowedRoles() != null && !edge.getAllowedRoles().isEmpty();
+        boolean hasUserRules = edge.getAllowedUserIds() != null && !edge.getAllowedUserIds().isEmpty();
+        boolean requiresSubmitter = edge.isOnlySubmitter();
+
+        if (!hasRoleRules && !hasUserRules && !requiresSubmitter) {
+            return true;
+        }
+
         boolean roleMatch = intersectsIgnoreCase(userRoles, edge.getAllowedRoles());
         boolean userMatch = edge.getAllowedUserIds() != null && edge.getAllowedUserIds().contains(userId);
-        boolean submitterMatch = edge.isOnlySubmitter() && Objects.equals(userId, submitterId);
+        boolean submitterMatch = requiresSubmitter && Objects.equals(userId, submitterId);
         return roleMatch || userMatch || submitterMatch;
     }
 
@@ -583,99 +552,7 @@ public class WorkflowEngineService {
         return filtered;
     }
 
-    private Map<String, Object> getStepRecordData(
-            WorkflowDefinition definition,
-            WorkflowStep step,
-            WorkflowInstance instance) {
-        Map<String, Object> recordData = getStepRecordMap(instance, step.getId());
-        StepDataConfig config = step.getDataConfig();
-        if (recordData == null && config != null && config.getReuseFromStepId() != null) {
-            recordData = getStepRecordMap(instance, config.getReuseFromStepId());
-        }
-        if (recordData == null) {
-            return null;
-        }
-        return new HashMap<>(recordData);
-    }
 
-    private Map<String, Object> loadReferencedData(
-            WorkflowDefinition definition,
-            WorkflowInstance instance,
-            WorkflowStep currentStep,
-            StepDataConfig dataConfig) {
-        if (dataConfig.getReuseFromStepId() != null && !dataConfig.getReuseFromStepId().isBlank()) {
-            return Collections.emptyMap();
-        }
-        String previousStepId = findPreviousStepId(instance, currentStep.getId());
-        if (previousStepId == null) {
-            return Collections.emptyMap();
-        }
-
-        WorkflowStep previousStep = definition.findStepById(previousStepId);
-        if (previousStep == null) {
-            return Collections.emptyMap();
-        }
-
-        Map<String, Object> previousData = getStepRecordMap(instance, previousStepId);
-        if (previousData == null) {
-            return Collections.emptyMap();
-        }
-
-        if (dataConfig.getPreviousStepFields() == null || dataConfig.getPreviousStepFields().isEmpty()) {
-            return previousData;
-        }
-
-        Map<String, Object> filtered = new HashMap<>();
-        for (String key : dataConfig.getPreviousStepFields()) {
-            if (previousData.containsKey(key)) {
-                filtered.put(key, previousData.get(key));
-            }
-        }
-        return filtered;
-    }
-
-    private Map<String, Object> loadMappedData(
-            WorkflowDefinition definition,
-            WorkflowInstance instance,
-            StepDataConfig dataConfig) {
-        Map<String, Object> mapped = new HashMap<>();
-
-        for (AutoFetchRule rule : dataConfig.getAutoFetchRules()) {
-            WorkflowStep sourceStep = definition.findStepById(rule.getSourceStepId());
-            if (sourceStep == null) {
-                continue;
-            }
-
-            Map<String, Object> sourceData = getStepRecordMap(instance, rule.getSourceStepId());
-            if (sourceData == null) {
-                continue;
-            }
-            if (sourceData == null || !sourceData.containsKey(rule.getSourceField())) {
-                continue;
-            }
-
-            Object value = sourceData.get(rule.getSourceField());
-            if (rule.getTargetField() != null && !rule.getTargetField().isBlank()) {
-                mapped.put(rule.getTargetField(), value);
-            }
-        }
-
-        return mapped;
-    }
-
-    private String findPreviousStepId(WorkflowInstance instance, String currentStepId) {
-        if (instance.getHistory() == null) {
-            return null;
-        }
-
-        for (int i = instance.getHistory().size() - 1; i >= 0; i--) {
-            InstanceHistory history = instance.getHistory().get(i);
-            if (history.getStepId() != null && !history.getStepId().equals(currentStepId)) {
-                return history.getStepId();
-            }
-        }
-        return null;
-    }
 
     private boolean conditionsPass(
             List<EdgeCondition> conditions,
@@ -702,23 +579,13 @@ public class WorkflowEngineService {
             WorkflowInstance instance,
             WorkflowStep currentStep,
             Map<String, Object> currentData) {
-        if (field == null) {
-            return null;
-        }
-
-        String[] parts = field.split("\\.", 2);
-        if (parts.length == 2) {
-            WorkflowStep step = definition.findStepById(parts[0]);
-            Map<String, Object> data = getStepRecordMap(instance, parts[0]);
-            if (step != null && data != null) {
-                return data.get(parts[1]);
-            }
-        }
-
-        if (currentData != null) {
+        if (field == null) return null;
+        // Primary lookup: currentData (which is primaryRecord merged with payload)
+        if (currentData != null && currentData.containsKey(field)) {
             return currentData.get(field);
         }
-        return null;
+        // Fallback: look in primaryRecord directly
+        return instance.getPrimaryRecord().get(field);
     }
 
     private boolean evaluateCondition(Object actual, ConditionOperator operator, Object expected) {

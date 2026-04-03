@@ -14,6 +14,8 @@ public class WorkflowEdge {
     private List<String> requiredFields = new ArrayList<>();
     private List<EdgeCondition> conditions = new ArrayList<>();
     private List<AutoAction> autoActions = new ArrayList<>();
+    /** When this edge is executed, set primaryRecord.status to this value. */
+    private String statusLabel;
 
     public String getId() {
         return id;
@@ -93,5 +95,13 @@ public class WorkflowEdge {
 
     public void setAutoActions(List<AutoAction> autoActions) {
         this.autoActions = autoActions != null ? autoActions : new ArrayList<>();
+    }
+
+    public String getStatusLabel() {
+        return statusLabel;
+    }
+
+    public void setStatusLabel(String statusLabel) {
+        this.statusLabel = statusLabel;
     }
 }

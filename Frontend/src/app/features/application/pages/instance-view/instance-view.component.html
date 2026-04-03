@@ -23,24 +23,32 @@
         <div class="iv-step-meta">
           <p class="iv-step-type">Current Step</p>
           <h2 class="iv-step-name">{{ stepView.stepName }}</h2>
+          <p class="iv-record-status" *ngIf="recordStatus">
+            Status: <strong>{{ recordStatus }}</strong>
+          </p>
         </div>
       </div>
 
+      <!-- Read-only context from previous steps -->
+      <div class="iv-card" *ngIf="readonlyContextFields.length > 0">
+        <p class="iv-summary-title">Record Context (read-only)</p>
+        <div *ngFor="let field of readonlyContextFields" class="iv-data-row">
+          <span class="iv-data-key">{{ field.key }}</span>
+          <span class="iv-data-val">{{ prettyValue(formData[field.key]) }}</span>
+        </div>
+      </div>
+
+      <!-- Editable fields for this step -->
       <div class="iv-card">
         <div class="iv-dynamic-form">
-          <div *ngFor="let field of modelFields" class="iv-field">
+          <div *ngFor="let field of editableFields" class="iv-field">
             <label class="iv-label">
               {{ field.key }}
               <span *ngIf="field.required" class="iv-req">*</span>
-              <span *ngIf="isReadOnlyField(field.key)" class="iv-optional">(read-only)</span>
             </label>
 
             <label *ngIf="fieldIsCheckbox(field)" class="iv-checkbox-label">
-              <input
-                type="checkbox"
-                [(ngModel)]="formData[field.key]"
-                [disabled]="isReadOnlyField(field.key)"
-              />
+              <input type="checkbox" [(ngModel)]="formData[field.key]" />
               {{ field.key }}
             </label>
 
@@ -49,8 +57,7 @@
               class="iv-input iv-textarea"
               rows="4"
               [ngModel]="valueAsJsonText(field.key)"
-              (ngModelChange)="updateJsonField(field.key, $event)"
-              [readonly]="isReadOnlyField(field.key)">
+              (ngModelChange)="updateJsonField(field.key, $event)">
             </textarea>
 
             <input
@@ -58,29 +65,9 @@
               class="iv-input"
               [type]="fieldInputType(field)"
               [(ngModel)]="formData[field.key]"
-              [readonly]="isReadOnlyField(field.key)"
             />
           </div>
-        </div>
-      </div>
-
-      <div class="iv-card" *ngIf="objectKeys(stepView.referencedData || {}).length > 0">
-        <p class="iv-summary-title">Referenced Data</p>
-        <div *ngFor="let key of objectKeys(stepView.referencedData)">
-          <div class="iv-data-row">
-            <span class="iv-data-key">{{ key }}</span>
-            <span class="iv-data-val">{{ prettyValue(stepView.referencedData[key]) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="iv-card" *ngIf="objectKeys(stepView.mappedData || {}).length > 0">
-        <p class="iv-summary-title">Mapped Data</p>
-        <div *ngFor="let key of objectKeys(stepView.mappedData)">
-          <div class="iv-data-row">
-            <span class="iv-data-key">{{ key }}</span>
-            <span class="iv-data-val">{{ prettyValue(stepView.mappedData[key]) }}</span>
-          </div>
+          <div class="wb-note" *ngIf="editableFields.length === 0">No fields to fill at this step.</div>
         </div>
       </div>
 
@@ -99,11 +86,6 @@
           <p class="iv-empty-text" *ngIf="selectedEdgeId && getEdgeDisabledReason(selectedEdgeId)">
             {{ getEdgeDisabledReason(selectedEdgeId) }}
           </p>
-        </div>
-
-        <div class="iv-field">
-          <label class="iv-label">Comment <span class="iv-optional">(optional)</span></label>
-          <textarea class="iv-input iv-textarea" rows="2" placeholder="Add note for audit trail..." [(ngModel)]="comment"></textarea>
         </div>
 
         <div class="iv-form-actions">
@@ -132,13 +114,13 @@
     </div>
 
     <div class="iv-card" *ngIf="historyRows?.length">
-      <p class="iv-summary-title">History</p>
+      <p class="iv-summary-title">Audit Trail</p>
       <div *ngFor="let row of historyRows" class="iv-data-row">
-        <span class="iv-data-key">{{ row.stepId }}</span>
+        <span class="iv-data-key">{{ row.edgeName || 'Started' }}</span>
         <span class="iv-data-val">
-          {{ row.edgeName || 'Started' }} by {{ row.performedByName || row.performedBy }}
-          on {{ row.performedAt | date:'medium' }}
-          <span *ngIf="row.comment"> · {{ row.comment }}</span>
+          by {{ row.performedByName || row.performedBy }}
+          · {{ row.performedAt | date:'medium' }}
+          <span *ngIf="row.comment"> · "{{ row.comment }}"</span>
         </span>
       </div>
     </div>

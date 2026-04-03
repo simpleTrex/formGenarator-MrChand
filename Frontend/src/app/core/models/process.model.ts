@@ -53,32 +53,24 @@ export interface WorkflowEdge {
   requiredFields: string[];
   conditions: EdgeCondition[];
   autoActions: AutoAction[];
-}
-
-export interface AutoFetchRule {
-  sourceStepId: string;
-  sourceField: string;
-  targetField: string;
-}
-
-export interface StepDataConfig {
-  referencePreviousStep: boolean;
-  reuseFromStepId?: string;
-  previousStepFields: string[];
-  autoFetchRules: AutoFetchRule[];
-  readOnlyFields: string[];
+  /** Sets primaryRecord.status when this edge is executed. */
+  statusLabel?: string;
 }
 
 export interface WorkflowStep {
   id: string;
-  modelId?: string;
   name: string;
   order: number;
   start: boolean;
   end: boolean;
+  /** Fields editable at this step (newly added here). */
   fields: DomainModelField[];
+  /**
+   * Keys of fields from prior steps shown read-only at this step for context.
+   * Definitions are looked up across all steps.
+   */
+  readonlyFieldKeys: string[];
   edges: WorkflowEdge[];
-  dataConfig?: StepDataConfig;
   positionX?: number;
   positionY?: number;
 }

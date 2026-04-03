@@ -3,15 +3,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DomainService } from '../../../../core/services/domain.service';
 import { ProcessService } from '../../../../core/services/process.service';
 import {
-  AutoFetchRule,
   DomainModelField,
   DomainFieldType,
   ProcessDefinitionResponse,
-  StepDataConfig,
   WorkflowEdge,
   WorkflowStatus,
   WorkflowStep,
 } from '../../../../core/models/process.model';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-process-builder',
@@ -30,19 +29,14 @@ export class ProcessBuilderComponent implements OnInit {
   steps: WorkflowStep[] = [];
   globalEdges: WorkflowEdge[] = [];
   selectedStepId: string | null = null;
+  selectedStepRef: WorkflowStep | null = null;
   editorOpen = false;
+  private nextStepIndex = 1;
 
   availableRoles: string[] = [];
   fieldTypes: DomainFieldType[] = [
-    'STRING',
-    'NUMBER',
-    'BOOLEAN',
-    'DATE',
-    'DATETIME',
-    'REFERENCE',
-    'EMPLOYEE_REFERENCE',
-    'OBJECT',
-    'ARRAY',
+    'STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'DATETIME',
+    'REFERENCE', 'EMPLOYEE_REFERENCE', 'OBJECT', 'ARRAY',
   ];
 
   loading = false;
@@ -62,14 +56,11 @@ export class ProcessBuilderComponent implements OnInit {
     this.domainSlug = this.route.snapshot.params['slug'];
     this.appSlug = this.route.snapshot.params['appSlug'];
     this.workflowSlug = this.route.snapshot.queryParamMap.get('wf') || '';
-
     this.loadRoles();
-
     if (this.workflowSlug) {
       this.loadWorkflow(this.workflowSlug);
       return;
     }
-
     this.resolveWorkflowFromApp();
   }
 
@@ -86,16 +77,11 @@ export class ProcessBuilderComponent implements OnInit {
         this.loading = false;
         this.initDraft();
       },
-      error: () => {
-        this.loading = false;
-        this.initDraft();
-      }
+      error: () => { this.loading = false; this.initDraft(); }
     });
   }
 
-  get isDraft(): boolean {
-    return this.workflowStatus !== 'PUBLISHED';
-  }
+  get isDraft(): boolean { return this.workflowStatus !== 'PUBLISHED'; }
 
   goBack(): void {
     this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug]);
@@ -108,14 +94,11 @@ export class ProcessBuilderComponent implements OnInit {
   loadRoles(): void {
     this.domainService.getAppGroups(this.domainSlug, this.appSlug).subscribe({
       next: (groups) => {
-        const names = (groups || [])
-          .map((g: any) => g?.name)
-          .filter((name: string) => !!name);
-        this.availableRoles = Array.from(new Set(names));
+        this.availableRoles = Array.from(new Set(
+          (groups || []).map((g: any) => g?.name).filter((n: string) => !!n)
+        ));
       },
-      error: () => {
-        this.availableRoles = [];
-      }
+      error: () => { this.availableRoles = []; }
     });
   }
 
@@ -129,15 +112,15 @@ export class ProcessBuilderComponent implements OnInit {
     this.processService.getWorkflow(this.domainSlug, this.appSlug, slug).subscribe({
       next: (res: ProcessDefinitionResponse) => {
         const wf = res.workflow;
-
         this.workflowSlug = wf.slug;
         this.workflowStatus = wf.status;
         this.name = wf.name || '';
         this.description = wf.description || '';
         this.steps = (wf.steps || []).map(s => this.withStepDefaults(s));
         this.globalEdges = (wf.globalEdges || []).map(e => this.withEdgeDefaults(e));
-
         this.normalizeStepOrder();
+        this.selectedStepRef = null;
+        this.syncNextStepIndex(this.steps);
         this.loading = false;
       },
       error: (err: any) => {
@@ -154,26 +137,29 @@ export class ProcessBuilderComponent implements OnInit {
     this.steps = [];
     this.globalEdges = [];
     this.selectedStepId = null;
+    this.selectedStepRef = null;
     this.editorOpen = false;
+    this.nextStepIndex = 1;
     this.addStepAndEdit();
   }
 
+  // ── Step management ─────────────────────────────────────────────────────────
+
   addStep(): WorkflowStep {
     const index = this.steps.length;
-
+    const stepNumber = this.allocateStepIndex();
     const step: WorkflowStep = {
-      id: `step_${index + 1}`,
-      name: `Step ${index + 1}`,
+      id: `step_${stepNumber}`,
+      name: `Step ${stepNumber}`,
       order: index,
       start: this.steps.length === 0,
       end: false,
       fields: [],
+      readonlyFieldKeys: [],
       edges: [],
-      dataConfig: this.defaultDataConfig(),
       positionX: 140 + index * 120,
       positionY: 180,
     };
-
     this.steps = [...this.steps, step];
     this.normalizeStepOrder();
     return step;
@@ -187,162 +173,143 @@ export class ProcessBuilderComponent implements OnInit {
   removeStep(index: number): void {
     const removed = this.steps[index];
     this.steps.splice(index, 1);
-
-    if (removed && removed.id === this.selectedStepId) {
-      this.closeEditor();
-    }
-
-    if (!this.steps.some(s => s.start) && this.steps.length > 0) {
-      this.steps[0].start = true;
-    }
-
+    if (removed && (removed === this.selectedStepRef || removed.id === this.selectedStepId)) this.closeEditor();
+    if (!this.steps.some(s => s.start) && this.steps.length > 0) this.steps[0].start = true;
     this.normalizeStepOrder();
   }
 
   setStartStep(index: number): void {
-    this.steps.forEach((step, i) => {
-      step.start = i === index;
-    });
+    this.steps.forEach((s, i) => { s.start = i === index; });
   }
 
   setStartStepById(stepId: string): void {
-    const index = this.steps.findIndex(step => step.id === stepId);
-    if (index >= 0) {
-      this.setStartStep(index);
-    }
+    const index = this.steps.findIndex(s => s.id === stepId);
+    if (index >= 0) this.setStartStep(index);
   }
 
   openStepEditor(step: WorkflowStep): void {
-    if (!step) {
-      return;
-    }
-    this.ensureDataConfig(step);
-    if (!step.fields) {
-      step.fields = [];
-    }
+    if (!step) return;
+    if (!step.fields) step.fields = [];
+    if (!step.readonlyFieldKeys) step.readonlyFieldKeys = [];
     this.selectedStepId = step.id;
+    this.selectedStepRef = step;
     this.editorOpen = true;
   }
 
   closeEditor(): void {
     this.editorOpen = false;
+    this.selectedStepRef = null;
   }
 
   get selectedStep(): WorkflowStep | null {
+    if (this.selectedStepRef && this.steps.includes(this.selectedStepRef)) {
+      return this.selectedStepRef;
+    }
     return this.steps.find(s => s.id === this.selectedStepId) || null;
+  }
+
+  removeSelectedStep(): void {
+    const step = this.selectedStep;
+    if (!step) return;
+    const index = this.steps.findIndex(s => s.id === step.id);
+    if (index >= 0) this.removeStep(index);
   }
 
   orderedSteps(): WorkflowStep[] {
     return [...this.steps].sort((a, b) => a.order - b.order);
   }
 
+  // ── Graph layout ────────────────────────────────────────────────────────────
+
   graphLevels(): WorkflowStep[][] {
-    if (!this.steps.length) {
-      return [];
-    }
-
+    if (!this.steps.length) return [];
     const byId = new Map<string, WorkflowStep>();
-    this.steps.forEach(step => byId.set(step.id, step));
-
+    this.steps.forEach(s => byId.set(s.id, s));
     const start = this.steps.find(s => s.start) || this.steps[0];
     const levelById = new Map<string, number>();
     const queue: Array<{ id: string; level: number }> = [];
-
-    if (start?.id) {
-      levelById.set(start.id, 0);
-      queue.push({ id: start.id, level: 0 });
-    }
-
+    if (start?.id) { levelById.set(start.id, 0); queue.push({ id: start.id, level: 0 }); }
     while (queue.length) {
-      const current = queue.shift();
-      if (!current) {
-        continue;
-      }
+      const current = queue.shift()!;
       const step = byId.get(current.id);
-      if (!step || !step.edges) {
-        continue;
-      }
+      if (!step?.edges) continue;
       for (const edge of step.edges) {
-        if (!edge.targetStepId || edge.terminal) {
-          continue;
-        }
+        if (!edge.targetStepId || edge.terminal) continue;
         if (!levelById.has(edge.targetStepId)) {
           levelById.set(edge.targetStepId, current.level + 1);
           queue.push({ id: edge.targetStepId, level: current.level + 1 });
         }
       }
     }
-
     const maxLevel = Math.max(0, ...Array.from(levelById.values()));
     const levels: WorkflowStep[][] = Array.from({ length: maxLevel + 1 }, () => []);
-
     for (const step of this.steps) {
       const level = levelById.get(step.id);
-      if (level !== undefined) {
-        levels[level].push(step);
-      }
+      if (level !== undefined) levels[level].push(step);
     }
-
     return levels.map(row => row.sort((a, b) => a.order - b.order));
   }
 
   unlinkedSteps(): WorkflowStep[] {
     const inbound = new Set<string>();
-    this.steps.forEach(step => {
-      (step.edges || []).forEach(edge => {
-        if (edge.targetStepId) {
-          inbound.add(edge.targetStepId);
-        }
-      });
-    });
-
-    return this.steps.filter(step => {
-      const hasOutbound = !!step.edges && step.edges.length > 0;
-      const hasInbound = inbound.has(step.id);
-      return !hasOutbound && !hasInbound;
-    });
+    this.steps.forEach(s => (s.edges || []).forEach(e => { if (e.targetStepId) inbound.add(e.targetStepId); }));
+    return this.steps.filter(s => !(s.edges?.length) && !inbound.has(s.id));
   }
 
   edgeTargetLabel(edge: WorkflowEdge): string {
-    if (edge.terminal) {
-      return 'Terminal';
-    }
-    if (!edge.targetStepId) {
-      return 'Unset';
-    }
+    if (edge.terminal) return 'Terminal';
+    if (!edge.targetStepId) return 'Unset';
     const target = this.steps.find(s => s.id === edge.targetStepId);
-    if (target?.name) {
-      return `${target.name} (${target.id})`;
-    }
-    return edge.targetStepId;
+    return target?.name ? `${target.name} (${target.id})` : edge.targetStepId;
   }
 
   edgeRoleLabel(edge: WorkflowEdge): string {
     const roles = (edge.allowedRoles || []).filter(Boolean);
     const roleText = roles.length ? `Roles: ${roles.join(', ')}` : '';
     const submitterText = edge.onlySubmitter ? 'Submitter only' : '';
-    if (roleText && submitterText) {
-      return `${roleText} · ${submitterText}`;
-    }
-    if (roleText) {
-      return roleText;
-    }
-    if (submitterText) {
-      return submitterText;
-    }
-    return 'No role set';
+    if (roleText && submitterText) return `${roleText} · ${submitterText}`;
+    return roleText || submitterText || 'No role set';
   }
 
-  removeSelectedStep(): void {
-    const step = this.selectedStep;
-    if (!step) {
-      return;
-    }
-    const index = this.steps.findIndex(s => s.id === step.id);
-    if (index >= 0) {
-      this.removeStep(index);
+  // ── Field management ────────────────────────────────────────────────────────
+
+  addField(step: WorkflowStep): void {
+    if (!step.fields) step.fields = [];
+    step.fields.push({ key: '', type: 'STRING', required: false, unique: false, config: {} });
+  }
+
+  removeField(step: WorkflowStep, index: number): void {
+    if (!step.fields) return;
+    const removedKey = step.fields[index].key;
+    step.fields.splice(index, 1);
+    // Remove from readonlyFieldKeys of all subsequent steps if it was referenced
+    if (removedKey) {
+      this.steps.forEach(s => {
+        if (s.readonlyFieldKeys) {
+          s.readonlyFieldKeys = s.readonlyFieldKeys.filter(k => k !== removedKey);
+        }
+      });
     }
   }
+
+  /** All fields defined in steps BEFORE the given step, for use as readonly context. */
+  getFieldsFromPreviousSteps(step: WorkflowStep): DomainModelField[] {
+    const ordered = this.orderedSteps();
+    const idx = ordered.findIndex(s => s.id === step.id);
+    const result: DomainModelField[] = [];
+    for (let i = 0; i < idx; i++) {
+      (ordered[i].fields || []).forEach(f => {
+        if (f.key && !result.some(r => r.key === f.key)) result.push(f);
+      });
+    }
+    return result;
+  }
+
+  getFieldOptionLabel(field: DomainModelField): string {
+    return `${field.key} (${field.type})`;
+  }
+
+  // ── Edge management ─────────────────────────────────────────────────────────
 
   addEdgeToStep(step: WorkflowStep): void {
     step.edges = [...step.edges, this.newEdge(step.id)];
@@ -360,31 +327,27 @@ export class ProcessBuilderComponent implements OnInit {
     this.globalEdges.splice(index, 1);
   }
 
-  addAutoFetchRule(step: WorkflowStep): void {
-    const dataConfig = this.ensureDataConfig(step);
-    dataConfig.autoFetchRules = [...dataConfig.autoFetchRules, this.newFetchRule()];
+  stepTargetOptions(currentStepId: string): WorkflowStep[] {
+    return this.steps.filter(s => s.id !== currentStepId);
   }
 
-  removeAutoFetchRule(step: WorkflowStep, index: number): void {
-    const dataConfig = this.ensureDataConfig(step);
-    dataConfig.autoFetchRules.splice(index, 1);
+  // ── List helpers (used by template) ─────────────────────────────────────────
+
+  addListItem(list: string[]): void { list.push(''); }
+  removeListItem(list: string[], index: number): void { list.splice(index, 1); }
+  setListItem(list: string[], index: number, value: string): void { list[index] = value; }
+
+  csv(values: string[] | undefined): string { return (values || []).join(', '); }
+  parseCsv(input: string): string[] {
+    return (input || '').split(',').map(v => v.trim()).filter(v => !!v);
   }
+
+  // ── Save / Publish / Archive / Delete ───────────────────────────────────────
 
   saveDraft(): void {
-    if (this.workflowStatus === 'PUBLISHED') {
-      this.error = 'Archive the workflow before editing.';
-      return;
-    }
-
-    if (!this.name.trim()) {
-      this.error = 'Workflow name is required.';
-      return;
-    }
-
-    if (this.steps.length === 0) {
-      this.error = 'At least one step is required.';
-      return;
-    }
+    if (this.workflowStatus === 'PUBLISHED') { this.error = 'Archive the workflow before editing.'; return; }
+    if (!this.name.trim()) { this.error = 'Workflow name is required.'; return; }
+    if (this.steps.length === 0) { this.error = 'At least one step is required.'; return; }
 
     this.error = '';
     this.successMsg = '';
@@ -398,7 +361,7 @@ export class ProcessBuilderComponent implements OnInit {
       globalEdges: this.sanitizeEdges(this.globalEdges),
     };
 
-    const request$ = this.workflowSlug
+    const request$: Observable<ProcessDefinitionResponse> = this.workflowSlug
       ? this.processService.updateWorkflow(this.domainSlug, this.appSlug, this.workflowSlug, payload)
       : this.processService.createWorkflow(this.domainSlug, this.appSlug, payload);
 
@@ -406,12 +369,11 @@ export class ProcessBuilderComponent implements OnInit {
       next: (res: ProcessDefinitionResponse) => {
         this.saving = false;
         this.successMsg = 'Draft saved successfully.';
-
         this.workflowSlug = res.workflow.slug;
         this.workflowStatus = res.workflow.status;
         this.steps = (res.workflow.steps || []).map(s => this.withStepDefaults(s));
         this.globalEdges = (res.workflow.globalEdges || []).map(e => this.withEdgeDefaults(e));
-
+        this.syncNextStepIndex(this.steps);
         this.router.navigate([], {
           relativeTo: this.route,
           queryParams: { wf: this.workflowSlug },
@@ -426,209 +388,62 @@ export class ProcessBuilderComponent implements OnInit {
   }
 
   publish(): void {
-    if (!this.workflowSlug) {
-      this.error = 'Save the draft first, then publish.';
-      return;
-    }
-
-    this.saving = true;
-    this.error = '';
-    this.successMsg = '';
-    this.publishErrors = [];
-
+    if (!this.workflowSlug) { this.error = 'Save the draft first, then publish.'; return; }
+    this.saving = true; this.error = ''; this.successMsg = ''; this.publishErrors = [];
     this.processService.publishWorkflow(this.domainSlug, this.appSlug, this.workflowSlug).subscribe({
       next: (res: ProcessDefinitionResponse) => {
         this.saving = false;
         this.workflowStatus = res.workflow.status;
         this.successMsg = 'Workflow published successfully.';
-        this.publishErrors = [];
       },
       error: (err: any) => {
         this.saving = false;
         this.publishErrors = this.extractValidationErrors(err);
-        if (this.publishErrors.length > 0) {
-          this.error = 'Publish failed. Hover the warning icon for details.';
-        } else {
-          this.error = err?.error?.message || 'Failed to publish workflow';
-        }
+        this.error = this.publishErrors.length
+          ? 'Publish failed. Hover the warning icon for details.'
+          : err?.error?.message || 'Failed to publish workflow';
       }
     });
   }
 
   archive(): void {
-    if (!this.workflowSlug) {
-      return;
-    }
-
-    if (!confirm('Archive this workflow?')) {
-      return;
-    }
-
-    this.saving = true;
-    this.error = '';
-    this.successMsg = '';
-
+    if (!this.workflowSlug || !confirm('Archive this workflow?')) return;
+    this.saving = true; this.error = ''; this.successMsg = '';
     this.processService.archiveWorkflow(this.domainSlug, this.appSlug, this.workflowSlug).subscribe({
-      next: () => {
-        this.saving = false;
-        this.workflowStatus = 'ARCHIVED';
-        this.successMsg = 'Workflow archived.';
-      },
-      error: (err: any) => {
-        this.saving = false;
-        this.error = err?.error?.message || 'Failed to archive workflow';
-      }
+      next: () => { this.saving = false; this.workflowStatus = 'ARCHIVED'; this.successMsg = 'Workflow archived.'; },
+      error: (err: any) => { this.saving = false; this.error = err?.error?.message || 'Failed to archive'; }
     });
   }
 
   deleteDraft(): void {
-    if (!this.workflowSlug) {
-      return;
-    }
-
-    if (!confirm('Delete this DRAFT workflow? This cannot be undone.')) {
-      return;
-    }
-
-    this.saving = true;
-    this.error = '';
-
+    if (!this.workflowSlug || !confirm('Delete this DRAFT workflow? This cannot be undone.')) return;
+    this.saving = true; this.error = '';
     this.processService.deleteWorkflow(this.domainSlug, this.appSlug, this.workflowSlug).subscribe({
       next: () => {
         this.saving = false;
         this.successMsg = 'Draft workflow deleted.';
         this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug]);
       },
-      error: (err: any) => {
-        this.saving = false;
-        this.error = err?.error?.message || 'Failed to delete workflow';
-      }
+      error: (err: any) => { this.saving = false; this.error = err?.error?.message || 'Failed to delete'; }
     });
   }
+
+  // ── Private helpers ──────────────────────────────────────────────────────────
 
   private extractValidationErrors(err: any): string[] {
     const details = err?.error?.details;
-    if (Array.isArray(details)) {
-      return details.map((item: any) => String(item)).filter(Boolean);
-    }
-    if (details && typeof details === 'object') {
-      return Object.values(details)
-        .map((item: any) => String(item))
-        .filter(Boolean);
-    }
+    if (Array.isArray(details)) return details.map((item: any) => String(item)).filter(Boolean);
+    if (details && typeof details === 'object') return Object.values(details).map((item: any) => String(item)).filter(Boolean);
     const message = err?.error?.message;
     return message ? [String(message)] : [];
-  }
-
-  csv(values: string[] | undefined): string {
-    return (values || []).join(', ');
-  }
-
-  parseCsv(input: string): string[] {
-    return (input || '')
-      .split(',')
-      .map(v => v.trim())
-      .filter(v => !!v);
-  }
-
-  stepTargetOptions(currentStepId: string): WorkflowStep[] {
-    return this.steps.filter(s => s.id !== currentStepId);
-  }
-
-  getStepModelFields(step: WorkflowStep): DomainModelField[] {
-    return step.fields || [];
-  }
-
-  getPreviousStep(step: WorkflowStep): WorkflowStep | null {
-    const ordered = [...this.steps].sort((a, b) => a.order - b.order);
-    const idx = ordered.findIndex(s => s.id === step.id);
-    if (idx > 0) {
-      return ordered[idx - 1];
-    }
-    return null;
-  }
-
-  getPreviousStepFields(step: WorkflowStep): DomainModelField[] {
-    const previous = this.getPreviousStep(step);
-    if (previous) {
-      return previous.fields || [];
-    }
-    return step.fields || [];
-  }
-
-  getAutoFetchTargetFields(rule: AutoFetchRule): DomainModelField[] {
-    return [];
-  }
-
-  getSourceStepOptionsForStep(step: WorkflowStep): WorkflowStep[] {
-    return this.steps.filter(s => s.order < step.order);
-  }
-
-  getStepById(stepId: string): WorkflowStep | null {
-    return this.steps.find(s => s.id === stepId) || null;
-  }
-
-  getAutoFetchSourceFields(rule: AutoFetchRule): DomainModelField[] {
-    if (!rule.sourceStepId) {
-      return [];
-    }
-    const sourceStep = this.getStepById(rule.sourceStepId);
-    if (!sourceStep) {
-      return [];
-    }
-    return sourceStep.fields || [];
-  }
-
-  getGlobalEdgeFields(): DomainModelField[] {
-    const start = this.steps.find(s => s.start) || this.steps[0];
-    if (!start) {
-      return [];
-    }
-    return start.fields || [];
-  }
-
-  addField(step: WorkflowStep): void {
-    if (!step.fields) {
-      step.fields = [];
-    }
-    step.fields.push({
-      key: '',
-      type: 'STRING',
-      required: false,
-      unique: false,
-      config: {},
-    });
-  }
-
-  removeField(step: WorkflowStep, index: number): void {
-    if (!step.fields) {
-      return;
-    }
-    step.fields.splice(index, 1);
-  }
-
-  addListItem(list: string[]): void {
-    list.push('');
-  }
-
-  removeListItem(list: string[], index: number): void {
-    list.splice(index, 1);
-  }
-
-  setListItem(list: string[], index: number, value: string): void {
-    list[index] = value;
-  }
-
-  getFieldOptionLabel(field: DomainModelField): string {
-    return `${field.key} (${field.type})`;
   }
 
   private withStepDefaults(step: WorkflowStep): WorkflowStep {
     return {
       ...step,
       fields: step.fields || [],
-      edges: (step.edges || []).map(edge => this.withEdgeDefaults(edge)),
-      dataConfig: step.dataConfig ? this.withDataConfigDefaults(step.dataConfig) : this.defaultDataConfig(),
+      readonlyFieldKeys: step.readonlyFieldKeys || [],
+      edges: (step.edges || []).map(e => this.withEdgeDefaults(e)),
       start: !!step.start,
       end: !!step.end,
     };
@@ -646,34 +461,8 @@ export class ProcessBuilderComponent implements OnInit {
       requiredFields: edge.requiredFields || [],
       conditions: edge.conditions || [],
       autoActions: edge.autoActions || [],
+      statusLabel: edge.statusLabel || '',
     };
-  }
-
-  private withDataConfigDefaults(config: StepDataConfig): StepDataConfig {
-    return {
-      referencePreviousStep: !!config.referencePreviousStep,
-      reuseFromStepId: config.reuseFromStepId || '',
-      previousStepFields: config.previousStepFields || [],
-      autoFetchRules: config.autoFetchRules || [],
-      readOnlyFields: config.readOnlyFields || [],
-    };
-  }
-
-  private defaultDataConfig(): StepDataConfig {
-    return {
-      referencePreviousStep: false,
-      reuseFromStepId: '',
-      previousStepFields: [],
-      autoFetchRules: [],
-      readOnlyFields: [],
-    };
-  }
-
-  private ensureDataConfig(step: WorkflowStep): StepDataConfig {
-    if (!step.dataConfig) {
-      step.dataConfig = this.defaultDataConfig();
-    }
-    return step.dataConfig;
   }
 
   private newEdge(currentStepId?: string): WorkflowEdge {
@@ -689,21 +478,33 @@ export class ProcessBuilderComponent implements OnInit {
       requiredFields: [],
       conditions: [],
       autoActions: [],
-    };
-  }
-
-  private newFetchRule(): AutoFetchRule {
-    return {
-      sourceStepId: '',
-      sourceField: '',
-      targetField: '',
+      statusLabel: '',
     };
   }
 
   private normalizeStepOrder(): void {
-    this.steps.forEach((step, index) => {
-      step.order = index;
-    });
+    this.steps.forEach((step, index) => { step.order = index; });
+  }
+
+  private allocateStepIndex(): number {
+    while (this.steps.some(step => step.id === `step_${this.nextStepIndex}`)) {
+      this.nextStepIndex += 1;
+    }
+    const current = this.nextStepIndex;
+    this.nextStepIndex += 1;
+    return current;
+  }
+
+  private syncNextStepIndex(steps: WorkflowStep[]): void {
+    let max = 0;
+    for (const step of steps) {
+      const match = /^step_(\d+)$/.exec(step.id || '');
+      if (match) {
+        const value = Number(match[1]);
+        if (!Number.isNaN(value)) max = Math.max(max, value);
+      }
+    }
+    this.nextStepIndex = Math.max(this.nextStepIndex, max + 1);
   }
 
   private sanitizeSteps(steps: WorkflowStep[]): WorkflowStep[] {
@@ -713,8 +514,8 @@ export class ProcessBuilderComponent implements OnInit {
       name: step.name.trim(),
       order: index,
       fields: step.fields || [],
+      readonlyFieldKeys: (step.readonlyFieldKeys || []).filter(k => !!k),
       edges: this.sanitizeEdges(step.edges),
-      dataConfig: this.withDataConfigDefaults(step.dataConfig || this.defaultDataConfig()),
     }));
   }
 
@@ -729,6 +530,7 @@ export class ProcessBuilderComponent implements OnInit {
       requiredFields: (edge.requiredFields || []).map(v => v.trim()).filter(Boolean),
       conditions: edge.conditions || [],
       autoActions: edge.autoActions || [],
+      statusLabel: edge.statusLabel || undefined,
     }));
   }
 }

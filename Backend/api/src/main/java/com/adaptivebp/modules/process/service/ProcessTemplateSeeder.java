@@ -26,27 +26,16 @@ public class ProcessTemplateSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Define all templates that should exist
-        List<ProcessTemplate> requiredTemplates = List.of(
+        // Always upsert all templates so changes (like requiredModels) are applied on restart
+        List<ProcessTemplate> templates = List.of(
             createLeaveRequestTemplate(),
             createEmployeeOnboardingTemplate(),
             createPurchaseOrderTemplate(),
             createEquipmentRequestTemplate(),
             createExpenseReimbursementTemplate()
         );
-
-        // Add any missing templates (instead of only seeding when empty)
-        int added = 0;
-        for (ProcessTemplate template : requiredTemplates) {
-            if (!templateRepository.existsById(template.getId())) {
-                templateRepository.save(template);
-                added++;
-            }
-        }
-
-        if (added > 0) {
-            System.out.println("✓ Seeded " + added + " new process templates (total: " + templateRepository.count() + ")");
-        }
+        templateRepository.saveAll(templates);
+        System.out.println("✓ Upserted " + templates.size() + " process templates");
     }
 
     private ProcessTemplate createLeaveRequestTemplate() {

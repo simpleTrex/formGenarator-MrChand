@@ -23,8 +23,8 @@ public class ModelTemplateSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Define all templates that should exist
-        List<ModelTemplate> requiredTemplates = List.of(
+        // Always upsert all templates so any changes are applied on restart
+        List<ModelTemplate> templates = List.of(
             createEmployeeTemplate(),
             createProjectTemplate(),
             createAssetTemplate(),
@@ -38,19 +38,8 @@ public class ModelTemplateSeeder implements CommandLineRunner {
             createEquipmentRequestTemplate(),
             createExpenseReportTemplate()
         );
-
-        // Add any missing templates (instead of only seeding when empty)
-        int added = 0;
-        for (ModelTemplate template : requiredTemplates) {
-            if (!templateRepository.existsById(template.getId())) {
-                templateRepository.save(template);
-                added++;
-            }
-        }
-
-        if (added > 0) {
-            System.out.println("✓ Seeded " + added + " new model templates (total: " + templateRepository.count() + ")");
-        }
+        templateRepository.saveAll(templates);
+        System.out.println("✓ Upserted " + templates.size() + " model templates");
     }
 
     private ModelTemplate createEmployeeTemplate() {
