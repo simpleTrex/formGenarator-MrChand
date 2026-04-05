@@ -246,6 +246,18 @@ export class DomainHomeComponent implements OnInit {
     this.showCreateAppForm = !this.showCreateAppForm;
   }
 
+  focusNextOnEnter(event: Event, next: HTMLInputElement | null | undefined): void {
+    event.preventDefault();
+    event.stopPropagation();
+    next?.focus();
+  }
+
+  submitOnEnter(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.submitNewApp();
+  }
+
   get canUseApps(): boolean {
     return this.isOwnerContext() || this.hasPermission('DOMAIN_USE_APP');
   }

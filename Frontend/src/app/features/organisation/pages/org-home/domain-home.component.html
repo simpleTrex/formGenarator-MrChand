@@ -96,21 +96,45 @@
             </button>
           </div>
 
-          <div class="d-create-app-form" *ngIf="showCreateAppForm">
+          <form class="d-create-app-form" *ngIf="showCreateAppForm" (ngSubmit)="submitNewApp()">
             <div class="d-field">
               <label class="d-label">Application Name <span class="d-req">*</span></label>
-              <input class="d-input" type="text" placeholder="e.g. Employee Onboarding" [(ngModel)]="newApp.name" />
+              <input
+                #appNameInput
+                class="d-input"
+                type="text"
+                name="appName"
+                placeholder="e.g. Employee Onboarding"
+                [(ngModel)]="newApp.name"
+                (keydown.enter)="focusNextOnEnter($event, appSlugInput)"
+              />
             </div>
             <div class="d-field">
               <label class="d-label">Slug <span class="d-req">*</span></label>
-              <input class="d-input mono" type="text" placeholder="e.g. onboarding" [(ngModel)]="newApp.slug" />
+              <input
+                #appSlugInput
+                class="d-input mono"
+                type="text"
+                name="appSlug"
+                placeholder="e.g. onboarding"
+                [(ngModel)]="newApp.slug"
+                (keydown.enter)="focusNextOnEnter($event, ownerUserIdInput)"
+              />
             </div>
             <div class="d-field">
               <label class="d-label">Owner User ID <span class="d-optional">(optional)</span></label>
-              <input class="d-input mono" type="text" placeholder="Leave blank to assign to yourself" [(ngModel)]="newApp.ownerUserId" />
+              <input
+                #ownerUserIdInput
+                class="d-input mono"
+                type="text"
+                name="ownerUserId"
+                placeholder="Leave blank to assign to yourself"
+                [(ngModel)]="newApp.ownerUserId"
+                (keydown.enter)="submitOnEnter($event)"
+              />
             </div>
-            <button class="d-primary-btn" (click)="submitNewApp()">Create Application</button>
-          </div>
+            <button class="d-primary-btn" type="submit">Create Application</button>
+          </form>
 
           <div *ngIf="appMessage" class="d-alert d-alert-success mt-2">{{ appMessage }}</div>
           <div *ngIf="appError" class="d-alert d-alert-error mt-2">{{ appError }}</div>
