@@ -1,0 +1,295 @@
+<div class="il-shell fade-in" [style.--tc]="themeColor">
+
+  <!-- Nav -->
+  <nav class="il-nav">
+    <button class="il-nav-back" (click)="goBack()">← Back</button>
+    <h1 class="il-nav-title">{{ mode === 'tasks' ? 'My Tasks' : 'All Instances' }}</h1>
+    <button class="il-refresh-btn" *ngIf="mode === 'instances'" (click)="goToTasks()" title="My Tasks">✓</button>
+    <button class="il-refresh-btn" *ngIf="mode === 'tasks'" (click)="goToInstances()" title="All Instances">≡</button>
+    <button class="il-refresh-btn" (click)="load()" title="Refresh">↻</button>
+  </nav>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="il-loading">
+    <div class="il-spinner"></div>
+    <span>Loading…</span>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="il-alert">{{ error }}</div>
+
+  <div *ngIf="!loading" class="il-body"
+       [class.il-body--wide]="mode === 'tasks' && (activeTab === 'tasks' || activeTab === 'started')">
+
+    <!-- ── TASKS MODE ───────���──────────────────────────────────────── -->
+    <div *ngIf="mode === 'tasks'">
+
+      <!-- Tab bar -->
+      <div class="il-tabs">
+        <button class="il-tab" [class.is-active]="activeTab === 'tasks'" (click)="setTab('tasks')">My Tasks</button>
+        <button class="il-tab" [class.is-active]="activeTab === 'started'" (click)="setTab('started')">Started By Me</button>
+      </div>
+
+      <!-- Workflow selector (shown when multiple workflows have activity) -->
+      <div *ngIf="workflowsWithActivity.length > 1" class="tg-wf-tabs">
+        <button *ngFor="let wf of workflowsWithActivity"
+                class="tg-wf-tab"
+                [class.is-active]="wf.id === selectedWorkflowId"
+                (click)="selectWorkflow(wf.id!)">
+          {{ wf.name }}
+        </button>
+      </div>
+
+      <!-- ════════════════��═══════════════════════════════════════════
+           MY TASKS TAB
+      ════════════��═══════════��═══════════════════════════════════ -->
+      <ng-container *ngIf="activeTab === 'tasks'">
+
+        <!-- Empty -->
+        <div *ngIf="!hasTasks()" class="il-empty">
+          <div class="il-empty-icon">✓</div>
+          <p class="il-empty-title">No pending tasks</p>
+          <p class="il-empty-sub">You do not have workflow actions pending right now.</p>
+          <button class="il-empty-btn" (click)="goBack()">Go to App Home</button>
+        </div>
+
+        <!-- Graph view -->
+        <div *ngIf="hasTasks() && selectedWorkflow" class="tg-layout">
+
+          <!-- Graph canvas -->
+          <div class="tg-graph-wrap">
+            <div class="tg-graph-title">
+              <span>{{ selectedWorkflow.name }}</span>
+              <span class="tg-graph-hint">Click a highlighted node to view pending tasks</span>
+            </div>
+
+            <div class="tg-graph" #tasksGraphEl>
+              <svg class="tg-graph-svg" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <marker id="tg-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                    <polygon points="0 0, 8 3, 0 6" fill="rgba(15,23,42,0.22)"/>
+                  </marker>
+                </defs>
+                <g *ngFor="let e of graphSvgEdges" class="tg-svg-edge">
+                  <path [attr.d]="e.path" class="tg-svg-line"/>
+                  <text [attr.x]="e.midX" [attr.y]="e.midY" class="tg-svg-label">{{ e.name }}</text>
+                </g>
+              </svg>
+
+              <div class="tg-tree-row" *ngFor="let row of computedGraphLevels">
+                <div class="tg-tree-node" *ngFor="let step of row">
+                  <button class="tg-graph-node"
+                          [attr.data-step-id]="step.id"
+                          [class.has-tasks]="getStepTaskCount(step.id) > 0"
+                          [class.is-selected]="selectedNodeStepId === step.id"
+                          (click)="selectNode(step.id)">
+                    <span class="tg-task-badge tg-badge-tasks" *ngIf="getStepTaskCount(step.id) > 0">
+                      {{ getStepTaskCount(step.id) }}
+                    </span>
+                    <div class="tg-node-head">
+                      <span class="tg-node-name">{{ step.name || 'Untitled Step' }}</span>
+                    </div>
+                    <div class="tg-node-tags">
+                      <span class="tg-node-tag" *ngIf="step.start">Start</span>
+                      <span class="tg-node-tag tg-node-tag-end" *ngIf="step.end">End</span>
+                      <span class="tg-node-tag tg-node-tag-pending"
+                            *ngIf="getStepTaskCount(step.id) > 0 && selectedNodeStepId !== step.id">
+                        {{ getStepTaskCount(step.id) }} waiting
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div><!-- /tg-graph -->
+
+            <div class="tg-legend">
+              <span class="tg-legend-item tg-legend-tasks">Node with pending tasks</span>
+              <span class="tg-legend-item">No pending tasks</span>
+            </div>
+          </div>
+
+          <!-- Side panel -->
+          <div class="tg-panel" *ngIf="selectedNodeStepId">
+            <div class="tg-panel-head">
+              <div>
+                <p class="tg-panel-eyebrow">Pending at step</p>
+                <span class="tg-panel-title">{{ getStepName(selectedNodeStepId) }}</span>
+              </div>
+              <button class="tg-panel-close" (click)="closeNodePanel()">✕</button>
+            </div>
+            <div class="tg-panel-list">
+              <button *ngFor="let task of getStepTasks(selectedNodeStepId)"
+                      class="tg-task-item"
+                      (click)="viewInstance(task.instanceId)">
+                <div class="tg-task-header">
+                  <span class="tg-task-wf">{{ task.workflowName }}</span>
+                  <code class="tg-task-id">{{ shortId(task.instanceId) }}</code>
+                </div>
+                <div class="tg-task-edges" *ngIf="task.availableEdges?.length">
+                  <span *ngFor="let edge of task.availableEdges" class="tg-edge-chip">{{ edge['name'] }}</span>
+                </div>
+                <div class="tg-task-meta">Started: {{ formatDate(task.startedAt) }}</div>
+                <span class="tg-task-arrow">→</span>
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /tg-layout tasks -->
+      </ng-container>
+
+      <!-- ════════════════════���═══════════════════════════════════════
+           STARTED BY ME TAB
+      ═════════════��═══════════════════════���══════════════════════ -->
+      <ng-container *ngIf="activeTab === 'started'">
+
+        <!-- Empty -->
+        <div *ngIf="!hasStarted()" class="il-empty">
+          <div class="il-empty-icon">↺</div>
+          <p class="il-empty-title">No workflows started</p>
+          <p class="il-empty-sub">Start a workflow to track its progress here.</p>
+          <button class="il-empty-btn" (click)="goBack()">Go to App Home</button>
+        </div>
+
+        <!-- Graph view -->
+        <div *ngIf="hasStarted() && selectedWorkflow" class="tg-layout">
+
+          <!-- Graph canvas -->
+          <div class="tg-graph-wrap">
+            <div class="tg-graph-title">
+              <span>{{ selectedWorkflow.name }}</span>
+              <span class="tg-graph-hint">Click a node to see instances at that step</span>
+            </div>
+
+            <div class="tg-graph" #startedGraphEl>
+              <svg class="tg-graph-svg" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <marker id="tg-arr-s" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                    <polygon points="0 0, 8 3, 0 6" fill="rgba(15,23,42,0.22)"/>
+                  </marker>
+                </defs>
+                <g *ngFor="let e of graphSvgEdges" class="tg-svg-edge">
+                  <path [attr.d]="e.path" class="tg-svg-line"/>
+                  <text [attr.x]="e.midX" [attr.y]="e.midY" class="tg-svg-label">{{ e.name }}</text>
+                </g>
+              </svg>
+
+              <div class="tg-tree-row" *ngFor="let row of computedGraphLevels">
+                <div class="tg-tree-node" *ngFor="let step of row">
+                  <button class="tg-graph-node"
+                          [attr.data-step-id]="step.id"
+                          [class.has-instances]="getStepInstanceCount(step.id) > 0"
+                          [class.is-selected]="selectedStartedNodeId === step.id"
+                          (click)="selectStartedNode(step.id)">
+                    <span class="tg-task-badge"
+                          *ngIf="getStepInstanceCount(step.id) > 0"
+                          [class]="'tg-task-badge tg-badge-' + getStepInstanceColor(step.id)">
+                      {{ getStepInstanceCount(step.id) }}
+                    </span>
+                    <div class="tg-node-head">
+                      <span class="tg-node-name">{{ step.name || 'Untitled Step' }}</span>
+                    </div>
+                    <div class="tg-node-tags">
+                      <span class="tg-node-tag" *ngIf="step.start">Start</span>
+                      <span class="tg-node-tag tg-node-tag-end" *ngIf="step.end">End</span>
+                      <span class="tg-node-tag tg-node-tag-count"
+                            *ngIf="getStepInstanceCount(step.id) > 0 && selectedStartedNodeId !== step.id">
+                        {{ getStepInstanceCount(step.id) }}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div><!-- /tg-graph started -->
+
+            <div class="tg-legend">
+              <span class="tg-legend-item tg-legend-active">Active instances</span>
+              <span class="tg-legend-item tg-legend-done">Completed instances</span>
+              <span class="tg-legend-item">No instances</span>
+            </div>
+          </div>
+
+          <!-- Side panel -->
+          <div class="tg-panel" *ngIf="selectedStartedNodeId">
+            <div class="tg-panel-head">
+              <div>
+                <p class="tg-panel-eyebrow">Instances at step</p>
+                <span class="tg-panel-title">{{ getStepName(selectedStartedNodeId) }}</span>
+              </div>
+              <button class="tg-panel-close" (click)="closeStartedPanel()">✕</button>
+            </div>
+            <div class="tg-panel-list">
+              <button *ngFor="let inst of getStepInstances(selectedStartedNodeId)"
+                      class="tg-task-item"
+                      (click)="viewInstance(inst.id!)">
+                <div class="tg-task-header">
+                  <span [class]="'tg-status-dot dot-' + inst.status.toLowerCase()"></span>
+                  <span [class]="'il-badge badge-' + inst.status.toLowerCase()">{{ inst.status }}</span>
+                  <code class="tg-task-id">{{ shortId(inst.id!) }}</code>
+                </div>
+                <div class="tg-task-meta">Started: {{ formatDate(inst.startedAt) }}</div>
+                <div class="tg-task-meta" *ngIf="inst.completedAt">Completed: {{ formatDate(inst.completedAt) }}</div>
+                <span class="tg-task-arrow">→</span>
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /tg-layout started -->
+      </ng-container>
+
+    </div><!-- /mode=tasks -->
+
+    <!-- ── INSTANCES MODE ───────��──────────────────────────────────────── -->
+    <div *ngIf="mode === 'instances'">
+
+      <div *ngIf="instances.length > 0" class="il-stats-bar">
+        <div class="il-stat">
+          <span class="il-stat-num">{{ instances.length }}</span>
+          <span class="il-stat-label">Total</span>
+        </div>
+        <div class="il-stat-divider"></div>
+        <div class="il-stat">
+          <span class="il-stat-num" style="color:#16a34a">{{ countByStatus('ACTIVE') }}</span>
+          <span class="il-stat-label">Active</span>
+        </div>
+        <div class="il-stat-divider"></div>
+        <div class="il-stat">
+          <span class="il-stat-num" style="color:#2563eb">{{ countByStatus('COMPLETED') }}</span>
+          <span class="il-stat-label">Completed</span>
+        </div>
+        <div class="il-stat-divider"></div>
+        <div class="il-stat">
+          <span class="il-stat-num" style="color:#94a3b8">{{ countByStatus('CANCELLED') }}</span>
+          <span class="il-stat-label">Cancelled</span>
+        </div>
+      </div>
+
+      <div *ngIf="instances.length === 0" class="il-empty">
+        <div class="il-empty-icon">0</div>
+        <p class="il-empty-title">No instances yet</p>
+        <p class="il-empty-sub">Start a workflow from the app home page and it will appear here.</p>
+        <button class="il-empty-btn" (click)="goBack()">Go to App Home</button>
+      </div>
+
+      <div *ngIf="instances.length > 0" class="il-list">
+        <button *ngFor="let inst of instances" class="il-card" (click)="viewInstance(inst.id!)">
+          <div class="il-card-left">
+            <span [class]="'il-status-dot dot-' + inst.status.toLowerCase()"></span>
+          </div>
+          <div class="il-card-body">
+            <div class="il-card-row1">
+              <span [class]="'il-badge badge-' + inst.status.toLowerCase()">{{ inst.status }}</span>
+              <code class="il-id">{{ inst.id }}</code>
+            </div>
+            <div class="il-card-row2">
+              <span *ngIf="inst.currentStepId" class="il-meta-chip">Step: {{ inst.currentStepId }}</span>
+              <span class="il-meta-chip">Started: {{ formatDate(inst.startedAt) }}</span>
+              <span *ngIf="inst.completedAt" class="il-meta-chip">Done: {{ formatDate(inst.completedAt) }}</span>
+            </div>
+          </div>
+          <span class="il-card-arrow">→</span>
+        </button>
+      </div>
+    </div><!-- /mode=instances -->
+
+  </div><!-- /il-body -->
+</div>

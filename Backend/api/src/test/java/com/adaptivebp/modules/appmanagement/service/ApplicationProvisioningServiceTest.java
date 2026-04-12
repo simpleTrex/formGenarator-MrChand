@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.adaptivebp.modules.appmanagement.model.AppGroup;
+import com.adaptivebp.modules.appmanagement.model.AppGroupMember;
 import com.adaptivebp.modules.appmanagement.model.Application;
 import com.adaptivebp.modules.appmanagement.repository.AppGroupMemberRepository;
 import com.adaptivebp.modules.appmanagement.repository.AppGroupRepository;
@@ -39,6 +40,7 @@ class ApplicationProvisioningServiceTest {
         app.setId("app-1");
 
         when(appGroupRepository.findByAppId(app.getId())).thenReturn(Collections.emptyList());
+        when(appGroupRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.provisionDefaultGroups(app, "user-1");
 
@@ -46,6 +48,36 @@ class ApplicationProvisioningServiceTest {
         verify(appGroupRepository).saveAll(captor.capture());
         assertEquals(3, captor.getValue().size());
         verify(appGroupMemberRepository).save(any());
+    }
+
+    @Test
+    void provisionDefaultGroups_doesNotAssignBlankOwner() {
+        Application app = new Application();
+        app.setId("app-1");
+
+        when(appGroupRepository.findByAppId(app.getId())).thenReturn(Collections.emptyList());
+        when(appGroupRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.provisionDefaultGroups(app, "   ");
+
+        verify(appGroupRepository).saveAll(any());
+        verify(appGroupMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void provisionDefaultGroups_assignsCreatorWhenOwnerMissing() {
+        Application app = new Application();
+        app.setId("app-1");
+
+        when(appGroupRepository.findByAppId(app.getId())).thenReturn(Collections.emptyList());
+        when(appGroupRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(appGroupMemberRepository.save(any(AppGroupMember.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.provisionDefaultGroups(app, null, "creator-1");
+
+        ArgumentCaptor<AppGroupMember> memberCaptor = ArgumentCaptor.forClass(AppGroupMember.class);
+        verify(appGroupMemberRepository).save(memberCaptor.capture());
+        assertEquals("creator-1", memberCaptor.getValue().getUserId());
     }
 
     @Test

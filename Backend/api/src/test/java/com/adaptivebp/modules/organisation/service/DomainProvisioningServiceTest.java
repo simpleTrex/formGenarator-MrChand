@@ -17,6 +17,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.adaptivebp.modules.organisation.model.DomainGroup;
+import com.adaptivebp.modules.formbuilder.model.DomainModel;
+import com.adaptivebp.modules.formbuilder.repository.DomainModelRepository;
 import com.adaptivebp.modules.organisation.repository.DomainGroupMemberRepository;
 import com.adaptivebp.modules.organisation.repository.DomainGroupRepository;
 import com.adaptivebp.modules.organisation.model.Organisation;
@@ -30,6 +32,9 @@ class DomainProvisioningServiceTest {
     @Mock
     private DomainGroupMemberRepository domainGroupMemberRepository;
 
+    @Mock
+    private DomainModelRepository domainModelRepository;
+
     @InjectMocks
     private DomainProvisioningService service;
 
@@ -39,6 +44,8 @@ class DomainProvisioningServiceTest {
         org.setId("domain-1");
 
         when(domainGroupRepository.findByDomainId(org.getId())).thenReturn(Collections.emptyList());
+        when(domainModelRepository.findByDomainIdAndSlug(org.getId(), "employees")).thenReturn(java.util.Optional.empty());
+        when(domainModelRepository.save(any(DomainModel.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.provisionDefaults(org, "user-owner");
 
@@ -47,6 +54,7 @@ class DomainProvisioningServiceTest {
         List<DomainGroup> saved = captor.getValue();
         assertEquals(2, saved.size());
         verify(domainGroupMemberRepository).save(any());
+        verify(domainModelRepository).save(any(DomainModel.class));
     }
 
     @Test
@@ -59,10 +67,12 @@ class DomainProvisioningServiceTest {
         existing.setName("Existing");
 
         when(domainGroupRepository.findByDomainId(org.getId())).thenReturn(List.of(existing));
+        when(domainModelRepository.findByDomainIdAndSlug(org.getId(), "employees")).thenReturn(java.util.Optional.of(new DomainModel()));
 
         service.provisionDefaults(org, "user-owner");
 
         verify(domainGroupRepository, never()).saveAll(any());
         verify(domainGroupMemberRepository, never()).save(any());
+        verify(domainModelRepository, never()).save(any(DomainModel.class));
     }
 }

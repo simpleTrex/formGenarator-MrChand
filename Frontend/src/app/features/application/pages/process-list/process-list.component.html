@@ -1,0 +1,116 @@
+<div class="app-container fade-in">
+
+  <!-- Header -->
+  <div class="page-actions">
+    <button class="back-btn" (click)="goBack()">← Back to App</button>
+    <button class="back-btn" (click)="viewTasks()">My Tasks</button>
+    <button class="back-btn" (click)="viewInstances()">View Instances</button>
+    <button class="back-btn" *ngIf="workflows.length === 0" (click)="createNew()">+ New Workflow</button>
+  </div>
+
+  <h2 class="section-title">Workflows</h2>
+  <p class="info-text">Each application can have a single model-centric workflow definition.</p>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Loading workflows...</p>
+  </div>
+
+  <!-- Global error -->
+  <div *ngIf="error" class="error-alert">{{ error }}</div>
+
+  <!-- Empty state -->
+  <app-modern-card *ngIf="!loading && !error && workflows.length === 0" theme="light" class="mt-4">
+    <div class="empty-state">
+      <p class="info-text">No workflow yet. Click <strong>+ New Workflow</strong> to get started.</p>
+      <app-modern-button variant="primary" size="md" (click)="createNew()">
+        Create First Workflow
+      </app-modern-button>
+    </div>
+  </app-modern-card>
+
+  <!-- Workflow cards -->
+  <div class="process-grid mt-4" *ngIf="!loading && workflows.length > 0">
+    <app-modern-card *ngFor="let item of workflows" theme="light" class="process-card">
+
+      <!-- Card header -->
+      <div class="card-header-row">
+        <div>
+          <h3 class="process-name">{{ item.workflow.name }}</h3>
+          <span class="badge">{{ item.workflow.slug }}</span>
+          <span [class]="'status-badge ' + statusBadge[item.workflow.status]">
+            {{ item.workflow.status }}
+          </span>
+          <span class="badge ml-1">v{{ item.workflow.version }}</span>
+        </div>
+        <div class="meta-text">
+          {{ item.stepCount }} steps
+        </div>
+      </div>
+
+      <!-- Description -->
+      <p *ngIf="item.workflow.description" class="info-text mt-2">
+        {{ item.workflow.description }}
+      </p>
+
+      <!-- Per-card error -->
+      <div *ngIf="actionError[item.workflow.slug]" class="error-alert mt-2">
+        {{ actionError[item.workflow.slug] }}
+      </div>
+
+      <!-- Actions -->
+      <div class="card-actions mt-3">
+
+        <!-- DRAFT actions -->
+        <ng-container *ngIf="item.workflow.status === 'DRAFT'">
+          <app-modern-button variant="outline" size="sm"
+            [loading]="!!actionLoading[item.workflow.slug]"
+            (click)="editWorkflow(item.workflow.slug)">
+            Edit
+          </app-modern-button>
+          <app-modern-button variant="primary" size="sm"
+            [loading]="!!actionLoading[item.workflow.slug]"
+            (click)="publishWorkflow(item.workflow.slug)">
+            Publish
+          </app-modern-button>
+          <app-modern-button variant="outline" size="sm"
+            [loading]="!!actionLoading[item.workflow.slug]"
+            (click)="deleteWorkflow(item.workflow.slug)">
+            Delete
+          </app-modern-button>
+        </ng-container>
+
+        <!-- PUBLISHED actions -->
+        <ng-container *ngIf="item.workflow.status === 'PUBLISHED'">
+          <app-modern-button variant="outline" size="sm"
+            [loading]="!!actionLoading[item.workflow.slug]"
+            (click)="editWorkflow(item.workflow.slug)">
+            Open Builder
+          </app-modern-button>
+          <app-modern-button variant="primary" size="sm"
+            [loading]="!!actionLoading[item.workflow.slug]"
+            (click)="startWorkflow(item.workflow.slug)">
+            ▶ Start
+          </app-modern-button>
+          <app-modern-button variant="outline" size="sm"
+            [loading]="!!actionLoading[item.workflow.slug]"
+            (click)="archiveWorkflow(item.workflow.slug)">
+            Archive
+          </app-modern-button>
+        </ng-container>
+
+        <!-- ARCHIVED -->
+        <ng-container *ngIf="item.workflow.status === 'ARCHIVED'">
+          <app-modern-button variant="outline" size="sm"
+            [loading]="!!actionLoading[item.workflow.slug]"
+            (click)="editWorkflow(item.workflow.slug)">
+            View
+          </app-modern-button>
+        </ng-container>
+
+      </div>
+    </app-modern-card>
+  </div>
+
+</div>

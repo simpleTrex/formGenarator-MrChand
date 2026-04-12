@@ -1,0 +1,561 @@
+<div class="arc-shell">
+
+  <!-- ── Top bar ── -->
+  <header class="arc-header">
+    <div class="arc-header-inner">
+      <div>
+        <h1 class="arc-title">System Architecture</h1>
+        <p class="arc-subtitle">AdaptiveBP — Technical Reference Documentation</p>
+      </div>
+      <span class="arc-version">v1.0</span>
+    </div>
+  </header>
+
+  <div class="arc-layout">
+
+    <!-- ── Sidebar TOC ── -->
+    <aside class="arc-sidebar">
+      <p class="arc-toc-label">Contents</p>
+      <nav class="arc-toc">
+        <button *ngFor="let s of sections"
+                class="arc-toc-item"
+                [class.active]="activeSection === s.id"
+                (click)="scrollTo(s.id)">
+          {{ s.label }}
+        </button>
+      </nav>
+    </aside>
+
+    <!-- ── Main content ── -->
+    <main class="arc-main">
+
+      <!-- ════════════════════════════════════════
+           1. SYSTEM OVERVIEW
+      ════════════════════════════════════════ -->
+      <section id="overview" class="arc-section">
+        <h2 class="arc-section-title">1. System Overview</h2>
+        <p class="arc-lead">
+          AdaptiveBP is a multi-tenant business process platform. Each tenant is a <strong>Domain</strong>
+          (organisation). Within a domain, owners create <strong>Applications</strong>. Each application has
+          one published <strong>Process Definition</strong> — a directed graph of nodes. End users run
+          <strong>Process Instances</strong> that walk through that graph step by step, collecting form data,
+          triggering approvals, and querying data models.
+        </p>
+
+        <!-- Overview diagram -->
+        <div class="arc-diagram-wrap">
+          <svg class="arc-svg" viewBox="0 0 780 320" xmlns="http://www.w3.org/2000/svg">
+            <!-- Owner -->
+            <rect x="10" y="120" width="110" height="48" rx="8" fill="#1e293b"/>
+            <text x="65" y="140" text-anchor="middle" fill="white" font-size="11" font-weight="700">Owner</text>
+            <text x="65" y="157" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Platform admin</text>
+
+            <!-- Arrow -->
+            <line x1="120" y1="144" x2="155" y2="144" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+            <!-- Domain -->
+            <rect x="155" y="108" width="130" height="72" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+            <text x="220" y="130" text-anchor="middle" fill="white" font-size="11" font-weight="700">Domain</text>
+            <text x="220" y="147" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9">Organisation workspace</text>
+            <text x="220" y="163" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="8">Groups · Users · Theme</text>
+
+            <!-- Arrow -->
+            <line x1="285" y1="144" x2="320" y2="144" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+            <!-- Application -->
+            <rect x="320" y="108" width="130" height="72" rx="8" fill="#1e3a5f" stroke="#2563eb" stroke-width="1.5"/>
+            <text x="385" y="130" text-anchor="middle" fill="white" font-size="11" font-weight="700">Application</text>
+            <text x="385" y="147" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9">Scoped workflow</text>
+            <text x="385" y="163" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="8">App Groups · Data Models</text>
+
+            <!-- Arrow to process def -->
+            <line x1="450" y1="130" x2="490" y2="80" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+            <!-- Arrow to instance -->
+            <line x1="450" y1="158" x2="490" y2="220" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+            <!-- Process definition -->
+            <rect x="490" y="44" width="145" height="64" rx="8" fill="#134e4a" stroke="#0d9488" stroke-width="1.5"/>
+            <text x="562" y="66" text-anchor="middle" fill="white" font-size="11" font-weight="700">Process Definition</text>
+            <text x="562" y="83" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9">Nodes + Edges graph</text>
+            <text x="562" y="99" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="8">Published · Versioned</text>
+
+            <!-- Process instance -->
+            <rect x="490" y="196" width="145" height="64" rx="8" fill="#3b0764" stroke="#7c3aed" stroke-width="1.5"/>
+            <text x="562" y="218" text-anchor="middle" fill="white" font-size="11" font-weight="700">Process Instance</text>
+            <text x="562" y="235" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9">Runtime execution</text>
+            <text x="562" y="251" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="8">ACTIVE · COMPLETED · CANCELLED</text>
+
+            <!-- Arrow from def to instance -->
+            <line x1="635" y1="108" x2="690" y2="144" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-teal)"/>
+            <line x1="635" y1="228" x2="690" y2="200" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-violet)"/>
+
+            <!-- ModelRecord -->
+            <rect x="685" y="140" width="90" height="48" rx="8" fill="#78350f" stroke="#d97706" stroke-width="1.5"/>
+            <text x="730" y="160" text-anchor="middle" fill="white" font-size="10" font-weight="700">Model</text>
+            <text x="730" y="175" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="8">Records</text>
+
+            <!-- Arrowhead defs -->
+            <defs>
+              <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8"/>
+              </marker>
+              <marker id="arr-teal" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#0d9488"/>
+              </marker>
+              <marker id="arr-violet" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#7c3aed"/>
+              </marker>
+            </defs>
+          </svg>
+          <p class="arc-caption">Figure 1 — Core entity relationships</p>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════
+           2. ENTITY HIERARCHY
+      ════════════════════════════════════════ -->
+      <section id="hierarchy" class="arc-section">
+        <h2 class="arc-section-title">2. Entity Hierarchy</h2>
+        <p class="arc-lead">All entities are stored in MongoDB. Each level scopes the one below it.</p>
+
+        <div class="arc-tree">
+          <div class="arc-tree-row level-0">
+            <div class="arc-tree-node">Owner Account</div>
+            <div class="arc-tree-desc">Single global admin. Created at platform setup. Owns all domains.</div>
+          </div>
+          <div class="arc-tree-row level-1">
+            <div class="arc-tree-node">Domain (Organisation)</div>
+            <div class="arc-tree-desc">Workspace. Has slug, industry, theme, domain groups and members. Many per Owner.</div>
+          </div>
+          <div class="arc-tree-row level-2">
+            <div class="arc-tree-node">Domain Group</div>
+            <div class="arc-tree-desc">Grants domain-level permissions (DOMAIN_MANAGE_APPS, DOMAIN_USE_APP…). Users are members.</div>
+          </div>
+          <div class="arc-tree-row level-2">
+            <div class="arc-tree-node">Application</div>
+            <div class="arc-tree-desc">A scoped workflow product. Has slug, app groups, data models. Many per Domain.</div>
+          </div>
+          <div class="arc-tree-row level-3">
+            <div class="arc-tree-node">App Group</div>
+            <div class="arc-tree-desc">Grants app-level permissions (APP_READ, APP_WRITE, APP_EXECUTE, APP_START_PROCESS…).</div>
+          </div>
+          <div class="arc-tree-row level-3">
+            <div class="arc-tree-node">Domain Model (Schema)</div>
+            <div class="arc-tree-desc">Field schema definition attached to an application. Used by DATA_ACTION nodes to write records.</div>
+          </div>
+          <div class="arc-tree-row level-4">
+            <div class="arc-tree-node">Model Record</div>
+            <div class="arc-tree-desc">Actual data rows. Stored as Map&lt;String,Object&gt;. Written by DATA_ACTION, read by DATA_VIEW.</div>
+          </div>
+          <div class="arc-tree-row level-3">
+            <div class="arc-tree-node">Process Definition</div>
+            <div class="arc-tree-desc">Node/edge graph. Versioned. One PUBLISHED per application at any time.</div>
+          </div>
+          <div class="arc-tree-row level-4">
+            <div class="arc-tree-node">Process Instance</div>
+            <div class="arc-tree-desc">Runtime copy of a definition. Tracks currentNodeId, status, history, collected data.</div>
+          </div>
+        </div>
+
+        <h3 class="arc-sub-title">Entity field reference</h3>
+        <div class="arc-table-wrap">
+          <table class="arc-table">
+            <thead><tr><th>Entity</th><th>Key fields</th><th>MongoDB collection</th></tr></thead>
+            <tbody>
+              <tr><td>Domain</td><td>id, name, slug, industry, description, ownerId</td><td>organisations</td></tr>
+              <tr><td>Domain Group</td><td>id, domainId, name, permissions[]</td><td>domain_groups</td></tr>
+              <tr><td>Application</td><td>id, domainId, name, slug, ownerUserId</td><td>applications</td></tr>
+              <tr><td>App Group</td><td>id, appId, name, permissions[]</td><td>app_groups</td></tr>
+              <tr><td>Domain Model</td><td>id, appId, name, fields[]</td><td>domain_models</td></tr>
+              <tr><td>Model Record</td><td>id, modelId, appId, data: Map</td><td>model_records</td></tr>
+              <tr><td>Process Definition</td><td>id, appId, version, status, nodes[], edges[]</td><td>process_definitions</td></tr>
+              <tr><td>Process Instance</td><td>id, definitionId, appId, status, currentNodeId, history[], collectedData</td><td>process_instances</td></tr>
+              <tr><td>Domain User</td><td>id, domainId, username, email, passwordHash</td><td>domain_users</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════
+           3. ACCESS CONTROL
+      ════════════════════════════════════════ -->
+      <section id="access" class="arc-section">
+        <h2 class="arc-section-title">3. Access Control</h2>
+        <p class="arc-lead">
+          Access is enforced at four levels. No role-based annotations — all checks are manual in the
+          <code>PermissionService</code> called from each controller.
+        </p>
+
+        <!-- Level diagram -->
+        <div class="arc-levels">
+          <div class="arc-level" style="--lc:#1e293b">
+            <div class="arc-level-num">L1</div>
+            <div class="arc-level-body">
+              <strong>Owner</strong>
+              <p>PrincipalType = OWNER. Bypasses every permission check. Created via owner-signup, authenticated with a separate JWT.</p>
+            </div>
+          </div>
+          <div class="arc-level" style="--lc:#1e3a5f">
+            <div class="arc-level-num">L2</div>
+            <div class="arc-level-body">
+              <strong>Domain Group Member</strong>
+              <p>PrincipalType = DOMAIN_USER. Permissions come from domain groups the user belongs to. Checked for domain-scoped operations (create app, manage users).</p>
+            </div>
+          </div>
+          <div class="arc-level" style="--lc:#134e4a">
+            <div class="arc-level-num">L3</div>
+            <div class="arc-level-body">
+              <strong>App Group Member</strong>
+              <p>Same DOMAIN_USER, but permissions resolved from app groups. APP_WRITE = access Process Builder + Data Models. APP_EXECUTE = Access Manager. Any authenticated user can start and run.</p>
+            </div>
+          </div>
+          <div class="arc-level" style="--lc:#3b0764">
+            <div class="arc-level-num">L4</div>
+            <div class="arc-level-body">
+              <strong>Authenticated (no group)</strong>
+              <p>Any logged-in DOMAIN_USER can start a process instance, view their own instance, and submit steps. Cannot see instance list, process builder, or data models.</p>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="arc-sub-title">Permission matrix</h3>
+        <div class="arc-table-wrap">
+          <table class="arc-table">
+            <thead>
+              <tr>
+                <th>Operation</th>
+                <th>Owner</th>
+                <th>APP_WRITE</th>
+                <th>APP_EXECUTE</th>
+                <th>Any Auth User</th>
+                <th>Unauthenticated</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Create / edit domain</td>
+                <td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+              <tr><td>Create application</td>
+                <td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+              <tr><td>Process Builder (edit nodes/edges)</td>
+                <td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+              <tr><td>Data Models (edit schemas)</td>
+                <td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+              <tr><td>View all instances</td>
+                <td class="yes">Yes</td><td class="yes">Yes*</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+              <tr><td>Manage App Groups (Access tab)</td>
+                <td class="yes">Yes</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No</td></tr>
+              <tr><td>Start a process instance</td>
+                <td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+              <tr><td>Submit process step</td>
+                <td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+              <tr><td>View own instance</td>
+                <td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+            </tbody>
+          </table>
+          <p class="arc-table-note">* APP_VIEW_PROCESSES permission required; granted per app group configuration.</p>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════
+           4. PROCESS ENGINE
+      ════════════════════════════════════════ -->
+      <section id="process" class="arc-section">
+        <h2 class="arc-section-title">4. Process Engine</h2>
+
+        <h3 class="arc-sub-title">Node types</h3>
+        <div class="arc-table-wrap">
+          <table class="arc-table">
+            <thead><tr><th>Type</th><th>Interactive</th><th>Description</th><th>Config</th></tr></thead>
+            <tbody>
+              <tr><td><code>START</code></td><td>No</td><td>Entry point. Auto-advanced through on instance start.</td><td>—</td></tr>
+              <tr><td><code>FORM_PAGE</code></td><td>Yes</td><td>Renders a form. User fills and submits. Data stored in instance.collectedData.</td><td>elements[], submitLabel</td></tr>
+              <tr><td><code>APPROVAL</code></td><td>Yes</td><td>Reviewer picks approve/reject action. Branches to different edges based on action.</td><td>availableActions[]</td></tr>
+              <tr><td><code>DATA_ACTION</code></td><td>No</td><td>Auto-executed. Writes a record to a DomainModel. Field values mapped from collected form data.</td><td>modelId, fieldMappings[]</td></tr>
+              <tr><td><code>DATA_VIEW</code></td><td>Yes</td><td>Queries a DomainModel and shows records. User reviews and clicks Continue.</td><td>modelId, filter</td></tr>
+              <tr><td><code>CONDITION</code></td><td>No</td><td>Auto-executed. Evaluates a boolean expression against collected data. Routes to true/false edge.</td><td>expression, field, operator, value</td></tr>
+              <tr><td><code>END</code></td><td>No</td><td>Terminal node. Sets instance status to COMPLETED.</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="arc-sub-title">Instance lifecycle</h3>
+
+        <!-- Lifecycle flow diagram -->
+        <div class="arc-diagram-wrap">
+          <svg class="arc-svg" viewBox="0 0 760 120" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+              </marker>
+              <marker id="a2-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#dc2626"/>
+              </marker>
+            </defs>
+            <!-- Start call -->
+            <rect x="10" y="36" width="100" height="48" rx="8" fill="#1e293b"/>
+            <text x="60" y="57" text-anchor="middle" fill="white" font-size="10" font-weight="700">POST /start</text>
+            <text x="60" y="73" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8">Creates instance</text>
+
+            <line x1="110" y1="60" x2="145" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#a2)"/>
+
+            <!-- Auto-advance START -->
+            <rect x="145" y="36" width="110" height="48" rx="8" fill="#134e4a" stroke="#0d9488" stroke-width="1.5"/>
+            <text x="200" y="57" text-anchor="middle" fill="white" font-size="10" font-weight="700">Auto-advance</text>
+            <text x="200" y="73" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8">Past START node</text>
+
+            <line x1="255" y1="60" x2="290" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#a2)"/>
+
+            <!-- Interactive node -->
+            <rect x="290" y="36" width="120" height="48" rx="8" fill="#1e3a5f" stroke="#2563eb" stroke-width="1.5"/>
+            <text x="350" y="57" text-anchor="middle" fill="white" font-size="10" font-weight="700">Interactive Node</text>
+            <text x="350" y="73" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8">FORM / APPROVAL / DATA_VIEW</text>
+
+            <line x1="410" y1="60" x2="445" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#a2)"/>
+
+            <!-- Submit -->
+            <rect x="445" y="36" width="120" height="48" rx="8" fill="#134e4a" stroke="#0d9488" stroke-width="1.5"/>
+            <text x="505" y="57" text-anchor="middle" fill="white" font-size="10" font-weight="700">POST /submit</text>
+            <text x="505" y="73" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8">Engine advances graph</text>
+
+            <line x1="565" y1="60" x2="600" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#a2)"/>
+
+            <!-- End / loop -->
+            <rect x="600" y="36" width="150" height="48" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1.5"/>
+            <text x="675" y="52" text-anchor="middle" fill="white" font-size="10" font-weight="700">Next node or END</text>
+            <text x="675" y="67" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8">Auto nodes execute inline</text>
+            <text x="675" y="80" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="8">Loop back until terminal</text>
+          </svg>
+          <p class="arc-caption">Figure 2 — Process instance execution flow</p>
+        </div>
+
+        <h3 class="arc-sub-title">Field reference format</h3>
+        <p class="arc-lead">
+          When a DATA_ACTION node maps a field from a prior FORM_PAGE, the reference is encoded as
+          <code>nodeId__elementId</code> (double underscore, avoiding MongoDB dot notation). The engine
+          resolves this at runtime by reading <code>instance.collectedData[nodeId][elementId]</code>.
+        </p>
+
+        <h3 class="arc-sub-title">Process definition graph rules</h3>
+        <ul class="arc-list">
+          <li>Every definition must have exactly one <code>START</code> node and at least one <code>END</code> node.</li>
+          <li>Edges are directed: <code>fromNodeId → toNodeId</code>. Optional <code>label</code> (e.g. "approve", "reject") used by APPROVAL routing.</li>
+          <li>CONDITION nodes evaluate a boolean and follow the edge whose label matches <code>"true"</code> or <code>"false"</code>.</li>
+          <li>Cycles are not supported — the engine has a depth guard (max 50 auto-advance hops) to prevent infinite loops.</li>
+          <li>Only one definition can have status PUBLISHED at a time per application. Publishing a new version archives the previous one.</li>
+        </ul>
+      </section>
+
+      <!-- ════════════════════════════════════════
+           5. DATA STORAGE
+      ════════════════════════════════════════ -->
+      <section id="data" class="arc-section">
+        <h2 class="arc-section-title">5. Data Storage</h2>
+
+        <h3 class="arc-sub-title">How data flows through a process</h3>
+        <div class="arc-diagram-wrap">
+          <svg class="arc-svg" viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="a3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+              </marker>
+            </defs>
+
+            <!-- FORM_PAGE -->
+            <rect x="10" y="76" width="120" height="48" rx="8" fill="#1e3a5f" stroke="#2563eb" stroke-width="1.5"/>
+            <text x="70" y="97" text-anchor="middle" fill="white" font-size="10" font-weight="700">FORM_PAGE</text>
+            <text x="70" y="113" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8">User submits fields</text>
+
+            <!-- Arrow: form → instance data -->
+            <line x1="130" y1="100" x2="175" y2="100" stroke="#64748b" stroke-width="1.5" marker-end="url(#a3)"/>
+            <text x="152" y="93" text-anchor="middle" fill="#94a3b8" font-size="7">stored in</text>
+
+            <!-- Instance collected data -->
+            <rect x="175" y="60" width="140" height="80" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+            <text x="245" y="84" text-anchor="middle" fill="white" font-size="10" font-weight="700">Instance</text>
+            <text x="245" y="100" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="8">collectedData</text>
+            <text x="245" y="114" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="7">Map&lt;nodeId, Map&lt;fieldId, val&gt;&gt;</text>
+            <text x="245" y="128" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="7">process_instances collection</text>
+
+            <!-- Arrow: instance → DATA_ACTION -->
+            <line x1="315" y1="100" x2="360" y2="100" stroke="#64748b" stroke-width="1.5" marker-end="url(#a3)"/>
+            <text x="337" y="93" text-anchor="middle" fill="#94a3b8" font-size="7">resolved by</text>
+
+            <!-- DATA_ACTION -->
+            <rect x="360" y="76" width="120" height="48" rx="8" fill="#134e4a" stroke="#0d9488" stroke-width="1.5"/>
+            <text x="420" y="97" text-anchor="middle" fill="white" font-size="10" font-weight="700">DATA_ACTION</text>
+            <text x="420" y="113" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8">Maps fields → record</text>
+
+            <!-- Arrow down: DATA_ACTION → ModelRecord -->
+            <line x1="420" y1="124" x2="420" y2="160" stroke="#0d9488" stroke-width="1.5" marker-end="url(#a3)"/>
+
+            <!-- ModelRecord -->
+            <rect x="360" y="160" width="120" height="36" rx="8" fill="#78350f" stroke="#d97706" stroke-width="1.5"/>
+            <text x="420" y="175" text-anchor="middle" fill="white" font-size="10" font-weight="700">ModelRecord</text>
+            <text x="420" y="189" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="7">model_records collection</text>
+
+            <!-- Arrow: ModelRecord → DATA_VIEW -->
+            <line x1="480" y1="178" x2="540" y2="140" stroke="#d97706" stroke-width="1.5" marker-end="url(#a3)"/>
+
+            <!-- DATA_VIEW -->
+            <rect x="540" y="108" width="120" height="48" rx="8" fill="#3b0764" stroke="#7c3aed" stroke-width="1.5"/>
+            <text x="600" y="129" text-anchor="middle" fill="white" font-size="10" font-weight="700">DATA_VIEW</text>
+            <text x="600" y="145" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8">Queries &amp; displays records</text>
+          </svg>
+          <p class="arc-caption">Figure 3 — Data flow: form input → instance storage → model record → data view</p>
+        </div>
+
+        <h3 class="arc-sub-title">Storage details</h3>
+        <div class="arc-table-wrap">
+          <table class="arc-table">
+            <thead><tr><th>Data</th><th>Where stored</th><th>Structure</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Form inputs (in-flight)</td>
+                <td><code>process_instances.collectedData</code></td>
+                <td><code>Map&lt;nodeId, Map&lt;fieldId, Object&gt;&gt;</code></td>
+                <td>Only for the current instance. Keys use <code>__</code> separator.</td>
+              </tr>
+              <tr>
+                <td>Persisted business data</td>
+                <td><code>model_records.data</code></td>
+                <td><code>Map&lt;String, Object&gt;</code></td>
+                <td>Written by DATA_ACTION. Queryable across instances.</td>
+              </tr>
+              <tr>
+                <td>Audit history</td>
+                <td><code>process_instances.history[]</code></td>
+                <td>Array of HistoryEntry (nodeId, action, performedAt, comment)</td>
+                <td>Appended on every node transition. Immutable.</td>
+              </tr>
+              <tr>
+                <td>User credentials</td>
+                <td><code>domain_users</code></td>
+                <td>BCrypt hashed password, JWT issued on login</td>
+                <td>Separate from Owner credentials.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════
+           6. API STRUCTURE
+      ════════════════════════════════════════ -->
+      <section id="api" class="arc-section">
+        <h2 class="arc-section-title">6. API Structure</h2>
+        <p class="arc-lead">All endpoints are prefixed <code>/adaptive</code>. Auth uses Bearer JWT in the Authorization header.</p>
+
+        <h3 class="arc-sub-title">Domain &amp; Application endpoints</h3>
+        <div class="arc-table-wrap">
+          <table class="arc-table">
+            <thead><tr><th>Method</th><th>Path</th><th>Auth required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="method-get">GET</td><td>/adaptive/domains/:slug</td><td>Any</td><td>Get domain by slug</td></tr>
+              <tr><td class="method-post">POST</td><td>/adaptive/domains</td><td>Owner</td><td>Create domain</td></tr>
+              <tr><td class="method-get">GET</td><td>/adaptive/domains/:slug/apps/:appSlug</td><td>Any</td><td>Get application</td></tr>
+              <tr><td class="method-post">POST</td><td>/adaptive/domains/:slug/apps</td><td>Owner / DOMAIN_MANAGE_APPS</td><td>Create application</td></tr>
+              <tr><td class="method-get">GET</td><td>/adaptive/domains/:slug/roles</td><td>Domain user</td><td>Current user's domain permissions</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="arc-sub-title">Process &amp; Instance endpoints</h3>
+        <div class="arc-table-wrap">
+          <table class="arc-table">
+            <thead><tr><th>Method</th><th>Path</th><th>Auth required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="method-get">GET</td><td>/adaptive/domains/:slug/apps/:app/process</td><td>APP_READ</td><td>Get published process definition</td></tr>
+              <tr><td class="method-post">POST</td><td>/adaptive/domains/:slug/apps/:app/process</td><td>APP_WRITE</td><td>Save process definition</td></tr>
+              <tr><td class="method-post">POST</td><td>/adaptive/domains/:slug/apps/:app/process/publish</td><td>APP_WRITE</td><td>Publish process</td></tr>
+              <tr><td class="method-post">POST</td><td>.../instances/start</td><td>Any auth user</td><td>Start a new instance</td></tr>
+              <tr><td class="method-get">GET</td><td>.../instances</td><td>APP_VIEW_PROCESSES</td><td>List all instances (admin)</td></tr>
+              <tr><td class="method-get">GET</td><td>.../instances/:id</td><td>Any auth user</td><td>Get own instance</td></tr>
+              <tr><td class="method-get">GET</td><td>.../instances/:id/current-node</td><td>Any auth user</td><td>Get current step view</td></tr>
+              <tr><td class="method-post">POST</td><td>.../instances/:id/submit</td><td>Any auth user</td><td>Submit current step</td></tr>
+              <tr><td class="method-post">POST</td><td>.../instances/:id/cancel</td><td>Any auth user</td><td>Cancel own instance</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="arc-sub-title">Access management endpoints</h3>
+        <div class="arc-table-wrap">
+          <table class="arc-table">
+            <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td class="method-get">GET</td><td>.../app-groups</td><td>APP_EXECUTE</td><td>List app groups</td></tr>
+              <tr><td class="method-post">POST</td><td>.../app-groups/:id/members</td><td>APP_EXECUTE</td><td>Add user to app group</td></tr>
+              <tr><td class="method-delete">DELETE</td><td>.../app-groups/:id/members/:userId</td><td>APP_EXECUTE</td><td>Remove user from app group</td></tr>
+              <tr><td class="method-get">GET</td><td>.../app-groups/user/:userId</td><td>Domain user</td><td>Get user's app group memberships</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════
+           7. TECH STACK
+      ════════════════════════════════════════ -->
+      <section id="stack" class="arc-section">
+        <h2 class="arc-section-title">7. Tech Stack</h2>
+
+        <div class="arc-stack-grid">
+          <div class="arc-stack-card">
+            <div class="arc-stack-layer">Frontend</div>
+            <ul class="arc-stack-list">
+              <li><strong>Angular 17</strong> — Module-based routing, *ngIf structural directives</li>
+              <li><strong>TypeScript</strong> — Strict typing, interface-first models</li>
+              <li><strong>CSS Custom Properties</strong> — Theme vars (--tc, --tp, --ta) injected per-component</li>
+              <li><strong>LocalStorage</strong> — Theme persistence (at-[domain]-[app], dt-[domain])</li>
+              <li><strong>Reactive HTTP</strong> — Angular HttpClient with Observable chains</li>
+            </ul>
+          </div>
+          <div class="arc-stack-card">
+            <div class="arc-stack-layer">Backend</div>
+            <ul class="arc-stack-list">
+              <li><strong>Spring Boot 3</strong> — REST controllers, Jackson serialisation</li>
+              <li><strong>Spring Security</strong> — Stateless JWT filter, SecurityContextHolder</li>
+              <li><strong>MongoDB</strong> — Document store via Spring Data MongoDB</li>
+              <li><strong>Port/Adapter pattern</strong> — Controllers call service ports, not repositories directly</li>
+              <li><strong>BCrypt</strong> — Password hashing for domain users</li>
+            </ul>
+          </div>
+          <div class="arc-stack-card">
+            <div class="arc-stack-layer">Infrastructure</div>
+            <ul class="arc-stack-list">
+              <li><strong>Docker / Docker Compose</strong> — Backend, MongoDB, Frontend containers</li>
+              <li><strong>GitHub Actions CI</strong> — Build + test pipeline on push</li>
+              <li><strong>Port 8005</strong> — Backend API default port</li>
+              <li><strong>Port 4200</strong> — Angular dev server</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 class="arc-sub-title">Module structure (Backend)</h3>
+        <div class="arc-table-wrap">
+          <table class="arc-table">
+            <thead><tr><th>Module</th><th>Package</th><th>Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td>Organisation</td><td>modules.organisation</td><td>Domain CRUD, domain groups, users, permissions</td></tr>
+              <tr><td>App Management</td><td>modules.appmanagement</td><td>Application CRUD, app groups, app permissions</td></tr>
+              <tr><td>Process</td><td>modules.process</td><td>Definition builder, process engine, instance lifecycle</td></tr>
+              <tr><td>Shared / Security</td><td>shared.security</td><td>JWT generation, AdaptiveUserDetails, auth filters</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="arc-sub-title">Frontend feature modules</h3>
+        <div class="arc-table-wrap">
+          <table class="arc-table">
+            <thead><tr><th>Module</th><th>Routes</th><th>Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td>Auth</td><td>/auth/*</td><td>Owner login, domain login/signup</td></tr>
+              <tr><td>Organisation</td><td>/domain/*</td><td>Domain home, domain create</td></tr>
+              <tr><td>Application</td><td>/domain/:slug/app/*</td><td>App home, process builder, data models, instances</td></tr>
+              <tr><td>Architecture</td><td>/architecture</td><td>This page — standalone component, no auth required</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>

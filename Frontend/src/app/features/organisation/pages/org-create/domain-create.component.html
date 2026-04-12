@@ -1,29 +1,89 @@
-<div style="max-width:600px;margin:20px auto;">
-  <h2>Create Domain</h2>
-  <div *ngIf="error" style="color:#b00020;margin-bottom:10px;">{{ error }}</div>
+<div class="dc-shell fade-in">
 
-  <div style="display:flex;flex-direction:column;gap:10px;">
-    <label>
-      Business Name
-      <input type="text" [(ngModel)]="name" (input)="onNameInput()" (keydown.enter)="focusNext($event)"
-        placeholder="e.g., ABC Corp" />
-    </label>
-
-    <label>
-      Preferred Domain Name (slug)
-      <input type="text" [(ngModel)]="slug" (keydown.enter)="focusNext($event)" placeholder="e.g., abc-corp" />
-    </label>
-
-    <label>
-      Description (optional)
-      <textarea rows="3" [(ngModel)]="description"></textarea>
-    </label>
-
-    <label>
-      Industry (optional)
-      <input type="text" [(ngModel)]="industry" (keydown.enter)="create()" />
-    </label>
-
-    <button (click)="create()" [disabled]="submitting || !name || !slug">Create Domain</button>
+  <!-- Left panel -->
+  <div class="dc-left">
+    <div class="dc-brand">
+      <span class="dc-logo-mark">◆</span>
+      <span class="dc-logo-text">AdaptiveBP</span>
+    </div>
+    <div class="dc-left-body">
+      <h1 class="dc-headline">Build your<br>digital domain.</h1>
+      <p class="dc-tagline">
+        A domain is your organisation's workspace — home to all its applications, users, and processes.
+      </p>
+      <ul class="dc-feature-list">
+        <li><span class="dc-feat-icon">01</span> Create and manage applications</li>
+        <li><span class="dc-feat-icon">02</span> Invite team members &amp; set permissions</li>
+        <li><span class="dc-feat-icon">03</span> Build automated business processes</li>
+      </ul>
+    </div>
   </div>
+
+  <!-- Right panel — form -->
+  <div class="dc-right">
+    <div class="dc-form-card">
+      <h2 class="dc-form-title">Create a domain</h2>
+      <p class="dc-form-sub">Set up your organisation's workspace in seconds.</p>
+
+      <div *ngIf="error" class="dc-alert">{{ error }}</div>
+
+      <div class="dc-field">
+        <label class="dc-label" for="dc-name">Organisation Name <span class="dc-req">*</span></label>
+        <input id="dc-name" class="dc-input" type="text"
+               placeholder="e.g. Acme Corp"
+               [(ngModel)]="name"
+               (input)="onNameInput()"
+               (keydown.enter)="focusNext($event)"
+               autocomplete="organization" />
+      </div>
+
+      <div class="dc-field">
+        <label class="dc-label" for="dc-slug">
+          Domain Slug <span class="dc-req">*</span>
+          <span class="dc-label-hint">— used in URLs</span>
+        </label>
+        <div class="dc-slug-row">
+          <span class="dc-slug-prefix">adaptivebp.com/</span>
+          <input id="dc-slug" class="dc-input dc-slug-input" type="text"
+                 placeholder="acme-corp"
+                 [(ngModel)]="slug"
+                 (keydown.enter)="focusNext($event)" />
+        </div>
+      </div>
+
+      <div class="dc-field">
+        <label class="dc-label" for="dc-industry">
+          Industry
+          <span class="dc-label-optional">optional</span>
+        </label>
+        <input id="dc-industry" class="dc-input" type="text"
+               placeholder="e.g. Retail, Healthcare, Finance"
+               [(ngModel)]="industry"
+               (keydown.enter)="focusNext($event)" />
+      </div>
+
+      <div class="dc-field">
+        <label class="dc-label" for="dc-desc">
+          Description
+          <span class="dc-label-optional">optional</span>
+        </label>
+        <textarea id="dc-desc" class="dc-input dc-textarea" rows="3"
+                  placeholder="What does this domain do?"
+                  [(ngModel)]="description"
+                  (keydown.enter)="focusNext($event)"></textarea>
+      </div>
+
+      <button class="dc-submit-btn"
+              [disabled]="submitting || !name || !slug"
+              (click)="create()">
+        <span *ngIf="!submitting">Create Domain →</span>
+        <span *ngIf="submitting" class="dc-spinner"></span>
+      </button>
+
+      <p class="dc-footer-note">
+        You'll be the owner and can invite members after creation.
+      </p>
+    </div>
+  </div>
+
 </div>

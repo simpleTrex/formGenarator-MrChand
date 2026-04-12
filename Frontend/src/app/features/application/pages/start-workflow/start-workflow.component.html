@@ -1,0 +1,61 @@
+<div class="sw-shell fade-in" [style.--tc]="themeColor">
+  <nav class="sw-nav">
+    <button class="sw-nav-back" (click)="goBack()">← Back</button>
+    <span class="sw-nav-spacer"></span>
+  </nav>
+
+  <div *ngIf="loading" class="sw-loading">
+    <div class="sw-spinner"></div>
+    <span>Loading…</span>
+  </div>
+
+  <div *ngIf="!loading" class="sw-body">
+    <div *ngIf="error" class="sw-alert sw-alert-error">{{ error }}</div>
+
+    <div class="sw-card" *ngIf="workflow && startStep">
+      <div class="sw-header">
+        <div class="sw-icon">WF</div>
+        <div>
+          <p class="sw-sub">Start Step</p>
+          <h2 class="sw-title">{{ startStep.name }}</h2>
+        </div>
+      </div>
+
+      <div class="sw-form">
+        <div *ngFor="let field of modelFields" class="sw-field">
+          <label class="sw-label">
+            {{ field.key }}
+            <span *ngIf="field.required" class="sw-req">*</span>
+          </label>
+
+          <label *ngIf="fieldIsCheckbox(field)" class="sw-checkbox">
+            <input type="checkbox" [(ngModel)]="formData[field.key]" />
+            {{ field.key }}
+          </label>
+
+          <textarea
+            *ngIf="fieldIsJson(field)"
+            class="sw-input sw-textarea"
+            rows="4"
+            [ngModel]="valueAsJsonText(field.key)"
+            (ngModelChange)="updateJsonField(field.key, $event)">
+          </textarea>
+
+          <input
+            *ngIf="!fieldIsCheckbox(field) && !fieldIsJson(field)"
+            class="sw-input"
+            [type]="fieldInputType(field)"
+            [(ngModel)]="formData[field.key]"
+          />
+        </div>
+      </div>
+
+      <div class="sw-actions">
+        <button class="sw-start" [disabled]="submitting" (click)="start()">
+          <span *ngIf="!submitting">Start Workflow</span>
+          <span *ngIf="submitting" class="sw-spinner-sm"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

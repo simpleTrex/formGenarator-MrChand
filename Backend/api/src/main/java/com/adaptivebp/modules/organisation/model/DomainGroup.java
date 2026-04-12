@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
+import com.adaptivebp.modules.organisation.model.enums.DomainGroupType;
 
 @Document(collection = "domain_groups")
 @CompoundIndexes({
@@ -22,6 +23,7 @@ public class DomainGroup {
     private String domainId;
     private String name;
     private Set<DomainPermission> permissions = EnumSet.noneOf(DomainPermission.class);
+    private DomainGroupType groupType = DomainGroupType.ACCESS;
     private boolean defaultGroup;
     private Instant createdAt = Instant.now();
 
@@ -33,6 +35,8 @@ public class DomainGroup {
     public void setName(String name) { this.name = name; }
     public Set<DomainPermission> getPermissions() { return permissions; }
     public void setPermissions(Set<DomainPermission> permissions) { this.permissions = permissions; }
+    public DomainGroupType getGroupType() { return groupType; }
+    public void setGroupType(DomainGroupType groupType) { this.groupType = groupType; }
     public boolean isDefaultGroup() { return defaultGroup; }
     public void setDefaultGroup(boolean defaultGroup) { this.defaultGroup = defaultGroup; }
     public Instant getCreatedAt() { return createdAt; }

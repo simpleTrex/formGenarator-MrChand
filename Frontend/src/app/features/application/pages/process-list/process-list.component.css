@@ -1,0 +1,68 @@
+.process-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.25rem;
+}
+
+.process-card {
+  display: block;
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.process-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem 0;
+  color: var(--text-dark, #1a1a2e);
+}
+
+.meta-text {
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+  white-space: nowrap;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 50rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 0.4rem;
+}
+
+.badge-draft {
+  background: rgba(234, 179, 8, 0.15);
+  color: #a16207;
+}
+
+.badge-published {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.badge-archived {
+  background: rgba(100, 116, 139, 0.15);
+  color: #475569;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+}
+
+.ml-1 { margin-left: 0.25rem; }

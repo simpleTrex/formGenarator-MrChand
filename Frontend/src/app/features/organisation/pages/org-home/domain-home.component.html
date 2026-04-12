@@ -1,265 +1,363 @@
-<div class="domain-container fade-in">
-  <!-- Header Section -->
-  <div class="page-actions">
-    <button class="back-btn" (click)="goBackToAdaptive()">← AdaptiveBP</button>
-    <button class="back-btn" *ngIf="(isDomainUser() || isOwnerContext()) && mode !== 'PREVIEW'" (click)="enterPreviewMode()">Preview Mode</button>
-    <button class="back-btn" *ngIf="(isDomainUser() || isOwnerContext()) && canEditMode && mode !== 'EDIT'" (click)="enterEditMode()">Edit Mode</button>
-    <button class="back-btn" *ngIf="(isDomainUser() || isOwnerContext()) && canAccessManager && mode !== 'ACCESS'" (click)="enterAccessManagerMode()">Access Manager</button>
-    <button class="back-btn" *ngIf="auth.isLoggedIn()" (click)="requestLogout()">Logout</button>
-  </div>
+<div class="d-shell fade-in"
+     [style.--tp]="currentTheme.primary"
+     [style.--ta]="currentTheme.accent">
 
+  <!-- ── Top nav ── -->
+  <nav class="d-nav">
+    <button class="d-nav-back" (click)="goBackToAdaptive()">← AdaptiveBP</button>
+
+    <div class="d-nav-right" *ngIf="isDomainUser() || isOwnerContext()">
+      <div class="d-mode-tabs">
+        <button class="d-mode-tab" [class.active]="mode === 'PREVIEW'" (click)="enterPreviewMode()">Home</button>
+        <button class="d-mode-tab" *ngIf="canEditMode"      [class.active]="mode === 'EDIT'"    (click)="enterEditMode()">Manage</button>
+        <button class="d-mode-tab" *ngIf="canAccessManager" [class.active]="mode === 'ACCESS'"  (click)="enterAccessManagerMode()">Access</button>
+      </div>
+      <button class="d-logout-btn" (click)="requestLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Logout confirm -->
   <app-confirm-dialog
     *ngIf="showLogoutConfirm"
     theme="light"
     title="Logout"
     message="Are you sure you want to logout?"
-    confirmText="Yes"
-    cancelText="No"
+    confirmText="Yes, logout"
+    cancelText="Cancel"
     confirmVariant="primary"
     cancelVariant="outline"
     (confirm)="confirmLogout()"
     (cancel)="cancelLogout()"
   />
 
-  <!-- Domain Info Section -->
-  <div class="domain-info-section">
-    <h2 class="section-title">Domain Information</h2>
-    <div *ngIf="error" class="error-alert">{{ error }}</div>
-    <div *ngIf="domain" class="domain-details">
-      <p><strong>Name:</strong> {{ domain.name }}</p>
-      <p><strong>Slug:</strong> <span class="badge">{{ domain.slug }}</span></p>
-      <p *ngIf="domain.description"><strong>Description:</strong> {{ domain.description }}</p>
-      <p *ngIf="domain.industry"><strong>Industry:</strong> <span class="industry-dot"></span> {{ domain.industry }}</p>
+  <!-- ── Hero banner ── -->
+  <div class="d-hero" [style.background]="heroBg">
+    <div class="d-hero-inner">
+      <div class="d-hero-chips" *ngIf="domain">
+        <span class="d-slug-chip">{{ domain.slug }}</span>
+        <span *ngIf="domain.industry" class="d-industry-chip">{{ domain.industry }}</span>
+      </div>
+      <h1 class="d-hero-name">{{ domain?.name || '...' }}</h1>
+      <p *ngIf="domain?.description" class="d-hero-desc">{{ domain.description }}</p>
     </div>
   </div>
 
-  <div *ngIf="isDomainUser() || isOwnerContext(); else domainAuthForms">
-    
-    <!-- Preview Mode (default for all users) -->
-    <app-modern-card *ngIf="mode === 'PREVIEW'" theme="light" class="mt-4">
-      <h3>Home</h3>
-      <p class="info-text">
-        This is the domain home page (business landing). We can customize this later.
-      </p>
-      <p class="info-text" *ngIf="canEditMode">
-        You can switch to <strong>Edit Mode</strong> to create apps.
-      </p>
-      <p class="info-text" *ngIf="canAccessManager">
-        You can manage users/groups using <strong>Access Manager</strong>.
-      </p>
-    </app-modern-card>
+  <!-- ── Body ── -->
+  <div class="d-body">
 
-    <div class="mt-4" *ngIf="canUseApps || canManageApps">
-      <h3 class="subsection-title">Applications</h3>
-      
-      <div *ngIf="appsLoading" class="loading-state">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p>Loading applications...</p>
+    <div *ngIf="error" class="d-alert d-alert-error">{{ error }}</div>
+
+    <!-- ════════ AUTHENTICATED ════════ -->
+    <ng-container *ngIf="isDomainUser() || isOwnerContext(); else authSection">
+
+      <!-- ── PREVIEW / HOME ── -->
+      <div *ngIf="mode === 'PREVIEW'">
+        <div class="d-section-head">
+          <h2 class="d-section-title">Applications</h2>
+        </div>
+
+        <div *ngIf="appsLoading" class="d-loading">
+          <div class="d-spinner"></div> Loading applications…
+        </div>
+        <div *ngIf="appError" class="d-alert d-alert-error">{{ appError }}</div>
+
+        <div *ngIf="!appsLoading && apps.length === 0 && !appError" class="d-empty">
+          <div class="d-empty-icon">—</div>
+          <p>No applications yet.</p>
+          <span *ngIf="canEditMode" class="d-empty-hint">Go to <strong>Manage</strong> to create one.</span>
+        </div>
+
+        <div class="d-apps-grid" *ngIf="apps.length > 0">
+          <a *ngFor="let app of apps"
+             [routerLink]="['/domain', slug, 'app', app.slug]"
+             class="d-app-card">
+            <div class="d-app-initial">{{ (app.name || '?')[0].toUpperCase() }}</div>
+            <div class="d-app-info">
+              <span class="d-app-name">{{ app.name }}</span>
+              <span class="d-app-slug">{{ app.slug }}</span>
+            </div>
+            <span class="d-app-arrow">→</span>
+          </a>
+        </div>
       </div>
-      
-      <div *ngIf="appError" class="error-alert">{{ appError }}</div>
-      <div *ngIf="apps && apps.length === 0 && !appsLoading" class="info-text">No applications yet.</div>
-      
-      <div class="app-list" *ngIf="apps && apps.length > 0">
-        <app-modern-card 
-          *ngFor="let app of apps" 
-          [routerLink]="['/domain', slug, 'app', app.slug]" 
-          class="clickable-card"
-        >
-          <div class="app-card-content">
-            <h4 class="app-name">{{ app.name }}</h4>
-            <div class="app-slug">{{ app.slug }}</div>
-            <div class="owner-badge" *ngIf="app.ownerUserId">Owner: {{ app.ownerUserId }}</div>
+
+      <!-- ── MANAGE / EDIT ── -->
+      <div *ngIf="mode === 'EDIT'">
+
+        <!-- Create App -->
+        <div class="d-manage-section" *ngIf="canManageApps">
+          <div class="d-manage-header">
+            <div>
+              <h2 class="d-section-title">Applications</h2>
+              <p class="d-muted">Create and manage applications for this domain.</p>
+            </div>
+            <button class="d-outline-btn" (click)="toggleCreateAppForm()">
+              {{ showCreateAppForm ? '✕ Cancel' : '+ New App' }}
+            </button>
           </div>
-        </app-modern-card>
-      </div>
-    </div>
 
-    <!-- Edit Mode (contributors/admins/owners) -->
-    <app-modern-card *ngIf="mode === 'EDIT'" theme="light" class="mt-4">
-      <div class="flex-between mb-4">
-        <h3>Edit Mode</h3>
-        <app-modern-button *ngIf="canManageApps" (click)="toggleCreateAppForm()" variant="outline" size="sm">
-          {{ showCreateAppForm ? 'Hide Create App' : 'Create App' }}
-        </app-modern-button>
-      </div>
-      
-      <p class="info-text">Editor tools will appear here. For now: create applications.</p>
-
-      <div class="app-create-form" *ngIf="canManageApps && showCreateAppForm">
-        <app-modern-input
-          label="Application Name"
-          placeholder="e.g. Employee Onboarding"
-          [(ngModel)]="newApp.name" 
-          [ngModelOptions]="{standalone:true}"
-        ></app-modern-input>
-        
-        <app-modern-input
-          label="Application Slug"
-          placeholder="e.g. onboarding"
-          [(ngModel)]="newApp.slug" 
-          [ngModelOptions]="{standalone:true}"
-        ></app-modern-input>
-        
-        <app-modern-input
-          label="Owner User ID (optional)"
-          placeholder="Enter ID"
-          [(ngModel)]="newApp.ownerUserId" 
-          [ngModelOptions]="{standalone:true}"
-        ></app-modern-input>
-        
-        <app-modern-button variant="primary" (click)="submitNewApp()">Create Application</app-modern-button>
-      </div>
-
-      <div *ngIf="appMessage" class="success-alert mt-4">{{ appMessage }}</div>
-      <div *ngIf="appError" class="error-alert mt-4">{{ appError }}</div>
-    </app-modern-card>
-
-    <!-- Access Manager (admins/owners) -->
-    <app-modern-card *ngIf="mode === 'ACCESS' && canManageUsers" theme="light" class="mt-4">
-      <h3>Domain Groups & Users</h3>
-      <p class="info-text">Drag and drop users to assign them to groups</p>
-      
-      <div *ngIf="domainGroupsLoading || usersLoading" class="loading-state">
-        <div class="spinner-border text-primary" role="status"></div>
-      </div>
-      
-      <div *ngIf="groupError" class="error-alert">{{ groupError }}</div>
-
-      <div class="groups-users-container mt-4">
-        <div class="groups-grid">
-          <div *ngFor="let group of domainGroups" class="group-card"
-               (dragover)="onDragOver($event)"
-               (drop)="onDrop($event, group.id)">
-            
-            <div class="group-card-header">
-              <h4 class="group-name">{{ group.name }}</h4>
-              <span class="user-count-badge">{{ getUsersInGroup(group.id).length }} member(s)</span>
+          <form class="d-create-app-form" *ngIf="showCreateAppForm" (ngSubmit)="submitNewApp()">
+            <div class="d-field">
+              <label class="d-label">Application Name <span class="d-req">*</span></label>
+              <input
+                #appNameInput
+                class="d-input"
+                type="text"
+                name="appName"
+                placeholder="e.g. Employee Onboarding"
+                [(ngModel)]="newApp.name"
+                (keydown.enter)="focusNextOnEnter($event, appSlugInput)"
+              />
             </div>
-            
-            <div class="group-permissions">
-              <span class="permission-chip" *ngFor="let perm of group.permissions">{{ perm }}</span>
+            <div class="d-field">
+              <label class="d-label">Slug <span class="d-req">*</span></label>
+              <input
+                #appSlugInput
+                class="d-input mono"
+                type="text"
+                name="appSlug"
+                placeholder="e.g. onboarding"
+                [(ngModel)]="newApp.slug"
+                (keydown.enter)="focusNextOnEnter($event, ownerUserIdInput)"
+              />
             </div>
-            
-            <div class="group-members">
-              <div *ngIf="getUsersInGroup(group.id).length === 0" class="empty-dropzone">
-                Drop users here
+            <div class="d-field">
+              <label class="d-label">Owner User ID <span class="d-optional">(optional)</span></label>
+              <input
+                #ownerUserIdInput
+                class="d-input mono"
+                type="text"
+                name="ownerUserId"
+                placeholder="Leave blank to assign to yourself"
+                [(ngModel)]="newApp.ownerUserId"
+                (keydown.enter)="submitOnEnter($event)"
+              />
+            </div>
+            <button class="d-primary-btn" type="submit">Create Application</button>
+          </form>
+
+          <div *ngIf="appMessage" class="d-alert d-alert-success mt-2">{{ appMessage }}</div>
+          <div *ngIf="appError" class="d-alert d-alert-error mt-2">{{ appError }}</div>
+
+          <!-- List existing apps inline -->
+          <div class="d-apps-grid mt-3" *ngIf="apps.length > 0">
+            <a *ngFor="let app of apps"
+               [routerLink]="['/domain', slug, 'app', app.slug]"
+               class="d-app-card">
+              <div class="d-app-initial">{{ (app.name || '?')[0].toUpperCase() }}</div>
+              <div class="d-app-info">
+                <span class="d-app-name">{{ app.name }}</span>
+                <span class="d-app-slug">{{ app.slug }}</span>
               </div>
-              <div *ngFor="let user of getUsersInGroup(group.id)"
-                   class="user-item"
-                   draggable="true"
-                   (dragstart)="onDragStart($event, user, group.id)"
-                   (dragend)="onDragEnd()">
-                <div class="user-info">
-                  <strong>{{ user.username }}</strong>
-                  <span>{{ user.email }}</span>
+              <span class="d-app-arrow">→</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="d-manage-section mt-4">
+          <div class="d-manage-header">
+            <div>
+              <h2 class="d-section-title">Workflow Roles</h2>
+              <p class="d-muted">Maintain domain-wide business roles used by workflow edges across all apps.</p>
+            </div>
+            <a [routerLink]="['/domain', slug, 'workflow-roles']" class="d-outline-btn">
+              Manage Workflow Roles →
+            </a>
+          </div>
+        </div>
+
+        <!-- ── Theme Picker ── -->
+        <div class="d-manage-section mt-4">
+          <h2 class="d-section-title">Domain Theme</h2>
+          <p class="d-muted">Choose a colour theme for this domain's pages.</p>
+          <div class="d-theme-grid mt-2">
+            <button *ngFor="let t of domainThemes"
+                    class="d-theme-swatch"
+                    [class.selected]="selectedThemeId === t.id"
+                    [style.background]="t.primary"
+                    (click)="selectTheme(t.id)"
+                    [title]="t.name">
+              <span class="d-theme-accent-dot" [style.background]="t.accent"></span>
+              <span *ngIf="selectedThemeId === t.id" class="d-theme-check">✓</span>
+            </button>
+          </div>
+          <p class="d-muted" style="font-size:0.78rem;margin-top:0.5rem;">Theme is saved in your browser for this domain.</p>
+        </div>
+
+      </div>
+
+      <!-- ── ACCESS MANAGER ── -->
+      <div *ngIf="mode === 'ACCESS' && canManageUsers">
+        <div class="d-section-head">
+          <h2 class="d-section-title">Access Management</h2>
+          <p class="d-muted">Manage domain access-group assignments and workflow roles.</p>
+
+          <!-- Quick Actions -->
+          <div class="d-quick-actions mt-3">
+            <a [routerLink]="['/domain', slug, 'users']" class="d-outline-btn">
+              Manage Users
+            </a>
+            <a [routerLink]="['/domain', slug, 'workflow-roles']" class="d-outline-btn">
+              Manage Workflow Roles
+            </a>
+          </div>
+        </div>
+
+        <div class="d-section-head mt-4">
+          <h3 class="d-section-title">Groups &amp; Members</h3>
+          <p class="d-muted">Drag users between groups to manage permissions.</p>
+        </div>
+
+        <div *ngIf="domainGroupsLoading || usersLoading" class="d-loading">
+          <div class="d-spinner"></div> Loading…
+        </div>
+        <div *ngIf="groupError" class="d-alert d-alert-error">{{ groupError }}</div>
+
+        <div class="d-access-layout mt-3">
+          <!-- Groups grid -->
+          <div class="d-groups-grid">
+            <div *ngFor="let group of domainGroups"
+                 class="d-group-card"
+                 (dragover)="onDragOver($event)"
+                 (drop)="onDrop($event, group.id)">
+              <div class="d-group-head">
+                <span class="d-group-name">{{ group.name }}</span>
+                <span class="d-count-pill">{{ getUsersInGroup(group.id).length }}</span>
+              </div>
+              <div class="d-permissions-row">
+                <span *ngFor="let perm of group.permissions" class="d-perm-chip">{{ perm }}</span>
+              </div>
+              <div class="d-group-members">
+                <div *ngIf="getUsersInGroup(group.id).length === 0" class="d-dropzone">
+                  Drop users here
                 </div>
-                <button class="icon-btn-remove" (click)="removeUserFromGroup(user, group.id)" title="Remove user">✕</button>
+                <div *ngFor="let user of getUsersInGroup(group.id)"
+                     class="d-user-pill"
+                     draggable="true"
+                     (dragstart)="onDragStart($event, user, group.id)"
+                     (dragend)="onDragEnd()">
+                  <div class="d-user-avatar">{{ (user.username || '?')[0].toUpperCase() }}</div>
+                  <div class="d-user-details">
+                    <span class="d-user-name">{{ user.username }}</span>
+                    <span class="d-user-email">{{ user.email }}</span>
+                  </div>
+                  <button class="d-remove-btn" (click)="removeUserFromGroup(user, group.id)" title="Remove">✕</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="unassigned-panel">
-          <div class="panel-header">
-            <h4>Unassigned Users</h4>
-            <span class="user-count-badge">{{ getUsersWithoutGroups().length }}</span>
-          </div>
-          
-          <div class="unassigned-list">
-            <div *ngIf="getUsersWithoutGroups().length === 0" class="empty-dropzone border-0 bg-transparent">
-              All users are assigned
+          <!-- Unassigned sidebar -->
+          <div class="d-unassigned-panel">
+            <div class="d-panel-head">
+              <span class="d-panel-title">Unassigned</span>
+              <span class="d-count-pill">{{ getUsersWithoutGroups().length }}</span>
             </div>
-            <div *ngFor="let user of getUsersWithoutGroups()"
-                 class="user-item"
-                 draggable="true"
-                 (dragstart)="onDragStart($event, user, null)"
-                 (dragend)="onDragEnd()">
-              <div class="user-info">
-                <strong>{{ user.username }}</strong>
-                <span>{{ user.email }}</span>
+            <div class="d-unassigned-list">
+              <p *ngIf="getUsersWithoutGroups().length === 0" class="d-muted" style="text-align:center;padding:1rem 0;">
+                All users are assigned
+              </p>
+              <div *ngFor="let user of getUsersWithoutGroups()"
+                   class="d-user-pill"
+                   draggable="true"
+                   (dragstart)="onDragStart($event, user, null)"
+                   (dragend)="onDragEnd()">
+                <div class="d-user-avatar">{{ (user.username || '?')[0].toUpperCase() }}</div>
+                <div class="d-user-details">
+                  <span class="d-user-name">{{ user.username }}</span>
+                  <span class="d-user-email">{{ user.email }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </app-modern-card>
-  </div>
 
-  <ng-template #domainAuthForms>
-    <div class="auth-forms-grid mt-4">
-      <app-modern-card theme="light">
-        <h3 class="form-title">Domain Login</h3>
-        <form [formGroup]="loginForm" (ngSubmit)="submitLogin()">
-          <app-modern-input
-            label="Username"
-            formControlName="username"
-            placeholder="Enter username"
-            [required]="true"
-          ></app-modern-input>
-          <div *ngIf="submittedLogin && lf['username'].errors" class="form-error">Username is required</div>
+    </ng-container>
 
-          <app-modern-input
-            label="Password"
-            type="password"
-            formControlName="password"
-            placeholder="Enter password"
-            [required]="true"
-          ></app-modern-input>
-          <div *ngIf="submittedLogin && lf['password'].errors" class="form-error">Password is required</div>
+    <!-- ════════ NOT AUTHENTICATED — auth card ════════ -->
+    <ng-template #authSection>
+      <div class="d-auth-wrap">
+        <div class="d-auth-card">
 
-          <div *ngIf="loginError" class="error-alert mb-3">{{ loginError }}</div>
-          
-          <app-modern-button type="submit" variant="primary" [fullWidth]="true" [loading]="loadingLogin">
-            Login to Domain
-          </app-modern-button>
-        </form>
-      </app-modern-card>
-
-      <app-modern-card theme="light">
-        <h3 class="form-title">Register User</h3>
-        <form [formGroup]="signupForm" (ngSubmit)="submitSignup()">
-          <app-modern-input
-            label="Username"
-            formControlName="username"
-            placeholder="Choose username"
-            [required]="true"
-          ></app-modern-input>
-          <div *ngIf="submittedSignup && sf['username'].errors" class="form-error">Username is required</div>
-
-          <app-modern-input
-            label="Email Address"
-            type="email"
-            formControlName="email"
-            placeholder="name@example.com"
-            [required]="true"
-          ></app-modern-input>
-          <div *ngIf="submittedSignup && sf['email'].errors" class="form-error">
-            <div *ngIf="sf['email'].errors['required']">Email is required</div>
-            <div *ngIf="sf['email'].errors['email']">Invalid email format</div>
+          <!-- Tab switcher -->
+          <div class="d-auth-tabs">
+            <button class="d-auth-tab" [class.active]="activeAuthTab === 'login'"
+                    (click)="activeAuthTab = 'login'">Sign in</button>
+            <button class="d-auth-tab" [class.active]="activeAuthTab === 'register'"
+                    (click)="activeAuthTab = 'register'">Create account</button>
+            <div class="d-auth-tab-indicator" [style.transform]="activeAuthTab === 'login' ? 'translateX(0)' : 'translateX(100%)'"></div>
           </div>
 
-          <app-modern-input
-            label="Password"
-            type="password"
-            formControlName="password"
-            placeholder="Create password (min 6 chars)"
-            [required]="true"
-          ></app-modern-input>
-          <div *ngIf="submittedSignup && sf['password'].errors" class="form-error">
-            <div *ngIf="sf['password'].errors['required']">Password is required</div>
-            <div *ngIf="sf['password'].errors['minlength']">At least 6 characters required</div>
+          <!-- ── Login ── -->
+          <div *ngIf="activeAuthTab === 'login'" class="d-auth-form">
+            <h2 class="d-auth-heading">Welcome back</h2>
+            <p class="d-auth-sub">Sign in to <strong>{{ domain?.name }}</strong></p>
+
+            <form [formGroup]="loginForm" (ngSubmit)="submitLogin()">
+              <div class="d-field">
+                <label class="d-label">Username</label>
+                <input class="d-input" type="text" formControlName="username" placeholder="Enter your username" autocomplete="username" />
+                <span *ngIf="submittedLogin && lf['username'].errors" class="d-field-error">Username is required</span>
+              </div>
+              <div class="d-field">
+                <label class="d-label">Password</label>
+                <input class="d-input" type="password" formControlName="password" placeholder="Enter your password" autocomplete="current-password" />
+                <span *ngIf="submittedLogin && lf['password'].errors" class="d-field-error">Password is required</span>
+              </div>
+              <div *ngIf="loginError" class="d-alert d-alert-error">{{ loginError }}</div>
+              <button type="submit" class="d-primary-btn full-w" [class.loading]="loadingLogin" [disabled]="loadingLogin">
+                <span *ngIf="!loadingLogin">Sign in</span>
+                <span *ngIf="loadingLogin" class="d-btn-spinner"></span>
+              </button>
+            </form>
+
+            <p class="d-auth-switch">
+              New here?
+              <button class="d-link-btn" (click)="activeAuthTab = 'register'">Create an account</button>
+            </p>
           </div>
 
-          <div *ngIf="signupError" class="error-alert mb-3">{{ signupError }}</div>
-          <div *ngIf="signupMessage" class="success-alert mb-3">{{ signupMessage }}</div>
+          <!-- ── Register ── -->
+          <div *ngIf="activeAuthTab === 'register'" class="d-auth-form">
+            <h2 class="d-auth-heading">Create account</h2>
+            <p class="d-auth-sub">Join <strong>{{ domain?.name }}</strong></p>
 
-          <app-modern-button type="submit" variant="outline" [fullWidth]="true" [loading]="loadingSignup">
-            Create Account
-          </app-modern-button>
-        </form>
-      </app-modern-card>
-    </div>
-  </ng-template>
+            <form [formGroup]="signupForm" (ngSubmit)="submitSignup()">
+              <div class="d-field">
+                <label class="d-label">Username</label>
+                <input class="d-input" type="text" formControlName="username" placeholder="Choose a username" autocomplete="username" />
+                <span *ngIf="submittedSignup && sf['username'].errors" class="d-field-error">Username is required</span>
+              </div>
+              <div class="d-field">
+                <label class="d-label">Email</label>
+                <input class="d-input" type="email" formControlName="email" placeholder="you@example.com" autocomplete="email" />
+                <span *ngIf="submittedSignup && sf['email'].errors?.['required']" class="d-field-error">Email is required</span>
+                <span *ngIf="submittedSignup && sf['email'].errors?.['email']" class="d-field-error">Invalid email format</span>
+              </div>
+              <div class="d-field">
+                <label class="d-label">Password</label>
+                <input class="d-input" type="password" formControlName="password" placeholder="Min. 6 characters" autocomplete="new-password" />
+                <span *ngIf="submittedSignup && sf['password'].errors?.['required']" class="d-field-error">Password is required</span>
+                <span *ngIf="submittedSignup && sf['password'].errors?.['minlength']" class="d-field-error">At least 6 characters required</span>
+              </div>
+              <div *ngIf="signupError" class="d-alert d-alert-error">{{ signupError }}</div>
+              <div *ngIf="signupMessage" class="d-alert d-alert-success">{{ signupMessage }}</div>
+              <button type="submit" class="d-outline-full-btn" [class.loading]="loadingSignup" [disabled]="loadingSignup">
+                <span *ngIf="!loadingSignup">Create account</span>
+                <span *ngIf="loadingSignup" class="d-btn-spinner"></span>
+              </button>
+            </form>
 
+            <p class="d-auth-switch">
+              Already have an account?
+              <button class="d-link-btn" (click)="activeAuthTab = 'login'">Sign in</button>
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </ng-template>
+
+  </div><!-- /d-body -->
 </div>

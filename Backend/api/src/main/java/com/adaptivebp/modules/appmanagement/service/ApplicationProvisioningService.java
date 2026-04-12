@@ -23,21 +23,54 @@ public class ApplicationProvisioningService {
     private AppGroupMemberRepository appGroupMemberRepository;
 
     public void provisionDefaultGroups(Application application, String ownerUserId) {
+        provisionDefaultGroups(application, ownerUserId, null);
+    }
+
+    public void provisionDefaultGroups(Application application, String ownerUserId, String creatorUserId) {
         if (application == null || application.getId() == null) {
             return;
         }
-        List<AppGroup> existing = appGroupRepository.findByAppId(application.getId());
-        if (existing.isEmpty()) {
+        List<AppGroup> groups = appGroupRepository.findByAppId(application.getId());
+        if (groups.isEmpty()) {
             AppGroup admin = buildGroup(application.getId(), "App Admin",
-                    EnumSet.of(AppPermission.APP_READ, AppPermission.APP_WRITE, AppPermission.APP_EXECUTE), true);
+                EnumSet.of(
+                    AppPermission.APP_VIEW,
+                    AppPermission.APP_CONFIGURE,
+                    AppPermission.APP_MANAGE_WORKFLOW,
+                    AppPermission.APP_START_WORKFLOW,
+                    AppPermission.APP_EXECUTE_WORKFLOW,
+                    AppPermission.APP_VIEW_ALL_INSTANCES), true);
             AppGroup editor = buildGroup(application.getId(), "App Editor",
-                    EnumSet.of(AppPermission.APP_READ, AppPermission.APP_WRITE), true);
+                EnumSet.of(
+                    AppPermission.APP_VIEW,
+                    AppPermission.APP_CONFIGURE,
+                    AppPermission.APP_MANAGE_WORKFLOW,
+                    AppPermission.APP_START_WORKFLOW,
+                    AppPermission.APP_EXECUTE_WORKFLOW), true);
             AppGroup viewer = buildGroup(application.getId(), "App Viewer",
-                    EnumSet.of(AppPermission.APP_READ), true);
-            appGroupRepository.saveAll(List.of(admin, editor, viewer));
-            if (ownerUserId != null) {
-                assignUser(admin, application.getId(), ownerUserId, ownerUserId);
-            }
+            EnumSet.of(
+                AppPermission.APP_VIEW,
+                AppPermission.APP_START_WORKFLOW,
+                AppPermission.APP_EXECUTE_WORKFLOW), true);
+            groups = appGroupRepository.saveAll(List.of(admin, editor, viewer));
+        }
+
+        AppGroup adminGroup = groups.stream()
+                .filter(g -> g.isDefaultGroup() && "App Admin".equalsIgnoreCase(g.getName()))
+                .findFirst()
+                .orElse(null);
+        if (adminGroup == null) {
+            return;
+        }
+
+        String normalizedOwner = normalizeUserId(ownerUserId);
+        String normalizedCreator = normalizeUserId(creatorUserId);
+
+        if (normalizedOwner != null) {
+            assignUser(adminGroup, application.getId(), normalizedOwner, normalizedOwner);
+        }
+        if (normalizedCreator != null && !normalizedCreator.equals(normalizedOwner)) {
+            assignUser(adminGroup, application.getId(), normalizedCreator, normalizedCreator);
         }
     }
 
@@ -72,15 +105,19 @@ public class ApplicationProvisioningService {
     }
 
     public void assignUser(AppGroup group, String appId, String userId, String assignedBy) {
-        if (group == null || userId == null) {
+        if (group == null) {
             return;
         }
-        boolean exists = appGroupMemberRepository.findByGroupIdAndUserId(group.getId(), userId).isPresent();
+        String normalizedUser = normalizeUserId(userId);
+        if (normalizedUser == null) {
+            return;
+        }
+        boolean exists = appGroupMemberRepository.findByGroupIdAndUserId(group.getId(), normalizedUser).isPresent();
         if (!exists) {
             AppGroupMember member = new AppGroupMember();
             member.setGroupId(group.getId());
             member.setAppId(appId);
-            member.setUserId(userId);
+            member.setUserId(normalizedUser);
             member.setAssignedBy(assignedBy);
             appGroupMemberRepository.save(member);
         }
@@ -93,5 +130,13 @@ public class ApplicationProvisioningService {
         group.setPermissions(permissions);
         group.setDefaultGroup(defaultGroup);
         return group;
+    }
+
+    private String normalizeUserId(String userId) {
+        if (userId == null) {
+            return null;
+        }
+        String normalized = userId.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

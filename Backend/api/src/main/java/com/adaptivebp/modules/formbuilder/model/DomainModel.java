@@ -28,6 +28,8 @@ public class DomainModel {
     private List<DomainModelField> fields = new ArrayList<>();
     private boolean sharedWithAllApps = false;
     private Set<String> allowedAppIds = new HashSet<>();
+    private ModelScope scope = ModelScope.DOMAIN_SCOPED;
+    private boolean isSystemModel = false;
     @CreatedDate
     private Instant createdAt = Instant.now();
     @LastModifiedDate
@@ -55,6 +57,10 @@ public class DomainModel {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public ModelScope getScope() { return scope; }
+    public void setScope(ModelScope scope) { this.scope = scope; }
+    public boolean isSystemModel() { return isSystemModel; }
+    public void setSystemModel(boolean systemModel) { isSystemModel = systemModel; }
 
     public boolean isAccessibleByAppId(String appId) {
         if (sharedWithAllApps) return true;

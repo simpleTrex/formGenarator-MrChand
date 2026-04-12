@@ -1,24 +1,25 @@
 package com.adaptivebp.modules.workflow.repository;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
-import com.adaptivebp.modules.workflow.model.WorkflowDefinition;
-
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository for WorkflowDefinition entities
- */
-@Repository
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import com.adaptivebp.modules.workflow.model.WorkflowDefinition;
+import com.adaptivebp.modules.workflow.model.enums.WorkflowStatus;
+
 public interface WorkflowDefinitionRepository extends MongoRepository<WorkflowDefinition, String> {
+    Optional<WorkflowDefinition> findByDomainIdAndAppIdAndSlugAndStatus(
+            String domainId, String appId, String slug, WorkflowStatus status);
 
-    List<WorkflowDefinition> findByDomainId(String domainId);
+    List<WorkflowDefinition> findByDomainIdAndAppId(String domainId, String appId);
 
-    List<WorkflowDefinition> findByDomainIdAndIsActive(String domainId, boolean isActive);
+    Optional<WorkflowDefinition> findTopByDomainIdAndAppIdAndSlugOrderByVersionDesc(
+            String domainId, String appId, String slug);
 
-    Optional<WorkflowDefinition> findByIdAndDomainId(String id, String domainId);
+    Optional<WorkflowDefinition> findTopByDomainIdAndAppIdOrderByVersionDesc(String domainId, String appId);
 
-    List<WorkflowDefinition> findByModelId(String modelId);
+    boolean existsByDomainIdAndAppIdAndSlug(String domainId, String appId, String slug);
+
+    void deleteByDomainIdAndAppId(String domainId, String appId);
 }

@@ -31,13 +31,18 @@ export class AppModelsComponent implements OnInit {
   error = '';
   message = '';
 
+  // Model template selection state
+  showTemplateModal = false;
+  modelTemplates: any[] = [];
+  templatesLoading = false;
+
   appAccess = { permissions: [] as string[], groups: [] as string[] };
 
   selectedModel: any | null = null;
 
   modelForm: FormGroup;
 
-  fieldTypes: DomainFieldType[] = ['STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'DATETIME', 'REFERENCE', 'OBJECT', 'ARRAY'];
+  fieldTypes: DomainFieldType[] = ['STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'DATETIME', 'REFERENCE', 'EMPLOYEE_REFERENCE', 'OBJECT', 'ARRAY'];
 
   constructor(
     private route: ActivatedRoute,
@@ -69,7 +74,7 @@ export class AppModelsComponent implements OnInit {
   }
 
   get canManageModels(): boolean {
-    return this.isOwnerContext() || this.appAccess.permissions.includes('APP_WRITE');
+    return this.isOwnerContext() || this.appAccess.permissions.includes('APP_CONFIGURE');
   }
 
   isOwnerContext(): boolean {
@@ -128,7 +133,7 @@ export class AppModelsComponent implements OnInit {
 
   private loadAccessAndData() {
     if (this.isOwnerContext()) {
-      this.appAccess.permissions = ['APP_READ', 'APP_WRITE', 'APP_EXECUTE'];
+      this.appAccess.permissions = ['APP_VIEW', 'APP_CONFIGURE', 'APP_EXECUTE_WORKFLOW'];
       this.appAccess.groups = ['App Admin'];
       this.loadAppsAndModels();
       return;
@@ -233,6 +238,70 @@ export class AppModelsComponent implements OnInit {
     this.selectedModel = null;
     this.message = '';
     this.error = '';
+    this.showModelTemplateSelector();
+  }
+
+  newFromTemplate() {
+    // Same as newModel - opens template selector
+    this.newModel();
+  }
+
+  private showModelTemplateSelector(): void {
+    this.templatesLoading = true;
+    this.domainService.getModelTemplates(this.domainSlug, this.appSlug).subscribe({
+      next: (templates) => {
+        this.modelTemplates = templates || [];
+        this.templatesLoading = false;
+        this.showTemplateModal = true;
+      },
+      error: (err) => {
+        console.error('Failed to load model templates:', err);
+        this.templatesLoading = false;
+        // Fall back to empty form when template loading fails
+        this.startFromScratch();
+      }
+    });
+  }
+
+  selectModelTemplate(template: any): void {
+    this.showTemplateModal = false;
+    this.message = '';
+    this.error = '';
+
+    // Reset form with template data
+    this.modelForm.reset({
+      name: template.name,
+      slug: template.id,
+      description: template.description,
+      shareMode: 'THIS_APP' as ShareMode,
+      selectedAppIds: []
+    });
+
+    this.modelForm.get('slug')?.enable();
+
+    // Clear existing fields and add template fields
+    while (this.fieldsArray.length) {
+      this.fieldsArray.removeAt(0);
+    }
+
+    // Add fields from template
+    if (template.fields && template.fields.length > 0) {
+      template.fields.forEach((field: any) => {
+        this.addField({
+          key: field.key || field.name, // Use key from backend, fallback to name
+          type: field.type,
+          required: field.required || false,
+          unique: field.unique || false
+        });
+      });
+    } else {
+      // Add at least one empty field
+      this.addField();
+    }
+  }
+
+  startFromScratch(): void {
+    this.showTemplateModal = false;
 
     this.modelForm.reset({
       name: '',
@@ -248,6 +317,10 @@ export class AppModelsComponent implements OnInit {
       this.fieldsArray.removeAt(0);
     }
     this.addField();
+  }
+
+  closeTemplateModal(): void {
+    this.showTemplateModal = false;
   }
 
   private buildAccess(): { sharedWithAllApps: boolean; allowedAppIds: string[] } {

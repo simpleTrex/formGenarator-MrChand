@@ -7,6 +7,7 @@ public enum DomainFieldType {
     DATE,
     DATETIME,
     REFERENCE,
+    EMPLOYEE_REFERENCE,
     OBJECT,
     ARRAY
 }

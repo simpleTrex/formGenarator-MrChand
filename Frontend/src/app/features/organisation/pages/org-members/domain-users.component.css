@@ -1,30 +1,241 @@
-.user-card {
+.du-shell {
+  padding: 1.25rem;
+}
+
+.du-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.du-head h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.du-head p {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+}
+
+.du-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.du-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.du-btn-primary {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #fff;
+}
+
+.du-btn-ghost {
+  background: transparent;
+}
+
+.du-btn-danger {
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+.du-loading,
+.du-error {
+  margin-bottom: 0.8rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+}
+
+.du-loading {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.du-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.du-group-form {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.du-group-form-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.du-group-form-head h4 {
+  margin: 0;
+}
+
+.du-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.du-field span {
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.du-field input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+}
+
+.du-muted {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.du-permissions {
+  margin: 0.75rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.9rem;
+}
+
+.du-permissions p {
+  width: 100%;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.du-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+}
+
+.du-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 960px) {
+  .du-layout {
+    grid-template-columns: 1fr 280px;
+  }
+}
+
+.du-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.9rem;
+}
+
+.du-group-card,
+.du-unassigned {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.9rem;
+}
+
+.du-group-card-head,
+.du-unassigned-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.55rem;
+  gap: 0.6rem;
+}
+
+.du-group-card-head h5,
+.du-unassigned-head h5 {
+  margin: 0;
+}
+
+.du-group-card-head small,
+.du-unassigned-head small {
+  color: #64748b;
+}
+
+.du-group-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.du-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.7rem;
+}
+
+.du-chip {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.72rem;
+}
+
+.du-group-members {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.du-dropzone {
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  text-align: center;
+  padding: 0.85rem;
+  font-size: 0.8rem;
+}
+
+.du-user-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8fafc;
   cursor: move;
-  transition: all 0.2s ease;
-  border: 1px solid #dee2e6;
 }
 
-.user-card:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
+.du-user-card strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #0f172a;
 }
 
-.user-card:active {
-  cursor: grabbing;
+.du-user-card small {
+  color: #64748b;
 }
 
-.drop-zone {
-  transition: background-color 0.2s ease;
-}
-
-.card:hover .drop-zone {
-  background-color: #f8f9fa;
-}
-
-.sticky-top {
-  z-index: 100;
-}
-
-.bi {
-  font-size: 1.2rem;
+.du-unassigned {
+  position: sticky;
+  top: 20px;
+  height: fit-content;
 }

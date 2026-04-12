@@ -1,0 +1,332 @@
+<div class="wb-shell fade-in">
+  <div class="wb-header">
+    <div class="wb-header-left">
+      <button class="wb-btn wb-btn-ghost" (click)="goBack()">← Back</button>
+    </div>
+    <div class="wb-header-right">
+      <span class="wb-status" *ngIf="workflowStatus">{{ workflowStatus }}</span>
+      <span class="wb-help" *ngIf="publishErrors.length" [attr.title]="publishErrors.join('\n')">!</span>
+      <button class="wb-btn wb-btn-outline" [disabled]="saving || !isDraft" (click)="saveDraft()">Save Draft</button>
+      <button class="wb-btn wb-btn-primary" [disabled]="saving || !workflowSlug || !isDraft" (click)="publish()">Publish</button>
+      <button class="wb-btn wb-btn-outline" [disabled]="saving || !workflowSlug || workflowStatus !== 'PUBLISHED'" (click)="archive()">Archive</button>
+      <button class="wb-btn wb-btn-danger" [disabled]="saving || !workflowSlug || !isDraft" (click)="deleteDraft()">Delete</button>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="wb-alert wb-alert-error">{{ error }}</div>
+  <div *ngIf="successMsg" class="wb-alert wb-alert-success">{{ successMsg }}</div>
+  <div *ngIf="loading" class="wb-loading">Loading workflow...</div>
+
+  <div *ngIf="!loading" class="wb-body">
+
+    <!-- Basics -->
+    <section class="wb-card">
+      <h3>Workflow Basics</h3>
+      <div class="wb-grid wb-grid-2">
+        <label class="wb-field">
+          <span>Name *</span>
+          <input [(ngModel)]="name" [readonly]="!isDraft" placeholder="Leave Request Approval" />
+        </label>
+        <label class="wb-field">
+          <span>Description</span>
+          <input [(ngModel)]="description" [readonly]="!isDraft" placeholder="Workflow description" />
+        </label>
+      </div>
+    </section>
+
+    <!-- Graph -->
+    <section class="wb-card wb-graph-card">
+      <div class="wb-card-head">
+        <h3>Workflow Graph</h3>
+        <button class="wb-btn wb-btn-outline" [disabled]="!isDraft" (click)="addStepAndEdit()">+ Add Step</button>
+      </div>
+
+      <div *ngIf="steps.length === 0" class="wb-empty-graph">
+        <p>Start by adding your first step.</p>
+        <button class="wb-btn wb-btn-primary" [disabled]="!isDraft" (click)="addStepAndEdit()">Create Step</button>
+      </div>
+
+      <div *ngIf="steps.length > 0" class="wb-graph wb-tree" #graphContainer>
+
+        <!-- SVG edge layer — drawn behind nodes -->
+        <svg class="wb-graph-svg" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="wb-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="rgba(15,23,42,0.28)"/>
+            </marker>
+            <marker id="wb-arr-hover" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="rgba(59,130,246,0.7)"/>
+            </marker>
+          </defs>
+          <g *ngFor="let e of graphSvgEdges" class="wb-svg-edge">
+            <path [attr.d]="e.path" class="wb-svg-line"/>
+            <path [attr.d]="e.path" class="wb-svg-hit"/>
+            <text [attr.x]="e.midX" [attr.y]="e.midY" class="wb-svg-label">{{ e.name }}</text>
+          </g>
+        </svg>
+
+        <div class="wb-tree-row" *ngFor="let row of graphLevels()">
+          <div class="wb-tree-node" [class.is-orphan]="orphanStepIds.has(step.id)" *ngFor="let step of row">
+            <button class="wb-graph-node" [attr.data-step-id]="step.id"
+                    [class.is-selected]="step === selectedStepRef"
+                    (click)="openStepEditor(step)">
+              <div class="wb-node-header">
+                <span class="wb-node-title">{{ step.name || 'Untitled Step' }}</span>
+                <div class="wb-node-badges">
+                  <span class="wb-node-badge" *ngIf="step.start">Start</span>
+                  <span class="wb-node-badge wb-node-badge-end" *ngIf="step.end">End</span>
+                </div>
+              </div>
+              <div class="wb-node-meta">ID: {{ step.id }}</div>
+              <div class="wb-node-stats">
+                <span>{{ step.fields.length || 0 }} fields</span>
+                <span *ngIf="step.readonlyFieldKeys?.length"> · {{ step.readonlyFieldKeys.length }} ctx</span>
+                <span>·</span>
+                <span>{{ step.edges.length || 0 }} edges</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="wb-unlinked" *ngIf="unlinkedSteps().length > 0">
+        <div class="wb-unlinked-head">Disconnected steps (not reachable from start)</div>
+        <div class="wb-unlinked-list">
+          <span class="wb-unlinked-chip" *ngFor="let step of unlinkedSteps()">
+            {{ step.name || step.id }}
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step Editor Modal -->
+    <div class="wb-modal" *ngIf="editorOpen && selectedStep as step">
+      <div class="wb-modal-backdrop" (click)="closeEditor()"></div>
+      <div class="wb-modal-panel">
+        <div class="wb-modal-head">
+          <div>
+            <p class="wb-modal-eyebrow">Step Editor</p>
+            <h3>{{ step.name || 'Untitled Step' }}</h3>
+          </div>
+          <div class="wb-modal-actions">
+            <button class="wb-btn wb-btn-outline" (click)="closeEditor()">Close</button>
+            <button class="wb-btn wb-btn-danger" [disabled]="!isDraft" (click)="removeSelectedStep()">Remove Step</button>
+          </div>
+        </div>
+
+        <div class="wb-step">
+
+          <!-- Identity -->
+          <div class="wb-grid wb-grid-3">
+            <label class="wb-field">
+              <span>Step ID *</span>
+              <input [(ngModel)]="step.id" [readonly]="!isDraft" placeholder="step_apply" />
+            </label>
+            <label class="wb-field">
+              <span>Step Name *</span>
+              <input [(ngModel)]="step.name" [readonly]="!isDraft" placeholder="Leave Application" />
+            </label>
+            <label class="wb-field">
+              <span>Order</span>
+              <input type="number" [(ngModel)]="step.order" readonly />
+            </label>
+          </div>
+          <div class="wb-grid wb-grid-3">
+            <label class="wb-inline-check">
+              <input type="checkbox" [checked]="step.start" [disabled]="!isDraft" (change)="setStartStepById(step.id)" />
+              <span>Start Step</span>
+            </label>
+            <label class="wb-inline-check">
+              <input type="checkbox" [(ngModel)]="step.end" [disabled]="!isDraft" />
+              <span>End Step</span>
+            </label>
+          </div>
+
+          <!-- Editable Fields (new fields added at this step) -->
+          <div class="wb-subcard">
+            <div class="wb-card-head">
+              <h5>Fields Added at This Step <span class="wb-help" title="These fields will be editable by the user at this step. They become part of the shared workflow record.">?</span></h5>
+              <button class="wb-btn wb-btn-outline" [disabled]="!isDraft" (click)="addField(step)">+ Add Field</button>
+            </div>
+            <div class="wb-note" *ngIf="!step.fields?.length">No editable fields at this step.</div>
+            <div class="wb-field-row" *ngFor="let field of step.fields; let f = index">
+              <div class="wb-grid wb-grid-3">
+                <label class="wb-field">
+                  <span>Field Key *</span>
+                  <input [(ngModel)]="field.key" [readonly]="!isDraft" placeholder="leaveType" />
+                </label>
+                <label class="wb-field">
+                  <span>Type *</span>
+                  <select [(ngModel)]="field.type" [disabled]="!isDraft">
+                    <option *ngFor="let type of fieldTypes" [ngValue]="type">{{ type }}</option>
+                  </select>
+                </label>
+                <button class="wb-btn wb-btn-danger" [disabled]="!isDraft" (click)="removeField(step, f)">Remove</button>
+              </div>
+              <div class="wb-grid wb-grid-3">
+                <label class="wb-inline-check">
+                  <input type="checkbox" [(ngModel)]="field.required" [disabled]="!isDraft" />
+                  <span>Required</span>
+                </label>
+                <label class="wb-inline-check">
+                  <input type="checkbox" [(ngModel)]="field.unique" [disabled]="!isDraft" />
+                  <span>Unique</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Read-only Context Fields (from previous steps) -->
+          <div class="wb-subcard">
+            <div class="wb-card-head">
+              <h5>Show Previous Fields as Read-only <span class="wb-help" title="Fields from previous steps shown as context at this step. They are visible but cannot be edited here.">?</span></h5>
+              <button class="wb-btn wb-btn-outline" [disabled]="!isDraft" (click)="addListItem(step.readonlyFieldKeys)">+ Add</button>
+            </div>
+            <div class="wb-note" *ngIf="!step.readonlyFieldKeys?.length">No read-only context fields.</div>
+            <div class="wb-list-row" *ngFor="let key of step.readonlyFieldKeys; let r = index">
+              <select
+                [disabled]="!isDraft"
+                [ngModel]="key"
+                (ngModelChange)="setListItem(step.readonlyFieldKeys, r, $event)">
+                <option [ngValue]="''">-- select field --</option>
+                <option *ngFor="let f of getFieldsFromPreviousSteps(step)" [ngValue]="f.key">
+                  {{ f.key }} ({{ f.type }})
+                </option>
+              </select>
+              <button class="wb-btn wb-btn-danger" [disabled]="!isDraft" (click)="removeListItem(step.readonlyFieldKeys, r)">Remove</button>
+            </div>
+          </div>
+
+          <!-- Edges -->
+          <div class="wb-subcard">
+            <div class="wb-card-head">
+              <h5>Step Edges</h5>
+              <button class="wb-btn wb-btn-outline" [disabled]="!isDraft" (click)="addEdgeToStep(step)">+ Add Edge</button>
+            </div>
+
+            <div class="wb-edge" *ngFor="let edge of step.edges; let e = index">
+              <div class="wb-grid wb-grid-3">
+                <label class="wb-field">
+                  <span>Edge ID *</span>
+                  <input [(ngModel)]="edge.id" [readonly]="!isDraft" placeholder="edge_submit" />
+                </label>
+                <label class="wb-field">
+                  <span>Action Name *</span>
+                  <input [(ngModel)]="edge.name" [readonly]="!isDraft" placeholder="Submit" />
+                </label>
+                <label class="wb-field">
+                  <span>Status Label <span class="wb-help" title="When this edge is executed, the workflow record's status is set to this value (e.g. 'submitted', 'approved', 'rejected').">?</span></span>
+                  <input [(ngModel)]="edge.statusLabel" [readonly]="!isDraft" placeholder="submitted" />
+                </label>
+              </div>
+
+              <div class="wb-grid wb-grid-3">
+                <label class="wb-field">
+                  <span>Target Step</span>
+                  <select [(ngModel)]="edge.targetStepId" [disabled]="!isDraft || edge.terminal">
+                    <option [ngValue]="null">-- terminal/no target --</option>
+                    <option *ngFor="let target of stepTargetOptions(step.id)" [ngValue]="target.id">
+                      {{ target.id }} ({{ target.name }})
+                    </option>
+                  </select>
+                </label>
+                <label class="wb-inline-check">
+                  <input type="checkbox" [(ngModel)]="edge.terminal" [disabled]="!isDraft" />
+                  <span>Terminal Edge</span>
+                </label>
+                <label class="wb-inline-check">
+                  <input type="checkbox" [(ngModel)]="edge.onlySubmitter" [disabled]="!isDraft" />
+                  <span>Only Submitter</span>
+                </label>
+              </div>
+
+              <div class="wb-grid wb-grid-2">
+                <label class="wb-field">
+                  <span>Allowed Roles</span>
+                  <div class="wb-list" *ngFor="let value of edge.allowedRoles; let ar = index">
+                    <select [disabled]="!isDraft" [ngModel]="value" (ngModelChange)="setListItem(edge.allowedRoles, ar, $event)">
+                      <option [ngValue]="''">-- select role --</option>
+                      <option *ngFor="let role of availableRoles" [ngValue]="role">{{ role }}</option>
+                    </select>
+                    <button class="wb-btn wb-btn-danger" [disabled]="!isDraft" (click)="removeListItem(edge.allowedRoles, ar)">Remove</button>
+                  </div>
+                  <button class="wb-btn wb-btn-outline" [disabled]="!isDraft" (click)="addListItem(edge.allowedRoles)">+ Add Role</button>
+                </label>
+                <label class="wb-field">
+                  <span>Required Fields <span class="wb-help" title="Fields from this step that must be filled before this edge can be executed.">?</span></span>
+                  <div class="wb-list" *ngFor="let value of edge.requiredFields; let rf = index">
+                    <select [disabled]="!isDraft" [ngModel]="value" (ngModelChange)="setListItem(edge.requiredFields, rf, $event)">
+                      <option [ngValue]="''">-- select field --</option>
+                      <option *ngFor="let field of step.fields" [ngValue]="field.key">{{ field.key }} ({{ field.type }})</option>
+                    </select>
+                    <button class="wb-btn wb-btn-danger" [disabled]="!isDraft" (click)="removeListItem(edge.requiredFields, rf)">Remove</button>
+                  </div>
+                  <button class="wb-btn wb-btn-outline" [disabled]="!isDraft" (click)="addListItem(edge.requiredFields)">+ Add Field</button>
+                </label>
+              </div>
+
+              <button class="wb-btn wb-btn-danger" [disabled]="!isDraft" (click)="removeEdgeFromStep(step, e)">Remove Edge</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Edges -->
+    <section class="wb-card">
+      <div class="wb-card-head">
+        <h3>Global Edges</h3>
+        <button class="wb-btn wb-btn-outline" [disabled]="!isDraft" (click)="addGlobalEdge()">+ Add Global Edge</button>
+      </div>
+      <div class="wb-edge" *ngFor="let edge of globalEdges; let ge = index">
+        <div class="wb-grid wb-grid-3">
+          <label class="wb-field">
+            <span>Edge ID *</span>
+            <input [(ngModel)]="edge.id" [readonly]="!isDraft" placeholder="edge_cancel" />
+          </label>
+          <label class="wb-field">
+            <span>Action Name *</span>
+            <input [(ngModel)]="edge.name" [readonly]="!isDraft" placeholder="Cancel" />
+          </label>
+          <label class="wb-field">
+            <span>Status Label</span>
+            <input [(ngModel)]="edge.statusLabel" [readonly]="!isDraft" placeholder="cancelled" />
+          </label>
+        </div>
+        <div class="wb-grid wb-grid-3">
+          <label class="wb-field">
+            <span>Target Step</span>
+            <select [(ngModel)]="edge.targetStepId" [disabled]="!isDraft || edge.terminal">
+              <option [ngValue]="null">-- terminal/no target --</option>
+              <option *ngFor="let target of steps" [ngValue]="target.id">{{ target.id }} ({{ target.name }})</option>
+            </select>
+          </label>
+          <label class="wb-inline-check">
+            <input type="checkbox" [(ngModel)]="edge.terminal" [disabled]="!isDraft" />
+            <span>Terminal Edge</span>
+          </label>
+          <label class="wb-inline-check">
+            <input type="checkbox" [(ngModel)]="edge.onlySubmitter" [disabled]="!isDraft" />
+            <span>Only Submitter</span>
+          </label>
+        </div>
+        <div class="wb-grid wb-grid-2">
+          <label class="wb-field">
+            <span>Allowed Roles</span>
+            <div class="wb-list" *ngFor="let value of edge.allowedRoles; let ar = index">
+              <select [disabled]="!isDraft" [ngModel]="value" (ngModelChange)="setListItem(edge.allowedRoles, ar, $event)">
+                <option [ngValue]="''">-- select role --</option>
+                <option *ngFor="let role of availableRoles" [ngValue]="role">{{ role }}</option>
+              </select>
+              <button class="wb-btn wb-btn-danger" [disabled]="!isDraft" (click)="removeListItem(edge.allowedRoles, ar)">Remove</button>
+            </div>
+            <button class="wb-btn wb-btn-outline" [disabled]="!isDraft" (click)="addListItem(edge.allowedRoles)">+ Add Role</button>
+          </label>
+        </div>
+        <button class="wb-btn wb-btn-danger" [disabled]="!isDraft" (click)="removeGlobalEdge(ge)">Remove Global Edge</button>
+      </div>
+    </section>
+
+  </div>
+</div>

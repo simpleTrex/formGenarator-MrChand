@@ -1,0 +1,129 @@
+<div class="iv-shell fade-in" [style.--tc]="themeColor">
+
+  <nav class="iv-nav">
+    <button class="iv-nav-back" (click)="goBackToApp()">← Back</button>
+    <span class="iv-nav-spacer"></span>
+  </nav>
+
+  <div *ngIf="loading" class="iv-loading">
+    <div class="iv-spinner"></div>
+    <span>Loading…</span>
+  </div>
+
+  <div *ngIf="!loading && instance" class="iv-body">
+
+    <div *ngIf="error" class="iv-alert iv-alert-error">{{ error }}</div>
+    <div *ngIf="successMsg" class="iv-alert" style="background: rgba(22,163,74,0.1); color: #15803d; border: 1px solid rgba(22,163,74,0.25);">
+      {{ successMsg }}
+    </div>
+
+    <ng-container *ngIf="instance.status === 'ACTIVE' && stepView">
+      <div class="iv-step-header">
+        <div class="iv-step-icon"><span class="iv-icon-label">WF</span></div>
+        <div class="iv-step-meta">
+          <p class="iv-step-type">Current Step</p>
+          <h2 class="iv-step-name">{{ stepView.stepName }}</h2>
+          <p class="iv-record-status" *ngIf="recordStatus">
+            Status: <strong>{{ recordStatus }}</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- Read-only context from previous steps -->
+      <div class="iv-card" *ngIf="readonlyContextFields.length > 0">
+        <p class="iv-summary-title">Record Context (read-only)</p>
+        <div *ngFor="let field of readonlyContextFields" class="iv-data-row">
+          <span class="iv-data-key">{{ field.key }}</span>
+          <span class="iv-data-val">{{ prettyValue(formData[field.key]) }}</span>
+        </div>
+      </div>
+
+      <!-- Editable fields for this step -->
+      <div class="iv-card">
+        <div class="iv-dynamic-form">
+          <div *ngFor="let field of editableFields" class="iv-field">
+            <label class="iv-label">
+              {{ field.key }}
+              <span *ngIf="field.required" class="iv-req">*</span>
+            </label>
+
+            <label *ngIf="fieldIsCheckbox(field)" class="iv-checkbox-label">
+              <input type="checkbox" [(ngModel)]="formData[field.key]" />
+              {{ field.key }}
+            </label>
+
+            <textarea
+              *ngIf="fieldIsJson(field)"
+              class="iv-input iv-textarea"
+              rows="4"
+              [ngModel]="valueAsJsonText(field.key)"
+              (ngModelChange)="updateJsonField(field.key, $event)">
+            </textarea>
+
+            <input
+              *ngIf="!fieldIsCheckbox(field) && !fieldIsJson(field)"
+              class="iv-input"
+              [type]="fieldInputType(field)"
+              [(ngModel)]="formData[field.key]"
+            />
+          </div>
+          <div class="wb-note" *ngIf="editableFields.length === 0">No fields to fill at this step.</div>
+        </div>
+      </div>
+
+      <div class="iv-card">
+        <div class="iv-field">
+          <label class="iv-label">Select Action <span class="iv-req">*</span></label>
+          <select class="iv-input iv-select" [(ngModel)]="selectedEdgeId">
+            <option value="">— select action —</option>
+            <option
+              *ngFor="let edge of availableEdges"
+              [value]="edge.id"
+              [disabled]="edge.disabled">
+              {{ edge.name }}{{ edge.disabled ? ' (disabled)' : '' }}
+            </option>
+          </select>
+          <p class="iv-empty-text" *ngIf="selectedEdgeId && getEdgeDisabledReason(selectedEdgeId)">
+            {{ getEdgeDisabledReason(selectedEdgeId) }}
+          </p>
+        </div>
+
+        <div class="iv-form-actions">
+          <button class="iv-submit-btn" [disabled]="submitting || !selectedEdgeId" (click)="executeEdge()">
+            <span *ngIf="!submitting">Execute</span>
+            <span *ngIf="submitting" class="iv-spinner-sm"></span>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="iv-terminal-card" *ngIf="instance.status !== 'ACTIVE'">
+      <div class="iv-terminal" *ngIf="instance.status === 'COMPLETED'">
+        <div class="iv-terminal-badge iv-badge-done">Completed</div>
+        <h2 class="iv-terminal-title iv-done">Workflow Completed</h2>
+        <p class="iv-terminal-sub">This workflow instance has completed successfully.</p>
+      </div>
+
+      <div class="iv-terminal" *ngIf="instance.status === 'CANCELLED'">
+        <div class="iv-terminal-badge iv-badge-cancel">Cancelled</div>
+        <h2 class="iv-terminal-title iv-cancel">Workflow Cancelled</h2>
+        <p class="iv-terminal-sub">This workflow instance was cancelled.</p>
+      </div>
+
+      <button class="iv-home-btn" (click)="goBackToApp()">Back to Tasks</button>
+    </div>
+
+    <div class="iv-card" *ngIf="historyRows?.length">
+      <p class="iv-summary-title">Audit Trail</p>
+      <div *ngFor="let row of historyRows" class="iv-data-row">
+        <span class="iv-data-key">{{ row.edgeName || 'Started' }}</span>
+        <span class="iv-data-val">
+          by {{ row.performedByName || row.performedBy }}
+          · {{ row.performedAt | date:'medium' }}
+          <span *ngIf="row.comment"> · "{{ row.comment }}"</span>
+        </span>
+      </div>
+    </div>
+
+  </div>
+</div>

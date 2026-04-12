@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,6 +28,7 @@ import com.adaptivebp.modules.organisation.dto.response.GroupMemberResponse;
 import com.adaptivebp.modules.organisation.model.DomainGroup;
 import com.adaptivebp.modules.organisation.model.DomainGroupMember;
 import com.adaptivebp.modules.organisation.model.Organisation;
+import com.adaptivebp.modules.organisation.model.enums.DomainGroupType;
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
 import com.adaptivebp.modules.organisation.repository.DomainGroupMemberRepository;
 import com.adaptivebp.modules.organisation.repository.DomainGroupRepository;
@@ -57,7 +59,7 @@ public class DomainGroupController {
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
             return ResponseEntity.status(403).build();
         }
-        List<DomainGroup> groups = domainGroupRepository.findByDomainId(domain.getId());
+        List<DomainGroup> groups = accessGroups(domain.getId());
         return ResponseEntity.ok(groups);
     }
 
@@ -68,7 +70,7 @@ public class DomainGroupController {
             return ResponseEntity.status(403).build();
         }
         List<DomainUser> users = domainUserLookupPort.findByDomainId(domain.getId());
-        List<DomainGroup> groups = domainGroupRepository.findByDomainId(domain.getId());
+        List<DomainGroup> groups = accessGroups(domain.getId());
         Map<String, String> groupIdToName = groups.stream()
                 .collect(Collectors.toMap(DomainGroup::getId, DomainGroup::getName));
         List<DomainUserResponse> userResponses = users.stream().map(user -> {
@@ -76,6 +78,7 @@ public class DomainGroupController {
             List<DomainGroupMember> memberships = domainGroupMemberRepository
                     .findByDomainIdAndUserId(domain.getId(), user.getId());
             List<DomainUserResponse.GroupMembershipInfo> groupInfos = memberships.stream()
+                    .filter(m -> groupIdToName.containsKey(m.getDomainGroupId()))
                     .map(m -> new DomainUserResponse.GroupMembershipInfo(
                             m.getDomainGroupId(),
                             groupIdToName.getOrDefault(m.getDomainGroupId(), "Unknown"),
@@ -91,7 +94,7 @@ public class DomainGroupController {
     public ResponseEntity<?> listGroupMembers(@PathVariable String slug, @PathVariable String groupId) {
         Organisation domain = requireDomain(slug);
         DomainGroup group = domainGroupRepository.findById(groupId).orElse(null);
-        if (group == null || !domain.getId().equals(group.getDomainId())) {
+        if (group == null || !domain.getId().equals(group.getDomainId()) || !isAccessGroup(group)) {
             return ResponseEntity.notFound().build();
         }
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
@@ -111,7 +114,20 @@ public class DomainGroupController {
     @PostMapping
     public ResponseEntity<?> create(@PathVariable String slug, @Valid @RequestBody CreateDomainGroupRequest request) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body("Domain groups are managed automatically and cannot be created manually.");
+                .body("Access groups are fixed defaults. Only membership assignment is allowed here.");
+    }
+
+    @PutMapping("/{groupId}")
+    public ResponseEntity<?> update(@PathVariable String slug, @PathVariable String groupId,
+            @Valid @RequestBody CreateDomainGroupRequest request) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body("Access groups are fixed defaults. Only membership assignment is allowed here.");
+    }
+
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<?> delete(@PathVariable String slug, @PathVariable String groupId) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body("Access groups are fixed defaults. Only membership assignment is allowed here.");
     }
 
     @PostMapping("/{groupId}/members")
@@ -119,7 +135,7 @@ public class DomainGroupController {
             @Valid @RequestBody AssignMemberRequest request) {
         Organisation domain = requireDomain(slug);
         DomainGroup group = domainGroupRepository.findById(groupId).orElse(null);
-        if (group == null || !domain.getId().equals(group.getDomainId())) {
+        if (group == null || !domain.getId().equals(group.getDomainId()) || !isAccessGroup(group)) {
             return ResponseEntity.notFound().build();
         }
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
@@ -157,7 +173,7 @@ public class DomainGroupController {
                 .findByDomainIdAndUserId(domain.getId(), userId);
         List<DomainGroup> userGroups = memberships.stream()
                 .map(m -> domainGroupRepository.findById(m.getDomainGroupId()).orElse(null))
-                .filter(g -> g != null)
+            .filter(g -> g != null && isAccessGroup(g))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(userGroups);
     }
@@ -167,7 +183,7 @@ public class DomainGroupController {
             @PathVariable String userId) {
         Organisation domain = requireDomain(slug);
         DomainGroup group = domainGroupRepository.findById(groupId).orElse(null);
-        if (group == null || !domain.getId().equals(group.getDomainId())) {
+        if (group == null || !domain.getId().equals(group.getDomainId()) || !isAccessGroup(group)) {
             return ResponseEntity.notFound().build();
         }
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
@@ -197,5 +213,15 @@ public class DomainGroupController {
             return details.getId();
         }
         return null;
+    }
+
+    private List<DomainGroup> accessGroups(String domainId) {
+        return domainGroupRepository.findByDomainId(domainId).stream()
+                .filter(this::isAccessGroup)
+                .collect(Collectors.toList());
+    }
+
+    private boolean isAccessGroup(DomainGroup group) {
+        return group.getGroupType() == null || group.getGroupType() == DomainGroupType.ACCESS;
     }
 }
