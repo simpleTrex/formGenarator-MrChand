@@ -1,0 +1,73 @@
+<div class="wr-shell">
+  <div class="wr-head">
+    <div>
+      <h2>Workflow Roles</h2>
+      <p>Create domain-wide business roles (Doctor, Nurse, Assistant) and assign users.</p>
+    </div>
+    <button class="wr-btn wr-btn-primary" (click)="openCreateRole()">+ New Role</button>
+  </div>
+
+  <div *ngIf="loading" class="wr-loading">Loading workflow roles...</div>
+  <div *ngIf="error" class="wr-error">{{ error }}</div>
+
+  <div *ngIf="showRoleForm" class="wr-form">
+    <div class="wr-form-head">
+      <h4>{{ roleFormMode === 'create' ? 'Create Workflow Role' : 'Update Workflow Role' }}</h4>
+      <button class="wr-btn wr-btn-ghost" [disabled]="savingRole" (click)="cancelRoleForm()">Close</button>
+    </div>
+
+    <label class="wr-field">
+      <span>Role Name</span>
+      <input [(ngModel)]="roleName" placeholder="Doctor" />
+    </label>
+
+    <button class="wr-btn wr-btn-primary" [disabled]="savingRole" (click)="saveRole()">
+      {{ roleFormMode === 'create' ? 'Create Role' : 'Save Role' }}
+    </button>
+  </div>
+
+  <div *ngIf="!loading" class="wr-layout">
+    <div class="wr-roles">
+      <div *ngFor="let role of roles" class="wr-role-card" (dragover)="onDragOver($event)" (drop)="onDrop($event, role.id)">
+        <div class="wr-role-head">
+          <div>
+            <h5>{{ role.name }}</h5>
+            <small>{{ getUsersInRole(role.id).length }} member(s)</small>
+          </div>
+          <div class="wr-actions">
+            <button class="wr-btn wr-btn-ghost" (click)="openEditRole(role)">Edit</button>
+            <button class="wr-btn wr-btn-danger" (click)="deleteRole(role)">Delete</button>
+          </div>
+        </div>
+
+        <div class="wr-members">
+          <div *ngIf="getUsersInRole(role.id).length === 0" class="wr-dropzone">Drop users here to assign this role</div>
+
+          <div *ngFor="let user of getUsersInRole(role.id)" class="wr-user" draggable="true" (dragstart)="onDragStart($event, user)" (dragend)="onDragEnd()">
+            <div>
+              <strong>{{ user.username }}</strong>
+              <small>{{ user.email }}</small>
+            </div>
+            <button class="wr-btn wr-btn-danger" (click)="removeUserFromRole(user, role.id)">Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wr-unassigned">
+      <div class="wr-unassigned-head">
+        <h5>No Workflow Role</h5>
+        <small>{{ getUsersWithoutRoles().length }}</small>
+      </div>
+
+      <div *ngIf="getUsersWithoutRoles().length === 0" class="wr-dropzone">All users have at least one role</div>
+
+      <div *ngFor="let user of getUsersWithoutRoles()" class="wr-user" draggable="true" (dragstart)="onDragStart($event, user)" (dragend)="onDragEnd()">
+        <div>
+          <strong>{{ user.username }}</strong>
+          <small>{{ user.email }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

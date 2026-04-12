@@ -2,7 +2,6 @@
   <div class="wb-header">
     <div class="wb-header-left">
       <button class="wb-btn wb-btn-ghost" (click)="goBack()">← Back</button>
-      <button class="wb-btn wb-btn-outline" (click)="openExplainer()">How It Works</button>
     </div>
     <div class="wb-header-right">
       <span class="wb-status" *ngIf="workflowStatus">{{ workflowStatus }}</span>
@@ -47,10 +46,30 @@
         <button class="wb-btn wb-btn-primary" [disabled]="!isDraft" (click)="addStepAndEdit()">Create Step</button>
       </div>
 
-      <div *ngIf="steps.length > 0" class="wb-graph wb-tree">
+      <div *ngIf="steps.length > 0" class="wb-graph wb-tree" #graphContainer>
+
+        <!-- SVG edge layer — drawn behind nodes -->
+        <svg class="wb-graph-svg" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="wb-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="rgba(15,23,42,0.28)"/>
+            </marker>
+            <marker id="wb-arr-hover" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="rgba(59,130,246,0.7)"/>
+            </marker>
+          </defs>
+          <g *ngFor="let e of graphSvgEdges" class="wb-svg-edge">
+            <path [attr.d]="e.path" class="wb-svg-line"/>
+            <path [attr.d]="e.path" class="wb-svg-hit"/>
+            <text [attr.x]="e.midX" [attr.y]="e.midY" class="wb-svg-label">{{ e.name }}</text>
+          </g>
+        </svg>
+
         <div class="wb-tree-row" *ngFor="let row of graphLevels()">
-          <div class="wb-tree-node" *ngFor="let step of row">
-            <button class="wb-graph-node" [class.is-selected]="step === selectedStepRef" (click)="openStepEditor(step)">
+          <div class="wb-tree-node" [class.is-orphan]="orphanStepIds.has(step.id)" *ngFor="let step of row">
+            <button class="wb-graph-node" [attr.data-step-id]="step.id"
+                    [class.is-selected]="step === selectedStepRef"
+                    (click)="openStepEditor(step)">
               <div class="wb-node-header">
                 <span class="wb-node-title">{{ step.name || 'Untitled Step' }}</span>
                 <div class="wb-node-badges">
@@ -61,34 +80,21 @@
               <div class="wb-node-meta">ID: {{ step.id }}</div>
               <div class="wb-node-stats">
                 <span>{{ step.fields.length || 0 }} fields</span>
-                <span *ngIf="step.readonlyFieldKeys?.length"> · {{ step.readonlyFieldKeys.length }} readonly</span>
-                <span>•</span>
+                <span *ngIf="step.readonlyFieldKeys?.length"> · {{ step.readonlyFieldKeys.length }} ctx</span>
+                <span>·</span>
                 <span>{{ step.edges.length || 0 }} edges</span>
               </div>
             </button>
-
-            <div class="wb-branch" *ngIf="step.edges.length">
-              <div class="wb-branch-spine"></div>
-              <div class="wb-branch-list">
-                <div class="wb-edge-chip" *ngFor="let edge of step.edges">
-                  <span class="wb-edge-chip-name">{{ edge.name || 'Unnamed' }}</span>
-                  <span class="wb-edge-chip-target">→ {{ edgeTargetLabel(edge) }}</span>
-                  <span class="wb-edge-chip-roles">{{ edgeRoleLabel(edge) }}</span>
-                  <span class="wb-edge-chip-status" *ngIf="edge.statusLabel">📌 {{ edge.statusLabel }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="wb-edge-empty" *ngIf="!step.edges.length">No outgoing edges</div>
           </div>
         </div>
       </div>
 
       <div class="wb-unlinked" *ngIf="unlinkedSteps().length > 0">
-        <div class="wb-unlinked-head">Unlinked steps</div>
+        <div class="wb-unlinked-head">Disconnected steps (not reachable from start)</div>
         <div class="wb-unlinked-list">
-          <button class="wb-unlinked-chip" *ngFor="let step of unlinkedSteps()" (click)="openStepEditor(step)">
+          <span class="wb-unlinked-chip" *ngFor="let step of unlinkedSteps()">
             {{ step.name || step.id }}
-          </button>
+          </span>
         </div>
       </div>
     </section>
@@ -320,12 +326,6 @@
         </div>
         <button class="wb-btn wb-btn-danger" [disabled]="!isDraft" (click)="removeGlobalEdge(ge)">Remove Global Edge</button>
       </div>
-    </section>
-
-    <!-- Preview -->
-    <section class="wb-card">
-      <h3>Definition Preview</h3>
-      <pre class="wb-json">{{ { name: name, description: description, steps: steps, globalEdges: globalEdges } | json }}</pre>
     </section>
 
   </div>

@@ -88,6 +88,28 @@ class PermissionServiceTest {
         assertFalse(permissionService.hasAppPermission("app-123", AppPermission.APP_EXECUTE));
     }
 
+    @Test
+    void hasAppPermission_startWorkflow_allowsViewPermissionCompatibility() {
+        AdaptiveUserDetails user = AdaptiveUserDetails.domainUser("user-3", "domain-2", "eve", "e@example.com", "hash");
+        authenticate(user);
+
+        when(appGroupQueryPort.getAppPermissions("app-123", "user-3"))
+                .thenReturn(Set.of(AppPermission.APP_VIEW));
+
+        assertTrue(permissionService.hasAppPermission("app-123", AppPermission.APP_START_WORKFLOW));
+    }
+
+    @Test
+    void hasAppPermission_startWorkflow_allowsReadPermissionCompatibility() {
+        AdaptiveUserDetails user = AdaptiveUserDetails.domainUser("user-4", "domain-2", "john", "j@example.com", "hash");
+        authenticate(user);
+
+        when(appGroupQueryPort.getAppPermissions("app-123", "user-4"))
+                .thenReturn(Set.of(AppPermission.APP_READ));
+
+        assertTrue(permissionService.hasAppPermission("app-123", AppPermission.APP_START_WORKFLOW));
+    }
+
     private void authenticate(AdaptiveUserDetails principal) {
         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
                 principal, null, principal.getAuthorities());

@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.adaptivebp.modules.appmanagement.model.Application;
 import com.adaptivebp.modules.appmanagement.permission.AppPermission;
 import com.adaptivebp.modules.appmanagement.port.ApplicationLookupPort;
+import com.adaptivebp.modules.organisation.permission.DomainPermission;
 import com.adaptivebp.modules.organisation.model.Organisation;
 import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
@@ -61,7 +62,7 @@ public class WorkflowInstanceController {
             @PathVariable String wfSlug,
             @RequestBody(required = false) StartWorkflowRequest request) {
         Context ctx = resolve(slug, appSlug);
-        requireAuthenticated();
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_START_WORKFLOW);
 
         WorkflowInstance instance = engineService.startWorkflowBySlug(
                 ctx.domain().getId(),
@@ -79,7 +80,7 @@ public class WorkflowInstanceController {
             @PathVariable String slug,
             @PathVariable String appSlug) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_VIEW_WORKFLOWS);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_VIEW_ALL_INSTANCES);
         return ResponseEntity.ok(engineService.listInstances(ctx.domain().getId(), ctx.app().getId()));
     }
 
@@ -107,8 +108,17 @@ public class WorkflowInstanceController {
             @PathVariable String appSlug,
             @PathVariable String instanceId) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_VIEW_WORKFLOWS);
-        return ResponseEntity.ok(engineService.getInstance(instanceId));
+        requireAuthenticated();
+        WorkflowInstance instance = engineService.getInstance(instanceId);
+        // Allow access if user has APP_VIEW_ALL_INSTANCES (admin/supervisor)
+        // OR if the user is the one who started this specific instance (submitter)
+        String uid = currentUserId();
+        boolean hasAllInstances = permissionService.hasAppPermission(ctx.app().getId(), AppPermission.APP_VIEW_ALL_INSTANCES);
+        boolean isSubmitter = uid != null && uid.equals(instance.getStartedBy());
+        if (!hasAllInstances && !isSubmitter) {
+            return ResponseEntity.status(403).build();
+        }
+        return ResponseEntity.ok(instance);
     }
 
     @GetMapping("/instances/{instanceId}/view")
@@ -127,8 +137,14 @@ public class WorkflowInstanceController {
             @PathVariable String appSlug,
             @PathVariable String instanceId,
             @Valid @RequestBody ExecuteEdgeRequest request) {
-        resolve(slug, appSlug);
-        requireAuthenticated();
+        Context ctx = resolve(slug, appSlug);
+        // Allow any domain member to attempt execution.
+        // Edge-level authorization (workflow roles, onlySubmitter, allowedUserIds)
+        // is enforced inside WorkflowEngineService.executeEdge().
+        if (!permissionService.hasAppPermission(ctx.app().getId(), AppPermission.APP_EXECUTE_WORKFLOW)
+                && !permissionService.hasDomainPermission(ctx.domain().getId(), DomainPermission.DOMAIN_USE_APP)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient permissions");
+        }
 
         return ResponseEntity.ok(engineService.executeEdge(
                 instanceId,

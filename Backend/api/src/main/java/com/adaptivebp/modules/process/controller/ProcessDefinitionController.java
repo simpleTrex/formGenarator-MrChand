@@ -57,7 +57,7 @@ public class ProcessDefinitionController {
     @GetMapping
     public ResponseEntity<?> getProcess(@PathVariable String slug, @PathVariable String appSlug) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_VIEW_PROCESSES);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_VIEW);
 
         ProcessDefinition def = definitionService.getProcess(ctx.domain().getId(), ctx.app().getId(), appSlug);
         ValidationResult valid = validationService.validate(def);
@@ -69,7 +69,7 @@ public class ProcessDefinitionController {
     public ResponseEntity<?> createProcess(@PathVariable String slug, @PathVariable String appSlug,
             @Valid @RequestBody CreateProcessRequest request) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_PROCESSES);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_WORKFLOW);
 
         String userId = currentUserId();
         ProcessDefinition created = definitionService.createProcess(
@@ -83,7 +83,7 @@ public class ProcessDefinitionController {
     public ResponseEntity<?> updateProcess(@PathVariable String slug, @PathVariable String appSlug,
             @RequestBody UpdateProcessRequest request) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_PROCESSES);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_WORKFLOW);
 
         ProcessDefinition updated = definitionService.updateProcess(
                 ctx.domain().getId(), ctx.app().getId(), appSlug, request);
@@ -95,7 +95,7 @@ public class ProcessDefinitionController {
     @DeleteMapping
     public ResponseEntity<?> deleteProcess(@PathVariable String slug, @PathVariable String appSlug) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_PROCESSES);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_WORKFLOW);
 
         definitionService.deleteProcess(ctx.domain().getId(), ctx.app().getId(), appSlug);
         return ResponseEntity.noContent().build();
@@ -105,7 +105,7 @@ public class ProcessDefinitionController {
     @PostMapping("/publish")
     public ResponseEntity<?> publishProcess(@PathVariable String slug, @PathVariable String appSlug) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_PROCESSES);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_WORKFLOW);
 
         ProcessDefinition published = definitionService.publishProcess(
                 ctx.domain().getId(), ctx.app().getId(), appSlug);
@@ -116,7 +116,7 @@ public class ProcessDefinitionController {
     @PostMapping("/archive")
     public ResponseEntity<?> archiveProcess(@PathVariable String slug, @PathVariable String appSlug) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_PROCESSES);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_WORKFLOW);
 
         ProcessDefinition archived = definitionService.archiveProcess(
                 ctx.domain().getId(), ctx.app().getId(), appSlug);
@@ -129,7 +129,7 @@ public class ProcessDefinitionController {
     @GetMapping("/templates")
     public ResponseEntity<?> listTemplates(@PathVariable String slug, @PathVariable String appSlug) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_PROCESSES);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_WORKFLOW);
 
         List<ProcessTemplate> templates = templateRepository.findAll();
         return ResponseEntity.ok(templates);
@@ -140,7 +140,7 @@ public class ProcessDefinitionController {
     public ResponseEntity<?> createFromTemplate(@PathVariable String slug, @PathVariable String appSlug,
             @RequestBody Map<String, Object> body) {
         Context ctx = resolve(slug, appSlug);
-        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_PROCESSES);
+        requireAppPermission(ctx.app().getId(), AppPermission.APP_MANAGE_WORKFLOW);
 
         String templateId = (String) body.get("templateId");
         if (templateId == null) {

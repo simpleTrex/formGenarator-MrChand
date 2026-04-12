@@ -74,7 +74,7 @@ export class AppModelsComponent implements OnInit {
   }
 
   get canManageModels(): boolean {
-    return this.isOwnerContext() || this.appAccess.permissions.includes('APP_WRITE');
+    return this.isOwnerContext() || this.appAccess.permissions.includes('APP_CONFIGURE');
   }
 
   isOwnerContext(): boolean {
@@ -133,7 +133,7 @@ export class AppModelsComponent implements OnInit {
 
   private loadAccessAndData() {
     if (this.isOwnerContext()) {
-      this.appAccess.permissions = ['APP_READ', 'APP_WRITE', 'APP_EXECUTE'];
+      this.appAccess.permissions = ['APP_VIEW', 'APP_CONFIGURE', 'APP_EXECUTE_WORKFLOW'];
       this.appAccess.groups = ['App Admin'];
       this.loadAppsAndModels();
       return;

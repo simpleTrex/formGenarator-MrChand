@@ -8,7 +8,9 @@ import java.util.Map;
 
 public class TaskResponse {
     private String instanceId;
+    private String workflowDefinitionId;
     private String workflowName;
+    private String currentStepId;
     private String currentStepName;
     private Map<String, Object> startedBy = new HashMap<>();
     private Instant startedAt;
@@ -24,12 +26,28 @@ public class TaskResponse {
         this.instanceId = instanceId;
     }
 
+    public String getWorkflowDefinitionId() {
+        return workflowDefinitionId;
+    }
+
+    public void setWorkflowDefinitionId(String workflowDefinitionId) {
+        this.workflowDefinitionId = workflowDefinitionId;
+    }
+
     public String getWorkflowName() {
         return workflowName;
     }
 
     public void setWorkflowName(String workflowName) {
         this.workflowName = workflowName;
+    }
+
+    public String getCurrentStepId() {
+        return currentStepId;
+    }
+
+    public void setCurrentStepId(String currentStepId) {
+        this.currentStepId = currentStepId;
     }
 
     public String getCurrentStepName() {

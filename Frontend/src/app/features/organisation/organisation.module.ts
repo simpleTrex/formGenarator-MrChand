@@ -6,21 +6,21 @@ import { ModernCardComponent } from '../../shared/components/modern-card/modern-
 import { DomainCreateComponent } from './pages/org-create/domain-create.component';
 import { DomainHomeComponent } from './pages/org-home/domain-home.component';
 import { DomainUsersComponent } from './pages/org-members/domain-users.component';
-import { DomainEmployeesComponent } from './pages/employees/domain-employees.component';
+import { DomainWorkflowRolesComponent } from './pages/workflow-roles/domain-workflow-roles.component';
 import { AuthGuard } from '../../core/guards/auth.guard';
 
 const routes: Routes = [
     { path: 'create', component: DomainCreateComponent, canActivate: [AuthGuard], data: { principalTypes: ['OWNER'] } },
     { path: ':slug', component: DomainHomeComponent },
     { path: ':slug/users', component: DomainUsersComponent },
-    { path: ':slug/employees', component: DomainEmployeesComponent },
+    { path: ':slug/workflow-roles', component: DomainWorkflowRolesComponent },
 ];
 
 @NgModule({
     declarations: [
         DomainCreateComponent,
         DomainUsersComponent,
-        DomainEmployeesComponent,
+        DomainWorkflowRolesComponent,
     ],
     imports: [
         SharedModule,

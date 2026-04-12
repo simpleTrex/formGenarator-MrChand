@@ -173,7 +173,9 @@ export interface HistoryResponse {
 
 export interface TaskResponse {
   instanceId: string;
+  workflowDefinitionId?: string;
   workflowName: string;
+  currentStepId?: string;
   currentStepName: string;
   startedBy: Record<string, any>;
   startedAt: string;

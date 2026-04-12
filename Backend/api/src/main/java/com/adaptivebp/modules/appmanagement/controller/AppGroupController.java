@@ -2,6 +2,7 @@ package com.adaptivebp.modules.appmanagement.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,7 +35,6 @@ import com.adaptivebp.modules.identity.model.DomainUser;
 import com.adaptivebp.modules.identity.port.DomainUserLookupPort;
 import com.adaptivebp.modules.organisation.dto.request.AssignMemberRequest;
 import com.adaptivebp.modules.organisation.model.Organisation;
-import com.adaptivebp.modules.organisation.permission.DomainPermission;
 import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
 import com.adaptivebp.shared.security.AdaptiveUserDetails;
@@ -43,6 +44,8 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/adaptive/domains/{slug}/apps/{appSlug}/groups")
 public class AppGroupController {
+
+    private static final Set<String> FIXED_GROUP_NAMES = Set.of("app admin", "app editor", "app viewer");
 
     @Autowired private ApplicationRepository applicationRepository;
     @Autowired private AppGroupRepository appGroupRepository;
@@ -55,22 +58,20 @@ public class AppGroupController {
     @GetMapping
     public ResponseEntity<?> list(@PathVariable String slug, @PathVariable String appSlug) {
         AppWithDomain awd = requireApplication(slug, appSlug);
-        if (!permissionService.hasAppPermission(awd.app.getId(), AppPermission.APP_READ) &&
-            !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        if (!canViewApp(awd.app.getId())) {
             return ResponseEntity.status(403).build();
         }
-        return ResponseEntity.ok(appGroupRepository.findByAppId(awd.app.getId()));
+        return ResponseEntity.ok(fixedAppGroups(awd.app.getId()));
     }
 
     @GetMapping("/users")
     public ResponseEntity<?> listUsersWithGroups(@PathVariable String slug, @PathVariable String appSlug) {
         AppWithDomain awd = requireApplication(slug, appSlug);
-        if (!permissionService.hasAppPermission(awd.app.getId(), AppPermission.APP_WRITE) &&
-            !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        if (!canManageAppGroups(awd.app.getId())) {
             return ResponseEntity.status(403).build();
         }
         List<DomainUser> users = domainUserLookupPort.findByDomainId(awd.org.getId());
-        List<AppGroup> groups = appGroupRepository.findByAppId(awd.app.getId());
+        List<AppGroup> groups = fixedAppGroups(awd.app.getId());
         Map<String, String> groupIdToName = groups.stream()
                 .collect(Collectors.toMap(AppGroup::getId, AppGroup::getName));
         AppGroup defaultViewerGroup = groups.stream()
@@ -92,6 +93,7 @@ public class AppGroupController {
                 ));
             } else {
                 groupInfos = memberships.stream()
+                    .filter(m -> groupIdToName.containsKey(m.getGroupId()))
                         .map(m -> new AppUserResponse.AppGroupMembershipInfo(
                                 m.getGroupId(),
                                 groupIdToName.getOrDefault(m.getGroupId(), "Unknown"),
@@ -109,11 +111,10 @@ public class AppGroupController {
             @PathVariable String groupId) {
         AppWithDomain awd = requireApplication(slug, appSlug);
         AppGroup group = appGroupRepository.findById(groupId).orElse(null);
-        if (group == null || !group.getAppId().equals(awd.app.getId())) {
+        if (group == null || !group.getAppId().equals(awd.app.getId()) || !isFixedGroup(group)) {
             return ResponseEntity.notFound().build();
         }
-        if (!permissionService.hasAppPermission(awd.app.getId(), AppPermission.APP_READ) &&
-            !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        if (!canViewApp(awd.app.getId())) {
             return ResponseEntity.status(403).build();
         }
         List<AppGroupMember> memberships = appGroupMemberRepository.findByGroupId(groupId);
@@ -129,30 +130,33 @@ public class AppGroupController {
     @PostMapping
     public ResponseEntity<?> create(@PathVariable String slug, @PathVariable String appSlug,
             @Valid @RequestBody CreateAppGroupRequest request) {
-        AppWithDomain awd = requireApplication(slug, appSlug);
-        if (!permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
-            return ResponseEntity.status(403).build();
-        }
-        boolean exists = appGroupRepository.findByAppIdAndName(awd.app.getId(), request.getName()).isPresent();
-        if (exists) { return ResponseEntity.badRequest().body("Group already exists"); }
-        AppGroup group = new AppGroup();
-        group.setAppId(awd.app.getId());
-        group.setName(request.getName());
-        group.setPermissions(request.getPermissions());
-        group.setDefaultGroup(false);
-        return ResponseEntity.ok(appGroupRepository.save(group));
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body("App groups are fixed defaults (App Admin, App Editor, App Viewer).");
+    }
+
+    @PutMapping("/{groupId}")
+    public ResponseEntity<?> update(@PathVariable String slug, @PathVariable String appSlug,
+            @PathVariable String groupId, @Valid @RequestBody CreateAppGroupRequest request) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body("App groups are fixed defaults (App Admin, App Editor, App Viewer).");
+    }
+
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<?> delete(@PathVariable String slug, @PathVariable String appSlug,
+            @PathVariable String groupId) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body("App groups are fixed defaults (App Admin, App Editor, App Viewer).");
     }
 
     @PostMapping("/{groupId}/members")
     public ResponseEntity<?> addMember(@PathVariable String slug, @PathVariable String appSlug,
             @PathVariable String groupId, @Valid @RequestBody AssignMemberRequest request) {
         AppWithDomain awd = requireApplication(slug, appSlug);
-        if (!permissionService.hasAppPermission(awd.app.getId(), AppPermission.APP_WRITE) &&
-            !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        if (!canManageAppGroups(awd.app.getId())) {
             return ResponseEntity.status(403).build();
         }
         AppGroup group = appGroupRepository.findById(groupId).orElse(null);
-        if (group == null || !group.getAppId().equals(awd.app.getId())) {
+        if (group == null || !group.getAppId().equals(awd.app.getId()) || !isFixedGroup(group)) {
             return ResponseEntity.notFound().build();
         }
         var userOpt = domainUserLookupPort.findByDomainIdAndUsername(awd.org.getId(), request.getUsername());
@@ -179,8 +183,7 @@ public class AppGroupController {
     public ResponseEntity<?> ensureDefaultViewerMembership(@PathVariable String slug,
             @PathVariable String appSlug, @PathVariable String userId) {
         AppWithDomain awd = requireApplication(slug, appSlug);
-        if (!permissionService.hasAppPermission(awd.app.getId(), AppPermission.APP_WRITE) &&
-            !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        if (!canManageAppGroups(awd.app.getId())) {
             return ResponseEntity.status(403).build();
         }
         var userOpt = domainUserLookupPort.findById(userId);
@@ -202,8 +205,7 @@ public class AppGroupController {
         AppWithDomain awd = requireApplication(slug, appSlug);
         String currentUserId = currentPrincipalId();
         boolean isOwn = userId.equals(currentUserId);
-        if (!isOwn && !permissionService.hasAppPermission(awd.app.getId(), AppPermission.APP_WRITE) &&
-            !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        if (!isOwn && !canManageAppGroups(awd.app.getId())) {
             return ResponseEntity.status(403).build();
         }
         var userOpt = domainUserLookupPort.findById(userId);
@@ -214,7 +216,7 @@ public class AppGroupController {
                 .findByAppIdAndUserId(awd.app.getId(), userId);
         List<AppGroup> userGroups = memberships.stream()
                 .map(m -> appGroupRepository.findById(m.getGroupId()).orElse(null))
-                .filter(g -> g != null).collect(Collectors.toList());
+            .filter(g -> g != null && isFixedGroup(g)).collect(Collectors.toList());
         return ResponseEntity.ok(userGroups);
     }
 
@@ -222,12 +224,11 @@ public class AppGroupController {
     public ResponseEntity<?> removeMember(@PathVariable String slug, @PathVariable String appSlug,
             @PathVariable String groupId, @PathVariable String userId) {
         AppWithDomain awd = requireApplication(slug, appSlug);
-        if (!permissionService.hasAppPermission(awd.app.getId(), AppPermission.APP_WRITE) &&
-            !permissionService.hasDomainPermission(awd.org.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
+        if (!canManageAppGroups(awd.app.getId())) {
             return ResponseEntity.status(403).build();
         }
         AppGroup group = appGroupRepository.findById(groupId).orElse(null);
-        if (group == null || !group.getAppId().equals(awd.app.getId())) {
+        if (group == null || !group.getAppId().equals(awd.app.getId()) || !isFixedGroup(group)) {
             return ResponseEntity.notFound().build();
         }
         appGroupMemberRepository.findByGroupIdAndUserId(groupId, userId).ifPresent(appGroupMemberRepository::delete);
@@ -261,5 +262,24 @@ public class AppGroupController {
             return details.getId();
         }
         return null;
+    }
+
+    private boolean canViewApp(String appId) {
+        return permissionService.hasAppPermission(appId, AppPermission.APP_VIEW);
+    }
+
+    private boolean canManageAppGroups(String appId) {
+        return permissionService.hasAppPermission(appId, AppPermission.APP_CONFIGURE);
+    }
+
+    private List<AppGroup> fixedAppGroups(String appId) {
+        return appGroupRepository.findByAppId(appId).stream()
+                .filter(this::isFixedGroup)
+                .collect(Collectors.toList());
+    }
+
+    private boolean isFixedGroup(AppGroup group) {
+        return group.isDefaultGroup() || (group.getName() != null
+                && FIXED_GROUP_NAMES.contains(group.getName().toLowerCase()));
     }
 }

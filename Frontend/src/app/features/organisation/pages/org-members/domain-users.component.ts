@@ -102,25 +102,16 @@ export class DomainUsersComponent implements OnInit {
     if (!this.draggedUser) return;
 
     const user = this.draggedUser;
-    const fromGroupId = this.draggedFromGroupId;
 
-    // If dropped on same group, do nothing
-    if (fromGroupId === targetGroupId) {
+    const alreadyInTarget = user.groups.some(g => g.groupId === targetGroupId);
+    if (alreadyInTarget) {
       this.draggedUser = null;
       this.draggedFromGroupId = null;
       return;
     }
 
-    // Remove from old group if exists
-    const removePromise = fromGroupId
-      ? this.domainService.removeDomainGroupMember(this.slug, fromGroupId, user.id).toPromise()
-      : Promise.resolve();
-
-    removePromise.then(() => {
-      // Add to new group
-      return this.domainService.addDomainGroupMember(this.slug, targetGroupId, user.username).toPromise();
-    }).then(() => {
-      // Reload data
+    this.domainService.addDomainGroupMember(this.slug, targetGroupId, user.username).toPromise()
+    .then(() => {
       this.loadData();
     }).catch(err => {
       this.error = 'Failed to update user group membership';
@@ -150,5 +141,15 @@ export class DomainUsersComponent implements OnInit {
         this.error = 'Failed to remove user from group';
         console.error(err);
       });
+  }
+
+  permissionLabel(permission: string): string {
+    const labels: Record<string, string> = {
+      DOMAIN_MANAGE_USERS: 'Manage Members & Groups',
+      DOMAIN_MANAGE_APPS: 'Manage Applications',
+      DOMAIN_MANAGE_WORKFLOWS: 'Manage Workflows',
+      DOMAIN_USE_APP: 'Use Apps'
+    };
+    return labels[permission] || permission;
   }
 }

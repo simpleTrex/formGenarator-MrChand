@@ -49,7 +49,7 @@ public class DomainModelController {
     public ResponseEntity<?> list(@PathVariable String slug, @RequestParam(name = "appSlug") String appSlug) {
         Organisation domain = requireDomain(slug);
         Application app = requireApplication(domain.getId(), appSlug);
-        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_WRITE)) {
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_CONFIGURE)) {
             return ResponseEntity.status(403).build();
         }
         List<DomainModel> models = domainModelRepository.findByDomainId(domain.getId());
@@ -61,7 +61,7 @@ public class DomainModelController {
             @RequestParam(name = "appSlug") String appSlug) {
         Organisation domain = requireDomain(slug);
         Application app = requireApplication(domain.getId(), appSlug);
-        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_WRITE)) {
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_CONFIGURE)) {
             return ResponseEntity.status(403).build();
         }
         DomainModel model = domainModelRepository.findByDomainIdAndSlug(domain.getId(), slugify(modelSlug))
@@ -74,7 +74,7 @@ public class DomainModelController {
             @Valid @RequestBody CreateDomainModelRequest request) {
         Organisation domain = requireDomain(slug);
         Application app = requireApplication(domain.getId(), appSlug);
-        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_WRITE)) {
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_CONFIGURE)) {
             return ResponseEntity.status(403).build();
         }
         String normalizedSlug = slugify(request.getSlug());
@@ -103,7 +103,7 @@ public class DomainModelController {
             @Valid @RequestBody UpdateDomainModelRequest request) {
         Organisation domain = requireDomain(slug);
         Application app = requireApplication(domain.getId(), appSlug);
-        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_WRITE)) {
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_CONFIGURE)) {
             return ResponseEntity.status(403).build();
         }
         DomainModel model = domainModelRepository.findByDomainIdAndSlug(domain.getId(), slugify(modelSlug))
@@ -131,7 +131,7 @@ public class DomainModelController {
             @RequestParam(name = "appSlug") String appSlug) {
         Organisation domain = requireDomain(slug);
         Application app = requireApplication(domain.getId(), appSlug);
-        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_WRITE)) {
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_CONFIGURE)) {
             return ResponseEntity.status(403).build();
         }
         DomainModel model = domainModelRepository.findByDomainIdAndSlug(domain.getId(), slugify(modelSlug))
@@ -162,45 +162,20 @@ public class DomainModelController {
 
     @PostMapping("/employees/records")
     public ResponseEntity<?> createEmployee(@PathVariable String slug, @RequestBody ModelRecord employeeData) {
-        Organisation domain = requireDomain(slug);
-        DomainModel employeeModel = domainModelRepository.findByDomainIdAndSlug(domain.getId(), "employees")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee model not found"));
-
-        employeeData.setModelId(employeeModel.getId());
-        employeeData.setDomainId(domain.getId());
-        ModelRecord saved = modelRecordService.save(employeeData);
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+            .body("Manual employee creation is disabled. Users must register in the domain.");
     }
 
     @PutMapping("/employees/records/{recordId}")
     public ResponseEntity<?> updateEmployee(@PathVariable String slug, @PathVariable String recordId, @RequestBody ModelRecord employeeData) {
-        Organisation domain = requireDomain(slug);
-        ModelRecord existing = modelRecordService.findById(recordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
-
-        if (!existing.getDomainId().equals(domain.getId())) {
-            return ResponseEntity.status(403).build();
-        }
-
-        employeeData.setId(recordId);
-        employeeData.setModelId(existing.getModelId());
-        employeeData.setDomainId(domain.getId());
-        ModelRecord saved = modelRecordService.save(employeeData);
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body("Manual employee updates are disabled. Users must be managed via domain access assignments.");
     }
 
     @DeleteMapping("/employees/records/{recordId}")
     public ResponseEntity<?> deleteEmployee(@PathVariable String slug, @PathVariable String recordId) {
-        Organisation domain = requireDomain(slug);
-        ModelRecord existing = modelRecordService.findById(recordId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
-
-        if (!existing.getDomainId().equals(domain.getId())) {
-            return ResponseEntity.status(403).build();
-        }
-
-        modelRecordService.deleteById(recordId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body("Manual employee deletion is disabled. Users must be managed via domain access assignments.");
     }
 
     // ── Model Templates ───────────────────────────────────────────────────────
@@ -210,7 +185,7 @@ public class DomainModelController {
     public ResponseEntity<?> listModelTemplates(@PathVariable String slug, @RequestParam(name = "appSlug") String appSlug) {
         Organisation domain = requireDomain(slug);
         Application app = requireApplication(domain.getId(), appSlug);
-        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_WRITE)) {
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_CONFIGURE)) {
             return ResponseEntity.status(403).build();
         }
 
@@ -224,7 +199,7 @@ public class DomainModelController {
             @RequestBody Map<String, String> body) {
         Organisation domain = requireDomain(slug);
         Application app = requireApplication(domain.getId(), appSlug);
-        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_WRITE)) {
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_CONFIGURE)) {
             return ResponseEntity.status(403).build();
         }
 

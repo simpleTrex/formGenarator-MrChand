@@ -1,5 +1,6 @@
 package com.adaptivebp.modules.organisation.controller;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,9 +23,8 @@ import org.springframework.web.server.ResponseStatusException;
 import com.adaptivebp.modules.identity.model.DomainUser;
 import com.adaptivebp.modules.identity.port.DomainUserLookupPort;
 import com.adaptivebp.modules.organisation.dto.request.AssignMemberRequest;
-import com.adaptivebp.modules.organisation.dto.request.CreateDomainGroupRequest;
+import com.adaptivebp.modules.organisation.dto.request.CreateWorkflowRoleRequest;
 import com.adaptivebp.modules.organisation.dto.response.DomainUserResponse;
-import com.adaptivebp.modules.organisation.dto.response.GroupMemberResponse;
 import com.adaptivebp.modules.organisation.model.DomainGroup;
 import com.adaptivebp.modules.organisation.model.DomainGroupMember;
 import com.adaptivebp.modules.organisation.model.Organisation;
@@ -39,8 +39,8 @@ import com.adaptivebp.shared.security.AdaptiveUserDetails;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/adaptive/domains/{slug}/groups")
-public class DomainGroupController {
+@RequestMapping("/adaptive/domains/{slug}/workflow-roles")
+public class DomainWorkflowRoleController {
 
     @Autowired
     private OrganisationRepository organisationRepository;
@@ -56,102 +56,136 @@ public class DomainGroupController {
     @GetMapping
     public ResponseEntity<?> list(@PathVariable String slug) {
         Organisation domain = requireDomain(slug);
-        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
+        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_USE_APP)
+                && !permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
             return ResponseEntity.status(403).build();
         }
-        List<DomainGroup> groups = accessGroups(domain.getId());
-        return ResponseEntity.ok(groups);
+        return ResponseEntity.ok(workflowRoles(domain.getId()));
     }
 
     @GetMapping("/users")
-    public ResponseEntity<?> listUsersWithGroups(@PathVariable String slug) {
+    public ResponseEntity<?> listUsersWithRoles(@PathVariable String slug) {
         Organisation domain = requireDomain(slug);
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
             return ResponseEntity.status(403).build();
         }
+
         List<DomainUser> users = domainUserLookupPort.findByDomainId(domain.getId());
-        List<DomainGroup> groups = accessGroups(domain.getId());
-        Map<String, String> groupIdToName = groups.stream()
+        List<DomainGroup> roles = workflowRoles(domain.getId());
+        Map<String, String> roleIdToName = roles.stream()
                 .collect(Collectors.toMap(DomainGroup::getId, DomainGroup::getName));
+
         List<DomainUserResponse> userResponses = users.stream().map(user -> {
             DomainUserResponse response = new DomainUserResponse(user);
             List<DomainGroupMember> memberships = domainGroupMemberRepository
                     .findByDomainIdAndUserId(domain.getId(), user.getId());
-            List<DomainUserResponse.GroupMembershipInfo> groupInfos = memberships.stream()
-                    .filter(m -> groupIdToName.containsKey(m.getDomainGroupId()))
+            List<DomainUserResponse.GroupMembershipInfo> roleInfos = memberships.stream()
+                    .filter(m -> roleIdToName.containsKey(m.getDomainGroupId()))
                     .map(m -> new DomainUserResponse.GroupMembershipInfo(
                             m.getDomainGroupId(),
-                            groupIdToName.getOrDefault(m.getDomainGroupId(), "Unknown"),
+                            roleIdToName.get(m.getDomainGroupId()),
                             m.getAssignedAt()))
                     .collect(Collectors.toList());
-            response.setGroups(groupInfos);
+            response.setGroups(roleInfos);
             return response;
         }).collect(Collectors.toList());
+
         return ResponseEntity.ok(userResponses);
     }
 
-    @GetMapping("/{groupId}/members")
-    public ResponseEntity<?> listGroupMembers(@PathVariable String slug, @PathVariable String groupId) {
+    @PostMapping
+    public ResponseEntity<?> create(@PathVariable String slug, @Valid @RequestBody CreateWorkflowRoleRequest request) {
         Organisation domain = requireDomain(slug);
-        DomainGroup group = domainGroupRepository.findById(groupId).orElse(null);
-        if (group == null || !domain.getId().equals(group.getDomainId()) || !isAccessGroup(group)) {
-            return ResponseEntity.notFound().build();
-        }
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
             return ResponseEntity.status(403).build();
         }
-        List<DomainGroupMember> memberships = domainGroupMemberRepository.findByDomainGroupId(groupId);
-        List<GroupMemberResponse> memberResponses = memberships.stream()
-                .map(membership -> domainUserLookupPort.findById(membership.getUserId())
-                        .map(user -> new GroupMemberResponse(user.getId(), user.getUsername(), user.getEmail(),
-                                user.getStatus(), membership.getAssignedAt(), membership.getAssignedBy()))
-                        .orElse(null))
-                .filter(r -> r != null)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(memberResponses);
+
+        String normalizedName = request.getName() != null ? request.getName().trim() : null;
+        boolean exists = domainGroupRepository.findByDomainIdAndName(domain.getId(), normalizedName).isPresent();
+        if (exists) {
+            return ResponseEntity.badRequest().body("Role already exists");
+        }
+
+        DomainGroup role = new DomainGroup();
+        role.setDomainId(domain.getId());
+        role.setName(normalizedName);
+        role.setPermissions(EnumSet.noneOf(DomainPermission.class));
+        role.setGroupType(DomainGroupType.WORKFLOW_ROLE);
+        role.setDefaultGroup(false);
+        return ResponseEntity.status(HttpStatus.CREATED).body(domainGroupRepository.save(role));
     }
 
-    @PostMapping
-    public ResponseEntity<?> create(@PathVariable String slug, @Valid @RequestBody CreateDomainGroupRequest request) {
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body("Access groups are fixed defaults. Only membership assignment is allowed here.");
+    @PutMapping("/{roleId}")
+    public ResponseEntity<?> update(@PathVariable String slug, @PathVariable String roleId,
+            @Valid @RequestBody CreateWorkflowRoleRequest request) {
+        Organisation domain = requireDomain(slug);
+        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        DomainGroup role = domainGroupRepository.findById(roleId).orElse(null);
+        if (role == null || !domain.getId().equals(role.getDomainId()) || !isWorkflowRole(role)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String normalizedName = request.getName() != null ? request.getName().trim() : null;
+        boolean duplicateName = domainGroupRepository.findByDomainIdAndName(domain.getId(), normalizedName)
+                .filter(existing -> !existing.getId().equals(role.getId()))
+                .isPresent();
+        if (duplicateName) {
+            return ResponseEntity.badRequest().body("Role already exists");
+        }
+
+        role.setName(normalizedName);
+        return ResponseEntity.ok(domainGroupRepository.save(role));
     }
 
-    @PutMapping("/{groupId}")
-    public ResponseEntity<?> update(@PathVariable String slug, @PathVariable String groupId,
-            @Valid @RequestBody CreateDomainGroupRequest request) {
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body("Access groups are fixed defaults. Only membership assignment is allowed here.");
+    @DeleteMapping("/{roleId}")
+    public ResponseEntity<?> delete(@PathVariable String slug, @PathVariable String roleId) {
+        Organisation domain = requireDomain(slug);
+        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        DomainGroup role = domainGroupRepository.findById(roleId).orElse(null);
+        if (role == null || !domain.getId().equals(role.getDomainId()) || !isWorkflowRole(role)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<DomainGroupMember> members = domainGroupMemberRepository.findByDomainGroupId(roleId);
+        for (DomainGroupMember member : members) {
+            domainGroupMemberRepository.delete(member);
+        }
+        domainGroupRepository.delete(role);
+        return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{groupId}")
-    public ResponseEntity<?> delete(@PathVariable String slug, @PathVariable String groupId) {
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body("Access groups are fixed defaults. Only membership assignment is allowed here.");
-    }
-
-    @PostMapping("/{groupId}/members")
-    public ResponseEntity<?> addMember(@PathVariable String slug, @PathVariable String groupId,
+    @PostMapping("/{roleId}/members")
+    public ResponseEntity<?> addMember(@PathVariable String slug, @PathVariable String roleId,
             @Valid @RequestBody AssignMemberRequest request) {
         Organisation domain = requireDomain(slug);
-        DomainGroup group = domainGroupRepository.findById(groupId).orElse(null);
-        if (group == null || !domain.getId().equals(group.getDomainId()) || !isAccessGroup(group)) {
-            return ResponseEntity.notFound().build();
-        }
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
             return ResponseEntity.status(403).build();
         }
+
+        DomainGroup role = domainGroupRepository.findById(roleId).orElse(null);
+        if (role == null || !domain.getId().equals(role.getDomainId()) || !isWorkflowRole(role)) {
+            return ResponseEntity.notFound().build();
+        }
+
         var userOpt = domainUserLookupPort.findByDomainIdAndUsername(domain.getId(), request.getUsername());
         if (userOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found in this domain");
         }
+
         String userId = userOpt.get().getId();
-        boolean exists = domainGroupMemberRepository.findByDomainGroupIdAndUserId(groupId, userId).isPresent();
+        boolean exists = domainGroupMemberRepository.findByDomainGroupIdAndUserId(roleId, userId).isPresent();
         if (exists) {
-            return ResponseEntity.badRequest().body("User already in group");
+            return ResponseEntity.badRequest().body("User already in role");
         }
+
         DomainGroupMember member = new DomainGroupMember();
-        member.setDomainGroupId(groupId);
+        member.setDomainGroupId(roleId);
         member.setDomainId(domain.getId());
         member.setUserId(userId);
         member.setAssignedBy(currentPrincipalId());
@@ -159,39 +193,32 @@ public class DomainGroupController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<?> listUserGroups(@PathVariable String slug, @PathVariable String userId) {
-        Organisation domain = requireDomain(slug);
-        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
-            return ResponseEntity.status(403).build();
-        }
-        var userOpt = domainUserLookupPort.findById(userId);
-        if (userOpt.isEmpty() || !userOpt.get().getDomainId().equals(domain.getId())) {
-            return ResponseEntity.notFound().build();
-        }
-        List<DomainGroupMember> memberships = domainGroupMemberRepository
-                .findByDomainIdAndUserId(domain.getId(), userId);
-        List<DomainGroup> userGroups = memberships.stream()
-                .map(m -> domainGroupRepository.findById(m.getDomainGroupId()).orElse(null))
-            .filter(g -> g != null && isAccessGroup(g))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(userGroups);
-    }
-
-    @DeleteMapping("/{groupId}/members/{userId}")
-    public ResponseEntity<?> removeMember(@PathVariable String slug, @PathVariable String groupId,
+    @DeleteMapping("/{roleId}/members/{userId}")
+    public ResponseEntity<?> removeMember(@PathVariable String slug, @PathVariable String roleId,
             @PathVariable String userId) {
         Organisation domain = requireDomain(slug);
-        DomainGroup group = domainGroupRepository.findById(groupId).orElse(null);
-        if (group == null || !domain.getId().equals(group.getDomainId()) || !isAccessGroup(group)) {
-            return ResponseEntity.notFound().build();
-        }
         if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_USERS)) {
             return ResponseEntity.status(403).build();
         }
-        domainGroupMemberRepository.findByDomainGroupIdAndUserId(groupId, userId)
+
+        DomainGroup role = domainGroupRepository.findById(roleId).orElse(null);
+        if (role == null || !domain.getId().equals(role.getDomainId()) || !isWorkflowRole(role)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        domainGroupMemberRepository.findByDomainGroupIdAndUserId(roleId, userId)
                 .ifPresent(domainGroupMemberRepository::delete);
         return ResponseEntity.ok().build();
+    }
+
+    private List<DomainGroup> workflowRoles(String domainId) {
+        return domainGroupRepository.findByDomainId(domainId).stream()
+                .filter(this::isWorkflowRole)
+                .collect(Collectors.toList());
+    }
+
+    private boolean isWorkflowRole(DomainGroup group) {
+        return group.getGroupType() == DomainGroupType.WORKFLOW_ROLE;
     }
 
     private Organisation requireDomain(String slug) {
@@ -213,15 +240,5 @@ public class DomainGroupController {
             return details.getId();
         }
         return null;
-    }
-
-    private List<DomainGroup> accessGroups(String domainId) {
-        return domainGroupRepository.findByDomainId(domainId).stream()
-                .filter(this::isAccessGroup)
-                .collect(Collectors.toList());
-    }
-
-    private boolean isAccessGroup(DomainGroup group) {
-        return group.getGroupType() == null || group.getGroupType() == DomainGroupType.ACCESS;
     }
 }

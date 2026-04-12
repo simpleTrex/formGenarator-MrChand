@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.adaptivebp.modules.appmanagement.dto.request.CreateApplicationRequest;
 import com.adaptivebp.modules.appmanagement.model.Application;
+import com.adaptivebp.modules.appmanagement.permission.AppPermission;
 import com.adaptivebp.modules.appmanagement.repository.ApplicationRepository;
 import com.adaptivebp.modules.appmanagement.service.ApplicationProvisioningService;
 import com.adaptivebp.modules.appmanagement.service.ApplicationDeletionService;
@@ -23,6 +26,7 @@ import com.adaptivebp.modules.organisation.model.Organisation;
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
 import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
+import com.adaptivebp.shared.security.AdaptiveUserDetails;
 
 import jakarta.validation.Valid;
 
@@ -48,21 +52,21 @@ public class ApplicationController {
     @GetMapping
     public ResponseEntity<?> list(@PathVariable String slug) {
         Organisation domain = requireDomain(slug);
-        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_USE_APP)) {
-            return ResponseEntity.status(403).build();
-        }
-        List<Application> apps = applicationRepository.findByDomainId(domain.getId());
+        String currentUserId = currentPrincipalId();
+        List<Application> apps = applicationRepository.findByDomainId(domain.getId()).stream()
+            .filter(app -> canViewApp(app, currentUserId))
+                .toList();
         return ResponseEntity.ok(apps);
     }
 
     @GetMapping("/{appSlug}")
     public ResponseEntity<?> getApplication(@PathVariable String slug, @PathVariable String appSlug) {
         Organisation domain = requireDomain(slug);
-        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_USE_APP)) {
-            return ResponseEntity.status(403).build();
-        }
         Application app = applicationRepository.findByDomainIdAndSlug(domain.getId(), appSlug)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));
+        if (!canViewApp(app, currentPrincipalId())) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(app);
     }
 
@@ -79,20 +83,23 @@ public class ApplicationController {
         application.setDomainId(domain.getId());
         application.setSlug(request.getSlug());
         application.setName(request.getName());
-        application.setOwnerUserId(request.getOwnerUserId());
+        String creatorUserId = currentPrincipalId();
+        String requestedOwnerUserId = normalizeUserId(request.getOwnerUserId());
+        String effectiveOwnerUserId = requestedOwnerUserId != null ? requestedOwnerUserId : creatorUserId;
+        application.setOwnerUserId(effectiveOwnerUserId);
         Application saved = applicationRepository.save(application);
-        applicationProvisioningService.provisionDefaultGroups(saved, request.getOwnerUserId());
+        applicationProvisioningService.provisionDefaultGroups(saved, effectiveOwnerUserId, creatorUserId);
         return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/{appSlug}")
     public ResponseEntity<?> delete(@PathVariable String slug, @PathVariable String appSlug) {
         Organisation domain = requireDomain(slug);
-        if (!permissionService.hasDomainPermission(domain.getId(), DomainPermission.DOMAIN_MANAGE_APPS)) {
-            return ResponseEntity.status(403).build();
-        }
         Application app = applicationRepository.findByDomainIdAndSlug(domain.getId(), appSlug)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found"));
+        if (!permissionService.hasAppPermission(app.getId(), AppPermission.APP_CONFIGURE)) {
+            return ResponseEntity.status(403).build();
+        }
         applicationDeletionService.deleteApplication(domain.getId(), app);
         return ResponseEntity.noContent().build();
     }
@@ -108,5 +115,28 @@ public class ApplicationController {
         s = s.replaceAll("[^a-z0-9]+", "-");
         s = s.replaceAll("^-+", "").replaceAll("-+$", "");
         return s;
+    }
+
+    private boolean canViewApp(Application app, String currentUserId) {
+        if (permissionService.hasAppPermission(app.getId(), AppPermission.APP_VIEW)) {
+            return true;
+        }
+        return currentUserId != null && currentUserId.equals(app.getOwnerUserId());
+    }
+
+    private String currentPrincipalId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof AdaptiveUserDetails details) {
+            return details.getId();
+        }
+        return null;
+    }
+
+    private String normalizeUserId(String userId) {
+        if (userId == null) {
+            return null;
+        }
+        String normalized = userId.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

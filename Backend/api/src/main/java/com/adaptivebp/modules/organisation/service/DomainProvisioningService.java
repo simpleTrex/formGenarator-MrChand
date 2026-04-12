@@ -15,6 +15,7 @@ import com.adaptivebp.modules.formbuilder.repository.DomainModelRepository;
 import com.adaptivebp.modules.organisation.model.Organisation;
 import com.adaptivebp.modules.organisation.model.DomainGroup;
 import com.adaptivebp.modules.organisation.model.DomainGroupMember;
+import com.adaptivebp.modules.organisation.model.enums.DomainGroupType;
 import com.adaptivebp.modules.organisation.permission.DomainPermission;
 import com.adaptivebp.modules.organisation.repository.DomainGroupMemberRepository;
 import com.adaptivebp.modules.organisation.repository.DomainGroupRepository;
@@ -43,7 +44,6 @@ public class DomainProvisioningService {
                     EnumSet.allOf(DomainPermission.class), true);
             DomainGroup contributorGroup = buildGroup(organisation.getId(), "Domain Contributor",
                     EnumSet.of(DomainPermission.DOMAIN_MANAGE_APPS, DomainPermission.DOMAIN_USE_APP,
-                            DomainPermission.DOMAIN_MANAGE_PROCESSES,
                             DomainPermission.DOMAIN_MANAGE_WORKFLOWS), true);
             domainGroupRepository.saveAll(List.of(adminGroup, contributorGroup));
             if (ownerDomainUserId != null) {
@@ -81,6 +81,7 @@ public class DomainProvisioningService {
         group.setDomainId(domainId);
         group.setName(name);
         group.setPermissions(permissions);
+        group.setGroupType(DomainGroupType.ACCESS);
         group.setDefaultGroup(defaultGroup);
         return group;
     }

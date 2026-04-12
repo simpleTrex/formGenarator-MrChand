@@ -1,74 +1,163 @@
 <div class="ah-shell fade-in" [style.--tc]="themeColor">
 
-  <!-- ── Nav bar (always visible) ── -->
+  <!-- ── Sticky nav ── -->
   <nav class="ah-nav">
     <button class="ah-nav-back" (click)="goBackToDomain()">
       ← {{ domain?.name || 'Domain' }}
     </button>
-
-    <!-- Admin mode tabs — only shown to admins/owners -->
     <div class="ah-mode-tabs" *ngIf="canEnterManageMode || canAccessManager">
       <button class="ah-tab" [class.active]="mode === 'PREVIEW'" (click)="enterPreviewMode()">Home</button>
-      <button class="ah-tab" *ngIf="canEnterManageMode"      [class.active]="mode === 'EDIT'"    (click)="enterEditMode()">Manage</button>
-      <button class="ah-tab" *ngIf="canAccessManager" [class.active]="mode === 'ACCESS'"  (click)="enterAccessManagerMode()">Access</button>
+      <button class="ah-tab" *ngIf="canEnterManageMode" [class.active]="mode === 'EDIT'" (click)="enterEditMode()">Manage</button>
+      <button class="ah-tab" *ngIf="canAccessManager" [class.active]="mode === 'ACCESS'" (click)="enterAccessManagerMode()">Access</button>
     </div>
   </nav>
 
   <div *ngIf="error" class="ah-alert ah-alert-error">{{ error }}</div>
 
-  <!-- ════════════════════════════════════════
-       NORMAL USER — clean Start landing
-  ════════════════════════════════════════ -->
+  <!-- ════════════════════════════════════════════════════════════════
+       NORMAL USER LANDING  (no manage/access perms)
+  ════════════════════════════════════════════════════════════════ -->
   <ng-container *ngIf="!canEnterManageMode && !canAccessManager">
-    <div class="ah-user-landing">
-      <div class="ah-app-bubble">{{ (app?.name || '?')[0].toUpperCase() }}</div>
-      <h1 class="ah-landing-name">{{ app?.name }}</h1>
-      <p *ngIf="app?.description" class="ah-landing-desc">{{ app.description }}</p>
-      <div *ngIf="startError" class="ah-alert ah-alert-error">{{ startError }}</div>
-      <button class="ah-start-btn" [disabled]="startingWorkflow" (click)="startWorkflow()">
-        <span *ngIf="!startingWorkflow">Start Workflow →</span>
-        <span *ngIf="startingWorkflow" class="ah-spinner"></span>
-      </button>
+
+    <!-- Hero band -->
+    <div class="ah-hero">
+      <div class="ah-hero-glow ah-hero-glow-a"></div>
+      <div class="ah-hero-glow ah-hero-glow-b"></div>
+      <div class="ah-hero-content">
+        <div class="ah-hero-icon">{{ (app?.name || '?')[0].toUpperCase() }}</div>
+        <h1 class="ah-hero-name">{{ app?.name }}</h1>
+        <p *ngIf="app?.description" class="ah-hero-desc">{{ app.description }}</p>
+      </div>
     </div>
 
-  </ng-container>
+    <!-- Actions area -->
+    <div class="ah-actions-area">
 
-  <!-- ════════════════════════════════════════
-       ADMIN / OWNER — mode-based content
-  ════════════════════════════════════════ -->
-  <ng-container *ngIf="canEnterManageMode || canAccessManager">
-
-    <!-- ── PREVIEW ── -->
-    <div *ngIf="mode === 'PREVIEW'" class="ah-body">
-
-      <!-- App hero -->
-      <div class="ah-admin-hero">
-        <div class="ah-app-bubble-sm">{{ (app?.name || '?')[0].toUpperCase() }}</div>
-        <div class="ah-admin-hero-text">
-          <h1 class="ah-admin-name">{{ app?.name }}</h1>
-          <p *ngIf="app?.description" class="ah-admin-desc">{{ app.description }}</p>
-        </div>
+      <div *ngIf="startError" class="ah-alert ah-alert-error" style="width:100%;max-width:560px;margin-bottom:0">
+        {{ startError }}
       </div>
 
-      <div *ngIf="startError" class="ah-alert ah-alert-error">{{ startError }}</div>
-
-      <!-- Start button -->
-      <button class="ah-start-btn-sm" [disabled]="startingWorkflow" (click)="startWorkflow()">
-        <span *ngIf="!startingWorkflow">▶ Start Workflow</span>
-        <span *ngIf="startingWorkflow" class="ah-spinner"></span>
+      <!-- Primary CTA -->
+      <button class="ah-cta-btn" [disabled]="startingWorkflow" (click)="startWorkflow()">
+        <span class="ah-cta-play" *ngIf="!startingWorkflow">▶</span>
+        <span class="ah-spinner" *ngIf="startingWorkflow"></span>
+        <span *ngIf="!startingWorkflow">Start Workflow</span>
       </button>
 
-      <div class="ah-manage-grid mt-3">
-        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'tasks']" class="ah-manage-card">
-          <div class="ah-manage-icon-wrap">TQ</div>
-          <div class="ah-manage-body">
-            <strong>My Tasks</strong>
-            <span>Execute pending workflow edges</span>
+      <!-- Quick-action cards -->
+      <div class="ah-cards-row">
+        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'tasks']" class="ah-qcard">
+          <div class="ah-qcard-icon ah-qcard-icon-tasks">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
           </div>
-          <span class="ah-manage-arrow">→</span>
+          <div class="ah-qcard-body">
+            <span class="ah-qcard-title">My Tasks</span>
+            <span class="ah-qcard-sub">Actions pending your approval</span>
+          </div>
+          <span class="ah-qcard-arrow">→</span>
+        </a>
+
+        <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'tasks']"
+           [queryParams]="{ tab: 'started' }" class="ah-qcard">
+          <div class="ah-qcard-icon ah-qcard-icon-started">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.18-5.55"/>
+            </svg>
+          </div>
+          <div class="ah-qcard-body">
+            <span class="ah-qcard-title">Started By Me</span>
+            <span class="ah-qcard-sub">Track your in-progress submissions</span>
+          </div>
+          <span class="ah-qcard-arrow">→</span>
         </a>
       </div>
 
+    </div>
+  </ng-container>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       ADMIN / OWNER — mode-based content
+  ════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="canEnterManageMode || canAccessManager">
+
+    <!-- ── PREVIEW (home mode for admins) ── -->
+    <div *ngIf="mode === 'PREVIEW'">
+
+      <!-- Hero band (same design, slightly smaller) -->
+      <div class="ah-hero ah-hero-sm">
+        <div class="ah-hero-glow ah-hero-glow-a"></div>
+        <div class="ah-hero-glow ah-hero-glow-b"></div>
+        <div class="ah-hero-content">
+          <div class="ah-hero-icon ah-hero-icon-sm">{{ (app?.name || '?')[0].toUpperCase() }}</div>
+          <h1 class="ah-hero-name ah-hero-name-sm">{{ app?.name }}</h1>
+          <p *ngIf="app?.description" class="ah-hero-desc">{{ app.description }}</p>
+        </div>
+      </div>
+
+      <!-- Admin actions area -->
+      <div class="ah-actions-area">
+
+        <div *ngIf="startError" class="ah-alert ah-alert-error" style="width:100%;max-width:680px;margin-bottom:0">
+          {{ startError }}
+        </div>
+
+        <button class="ah-cta-btn" [disabled]="startingWorkflow" (click)="startWorkflow()">
+          <span class="ah-cta-play" *ngIf="!startingWorkflow">▶</span>
+          <span class="ah-spinner" *ngIf="startingWorkflow"></span>
+          <span *ngIf="!startingWorkflow">Start Workflow</span>
+        </button>
+
+        <!-- Quick-action grid (wider for admins) -->
+        <div class="ah-cards-row ah-cards-row-wide">
+
+          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'tasks']" class="ah-qcard">
+            <div class="ah-qcard-icon ah-qcard-icon-tasks">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+            </div>
+            <div class="ah-qcard-body">
+              <span class="ah-qcard-title">My Tasks</span>
+              <span class="ah-qcard-sub">Pending actions for you</span>
+            </div>
+            <span class="ah-qcard-arrow">→</span>
+          </a>
+
+          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'instances']" class="ah-qcard">
+            <div class="ah-qcard-icon ah-qcard-icon-instances">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+              </svg>
+            </div>
+            <div class="ah-qcard-body">
+              <span class="ah-qcard-title">All Instances</span>
+              <span class="ah-qcard-sub">Monitor all workflow runs</span>
+            </div>
+            <span class="ah-qcard-arrow">→</span>
+          </a>
+
+          <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'workflows', 'builder']" class="ah-qcard ah-qcard-outline">
+            <div class="ah-qcard-icon ah-qcard-icon-builder">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/>
+                <line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/>
+                <line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+              </svg>
+            </div>
+            <div class="ah-qcard-body">
+              <span class="ah-qcard-title">Workflow Builder</span>
+              <span class="ah-qcard-sub">Design &amp; publish workflow steps</span>
+            </div>
+            <span class="ah-qcard-arrow">→</span>
+          </a>
+
+        </div>
+      </div>
     </div>
 
     <!-- ── MANAGE / EDIT ── -->
@@ -86,7 +175,6 @@
             </div>
             <span class="ah-manage-arrow">→</span>
           </a>
-
 
           <a [routerLink]="['/domain', domainSlug, 'app', appSlug, 'tasks']" class="ah-manage-card">
             <div class="ah-manage-icon-wrap">TQ</div>
@@ -129,7 +217,7 @@
         </div>
       </ng-container>
 
-      <!-- Delete Application (Domain Admin only) -->
+      <!-- Delete Application -->
       <div *ngIf="canManageApp" class="ah-theme-section mt-4">
         <h3 class="ah-theme-title">Delete Application</h3>
         <p class="ah-muted">This will permanently delete <strong>{{ app?.name }}</strong> and related data.</p>
@@ -146,14 +234,10 @@
 
         <ng-container *ngIf="showDeleteConfirm">
           <p class="ah-muted" style="margin-top: 0.9rem;">Type <strong>{{ deleteExpectedPhrase }}</strong> to confirm.</p>
-          <input
-            type="text"
-            [disabled]="deletingApp"
-            [(ngModel)]="deleteConfirmText"
-            placeholder="delete {{ app?.name }}"
-            style="width: 100%; max-width: 520px; padding: 0.65rem 0.8rem; border-radius: 10px; border: 1.5px solid rgba(0,0,0,0.1); background: white; font-size: 0.9rem; outline: none;"
-          />
-          <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.9rem;">
+          <input type="text" [disabled]="deletingApp" [(ngModel)]="deleteConfirmText"
+                 placeholder="delete {{ app?.name }}"
+                 style="width:100%;max-width:520px;padding:0.65rem 0.8rem;border-radius:10px;border:1.5px solid rgba(0,0,0,0.1);background:white;font-size:0.9rem;outline:none;" />
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.9rem;">
             <button class="ah-nav-back" [disabled]="deletingApp" (click)="cancelDeleteConfirm()">Cancel</button>
             <button class="ah-start-btn-sm" [disabled]="deletingApp || !canConfirmDelete" (click)="confirmDeleteApplication()">
               <span *ngIf="!deletingApp">Confirm Delete</span>
@@ -167,7 +251,7 @@
     <!-- ── ACCESS MANAGER ── -->
     <div *ngIf="mode === 'ACCESS' && canManageAppGroups" class="ah-body">
       <h2 class="ah-section-title">Access Manager</h2>
-      <p class="ah-muted">Drag users between groups to manage their permissions.</p>
+      <p class="ah-muted">App groups are fixed defaults (App Admin, App Editor, App Viewer). Assign users between these groups.</p>
 
       <div *ngIf="appGroupsLoading || usersLoading" class="ah-loading">
         <div class="ah-spinner-dark"></div> Loading…
@@ -176,26 +260,24 @@
 
       <div class="ah-access-layout mt-3">
         <div class="ah-groups-grid">
-          <div *ngFor="let group of appGroups"
-               class="ah-group-card"
-               (dragover)="onDragOver($event)"
-               (drop)="onDrop($event, group.id)">
+          <div *ngFor="let group of appGroups" class="ah-group-card"
+               (dragover)="onDragOver($event)" (drop)="onDrop($event, group.id)">
             <div class="ah-group-head">
-              <span class="ah-group-name">{{ group.name }}</span>
-              <span class="ah-count-pill">{{ getUsersInGroup(group.id).length }}</span>
+              <div class="ah-group-meta">
+                <span class="ah-group-name">{{ group.name }}</span>
+                <span class="ah-group-default" *ngIf="group.defaultGroup">Default</span>
+              </div>
+              <div class="ah-group-head-actions">
+                <span class="ah-count-pill">{{ getUsersInGroup(group.id).length }}</span>
+              </div>
             </div>
             <div class="ah-perms-row">
               <span *ngFor="let perm of group.permissions" class="ah-perm-chip">{{ perm }}</span>
             </div>
             <div class="ah-group-members">
-              <div *ngIf="getUsersInGroup(group.id).length === 0" class="ah-dropzone">
-                Drop users here
-              </div>
-              <div *ngFor="let user of getUsersInGroup(group.id)"
-                   class="ah-user-pill"
-                   draggable="true"
-                   (dragstart)="onDragStart($event, user, group.id)"
-                   (dragend)="onDragEnd()">
+              <div *ngIf="getUsersInGroup(group.id).length === 0" class="ah-dropzone">Drop users here</div>
+              <div *ngFor="let user of getUsersInGroup(group.id)" class="ah-user-pill"
+                   draggable="true" (dragstart)="onDragStart($event, user, group.id)" (dragend)="onDragEnd()">
                 <div class="ah-user-avatar">{{ (user.username || '?')[0].toUpperCase() }}</div>
                 <div class="ah-user-info">
                   <span class="ah-user-name">{{ user.username }}</span>
@@ -207,7 +289,6 @@
           </div>
         </div>
 
-        <!-- Unassigned sidebar -->
         <div class="ah-unassigned">
           <div class="ah-unassigned-head">
             <span>Unassigned</span>
@@ -217,11 +298,8 @@
             <p *ngIf="getUsersWithoutGroups().length === 0" class="ah-muted" style="text-align:center;padding:1rem 0">
               All users assigned
             </p>
-            <div *ngFor="let user of getUsersWithoutGroups()"
-                 class="ah-user-pill"
-                 draggable="true"
-                 (dragstart)="onDragStart($event, user, null)"
-                 (dragend)="onDragEnd()">
+            <div *ngFor="let user of getUsersWithoutGroups()" class="ah-user-pill"
+                 draggable="true" (dragstart)="onDragStart($event, user, null)" (dragend)="onDragEnd()">
               <div class="ah-user-avatar">{{ (user.username || '?')[0].toUpperCase() }}</div>
               <div class="ah-user-info">
                 <span class="ah-user-name">{{ user.username }}</span>

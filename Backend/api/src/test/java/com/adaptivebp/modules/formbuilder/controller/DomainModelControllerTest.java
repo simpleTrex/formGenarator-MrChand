@@ -43,7 +43,7 @@ class DomainModelControllerTest {
     private DomainModelController controller;
 
     @Test
-    void list_shouldReturn403_withoutAppWritePermission() {
+    void list_shouldReturn403_withoutAppConfigurePermission() {
         Organisation org = new Organisation("acme", "acme", "owner");
         org.setId("d1");
 
@@ -54,14 +54,14 @@ class DomainModelControllerTest {
 
         when(organisationLookupPort.findBySlug("acme")).thenReturn(Optional.of(org));
         when(applicationLookupPort.findByDomainIdAndSlug("d1", "app1")).thenReturn(Optional.of(app));
-        when(permissionService.hasAppPermission("a1", AppPermission.APP_WRITE)).thenReturn(false);
+        when(permissionService.hasAppPermission("a1", AppPermission.APP_CONFIGURE)).thenReturn(false);
 
         ResponseEntity<?> res = controller.list("acme", "app1");
         assertEquals(HttpStatus.FORBIDDEN, res.getStatusCode());
     }
 
     @Test
-    void create_shouldReturn403_withoutAppWritePermission() {
+    void create_shouldReturn403_withoutAppConfigurePermission() {
         Organisation org = new Organisation("acme", "acme", "owner");
         org.setId("d1");
 
@@ -72,7 +72,7 @@ class DomainModelControllerTest {
 
         when(organisationLookupPort.findBySlug("acme")).thenReturn(Optional.of(org));
         when(applicationLookupPort.findByDomainIdAndSlug("d1", "app1")).thenReturn(Optional.of(app));
-        when(permissionService.hasAppPermission("a1", AppPermission.APP_WRITE)).thenReturn(false);
+        when(permissionService.hasAppPermission("a1", AppPermission.APP_CONFIGURE)).thenReturn(false);
 
         CreateDomainModelRequest req = new CreateDomainModelRequest();
         req.setName("Product");
@@ -94,7 +94,7 @@ class DomainModelControllerTest {
 
         when(organisationLookupPort.findBySlug("acme")).thenReturn(Optional.of(org));
         when(applicationLookupPort.findByDomainIdAndSlug("d1", "app1")).thenReturn(Optional.of(app));
-        when(permissionService.hasAppPermission("a1", AppPermission.APP_WRITE)).thenReturn(true);
+        when(permissionService.hasAppPermission("a1", AppPermission.APP_CONFIGURE)).thenReturn(true);
         when(domainModelRepository.existsByDomainIdAndSlug("d1", "product")).thenReturn(false);
 
         DomainModel saved = new DomainModel();

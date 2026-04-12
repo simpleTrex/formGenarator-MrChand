@@ -268,3 +268,433 @@
   transition: transform 160ms, color 160ms;
 }
 .il-card:hover .il-card-arrow { transform: translateX(3px); color: var(--tc, #1a1a2e); }
+
+/* ── Wide body for graph view ─────────────────────────────────────────────── */
+.il-body--wide {
+  max-width: none;
+  padding: 1.5rem 2rem 3rem;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TASK GRAPH
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Workflow selector tabs ────────────────────────────────────────────────── */
+.tg-wf-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.tg-wf-tab {
+  padding: 0.4rem 1rem;
+  background: white;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: 50rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.tg-wf-tab.is-active,
+.tg-wf-tab:hover {
+  background: var(--tc, #1a1a2e);
+  color: white;
+  border-color: var(--tc, #1a1a2e);
+}
+
+/* ── Main layout: graph + side panel ─────────────────────────────────────── */
+.tg-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.tg-graph-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.tg-graph-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+.tg-graph-hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+/* ── Graph canvas ──────────────────────────────────────────────────────────── */
+.tg-graph {
+  position: relative;
+  background: white;
+  border: 1.5px solid rgba(0,0,0,0.07);
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem 2.5rem;
+  overflow: visible;
+  min-height: 180px;
+}
+
+.tg-graph-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ── Tree rows ─────────────────────────────────────────────────────────────── */
+.tg-tree-row {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 3.25rem;
+  position: relative;
+  z-index: 1;
+}
+.tg-tree-row:last-child { margin-bottom: 0; }
+
+.tg-tree-node { display: flex; }
+
+/* ── Node button ───────────────────────────────────────────────────────────── */
+.tg-graph-node {
+  position: relative;
+  display: block;
+  padding: 0.8rem 1rem;
+  background: #f8fafc;
+  border: 2px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  width: 158px;
+  text-align: left;
+  cursor: default;
+  transition: border-color 180ms, box-shadow 180ms, transform 180ms, background 180ms;
+  outline: none;
+}
+
+/* node with pending tasks: interactive */
+.tg-graph-node.has-tasks {
+  background: white;
+  border-color: var(--tc, #1a1a2e);
+  cursor: pointer;
+}
+.tg-graph-node.has-tasks:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+/* selected node */
+.tg-graph-node.is-selected {
+  background: var(--tc, #1a1a2e);
+  border-color: var(--tc, #1a1a2e);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+}
+
+/* ── Task count badge ─────────────────────────────────────────────────────── */
+.tg-task-badge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+  line-height: 1;
+}
+.tg-graph-node.is-selected .tg-task-badge {
+  background: white;
+  color: var(--tc, #1a1a2e);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ── Node content ─────────────────────────────────────────────────────────── */
+.tg-node-head { display: flex; align-items: center; gap: 0.4rem; }
+
+.tg-node-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.tg-graph-node.is-selected .tg-node-name { color: white; }
+
+.tg-node-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+.tg-node-tag {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 50rem;
+  background: rgba(0,0,0,0.06);
+  color: #64748b;
+}
+.tg-graph-node.is-selected .tg-node-tag {
+  background: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.8);
+}
+.tg-node-tag-end {
+  background: rgba(37,99,235,0.1);
+  color: #1d4ed8;
+}
+.tg-node-tag-pending {
+  background: rgba(239,68,68,0.1);
+  color: #dc2626;
+}
+.tg-graph-node.is-selected .tg-node-tag-pending {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+/* ── SVG edges ────────────────────────────────────────────────────────────── */
+.tg-svg-line {
+  fill: none;
+  stroke: rgba(15,23,42,0.18);
+  stroke-width: 1.5;
+  marker-end: url(#tg-arr);
+}
+.tg-svg-label {
+  font-size: 9.5px;
+  fill: #94a3b8;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 3;
+}
+
+/* ── Legend ───────────────────────────────────────────────────────────────── */
+.tg-legend {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+  padding: 0 0.25rem;
+}
+.tg-legend-item {
+  font-size: 0.71rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.tg-legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 3px;
+  background: #f8fafc;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+.tg-legend-active::before {
+  background: white;
+  border-color: var(--tc, #1a1a2e);
+}
+
+/* ── Side panel ───────────────────────────────────────────────────────────── */
+.tg-panel {
+  width: 310px;
+  flex-shrink: 0;
+  background: white;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 16px;
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  animation: tgPanelIn 220ms ease-out both;
+}
+@keyframes tgPanelIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.tg-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem 0.85rem;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 2;
+}
+.tg-panel-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin: 0 0 0.2rem;
+}
+.tg-panel-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+}
+.tg-panel-close {
+  background: none;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 0.7rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 150ms;
+}
+.tg-panel-close:hover { background: var(--tc, #1a1a2e); color: white; border-color: var(--tc, #1a1a2e); }
+
+.tg-panel-list {
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ── Task item (inside panel) ─────────────────────────────────────────────── */
+.tg-task-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.8rem 2rem 0.8rem 0.9rem;
+  background: #f8fafc;
+  border: 1.5px solid rgba(0,0,0,0.06);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 150ms;
+  text-align: left;
+  width: 100%;
+  position: relative;
+}
+.tg-task-item:hover {
+  border-color: var(--tc, #1a1a2e);
+  background: white;
+  transform: translateX(2px);
+}
+
+.tg-task-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.tg-task-wf {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tg-task-id {
+  font-family: monospace;
+  font-size: 0.62rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.tg-task-edges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.tg-edge-chip {
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: rgba(22,163,74,0.1);
+  color: #15803d;
+  padding: 0.1rem 0.45rem;
+  border-radius: 50rem;
+}
+
+.tg-task-meta {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.tg-task-arrow {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.85rem;
+  transition: all 150ms;
+}
+.tg-task-item:hover .tg-task-arrow {
+  color: var(--tc, #1a1a2e);
+  right: 0.5rem;
+}
+
+/* ── Instance node (has-instances variant) ────────────────────────────────── */
+.tg-graph-node.has-instances {
+  background: white;
+  border-color: #2563eb;
+  cursor: pointer;
+}
+.tg-graph-node.has-instances:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37,99,235,0.15);
+}
+.tg-graph-node.has-instances.is-selected {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+.tg-graph-node.has-instances.is-selected .tg-node-name { color: white; }
+.tg-graph-node.has-instances.is-selected .tg-node-tag {
+  background: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.85);
+}
+
+/* ── Status-colored badges ──────────────────────────────────────────────── */
+.tg-badge-tasks   { background: #ef4444; color: white; }
+.tg-badge-active  { background: #16a34a; color: white; box-shadow: 0 2px 8px rgba(22,163,74,0.35); }
+.tg-badge-completed { background: #2563eb; color: white; box-shadow: 0 2px 8px rgba(37,99,235,0.35); }
+.tg-badge-cancelled { background: #94a3b8; color: white; }
+.tg-badge-mixed   { background: #f59e0b; color: white; box-shadow: 0 2px 8px rgba(245,158,11,0.35); }
+
+/* ── Count tag for started-by-me nodes ─────────────────────────────────── */
+.tg-node-tag-count {
+  background: rgba(37,99,235,0.1);
+  color: #1d4ed8;
+}
+
+/* ── Legend variants ─────────────────────────────────────────────────────── */
+.tg-legend-active::before  { background: white; border-color: #16a34a; }
+.tg-legend-done::before    { background: white; border-color: #2563eb; }
+
+/* ── Status dot in side panel ────────────────────────────────────────────── */
+.tg-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.dot-active    { background: #16a34a; }
+.dot-completed { background: #2563eb; }
+.dot-cancelled { background: #94a3b8; }

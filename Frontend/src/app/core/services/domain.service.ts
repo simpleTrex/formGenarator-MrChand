@@ -74,12 +74,52 @@ export class DomainService {
     return this.baseService.get(`${this.adaptive}/domains/${slug}/groups`, true);
   }
 
+  createDomainGroup(slug: string, payload: { name: string; permissions: string[] }): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${slug}/groups`, true, payload);
+  }
+
+  updateDomainGroup(slug: string, groupId: string, payload: { name: string; permissions: string[] }): Observable<any> {
+    return this.baseService.put(`${this.adaptive}/domains/${slug}/groups/${groupId}`, true, payload);
+  }
+
+  deleteDomainGroup(slug: string, groupId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${slug}/groups/${groupId}`, true, {});
+  }
+
   getDomainRoles(slug: string): Observable<any> {
     return this.baseService.get(`${this.adaptive}/domains/${slug}/access/me`, true);
   }
 
   getDomainUsersWithGroups(slug: string): Observable<any> {
     return this.baseService.get(`${this.adaptive}/domains/${slug}/groups/users`, true);
+  }
+
+  getWorkflowRoles(slug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/workflow-roles`, true);
+  }
+
+  getUsersWithWorkflowRoles(slug: string): Observable<any> {
+    return this.baseService.get(`${this.adaptive}/domains/${slug}/workflow-roles/users`, true);
+  }
+
+  createWorkflowRole(slug: string, payload: { name: string }): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${slug}/workflow-roles`, true, payload);
+  }
+
+  updateWorkflowRole(slug: string, roleId: string, payload: { name: string }): Observable<any> {
+    return this.baseService.put(`${this.adaptive}/domains/${slug}/workflow-roles/${roleId}`, true, payload);
+  }
+
+  deleteWorkflowRole(slug: string, roleId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${slug}/workflow-roles/${roleId}`, true, {});
+  }
+
+  addWorkflowRoleMember(slug: string, roleId: string, username: string): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${slug}/workflow-roles/${roleId}/members`, true, { username });
+  }
+
+  removeWorkflowRoleMember(slug: string, roleId: string, userId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${slug}/workflow-roles/${roleId}/members/${userId}`, true, {});
   }
 
   getGroupMembers(slug: string, groupId: string): Observable<any> {
@@ -116,6 +156,18 @@ export class DomainService {
 
   getAppGroups(slug: string, appSlug: string): Observable<any> {
     return this.baseService.get(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups`, true);
+  }
+
+  createAppGroup(slug: string, appSlug: string, payload: { name: string; permissions: string[] }): Observable<any> {
+    return this.baseService.post(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups`, true, payload);
+  }
+
+  updateAppGroup(slug: string, appSlug: string, groupId: string, payload: { name: string; permissions: string[] }): Observable<any> {
+    return this.baseService.put(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups/${groupId}`, true, payload);
+  }
+
+  deleteAppGroup(slug: string, appSlug: string, groupId: string): Observable<any> {
+    return this.baseService.delete(`${this.adaptive}/domains/${slug}/apps/${appSlug}/groups/${groupId}`, true, {});
   }
 
   getAppUsersWithGroups(slug: string, appSlug: string): Observable<any> {
@@ -159,25 +211,9 @@ export class DomainService {
     return this.baseService.delete(`${this.adaptive}/domains/${domainSlug}/models/${encodeURIComponent(modelSlug)}?appSlug=${encodeURIComponent(appSlug)}`, true, {});
   }
 
-  // Employee Management (Domain-scoped)
-  getEmployeeModel(domainSlug: string): Observable<any> {
-    return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/models/employees`, true);
-  }
-
+  // Legacy employee records (read-only for existing form integrations)
   getEmployees(domainSlug: string): Observable<any> {
     return this.baseService.get(`${this.adaptive}/domains/${domainSlug}/models/employees/records`, true);
-  }
-
-  createEmployee(domainSlug: string, employeeData: any): Observable<any> {
-    return this.baseService.post(`${this.adaptive}/domains/${domainSlug}/models/employees/records`, true, employeeData);
-  }
-
-  updateEmployee(domainSlug: string, recordId: string, employeeData: any): Observable<any> {
-    return this.baseService.put(`${this.adaptive}/domains/${domainSlug}/models/employees/records/${recordId}`, true, employeeData);
-  }
-
-  deleteEmployee(domainSlug: string, recordId: string): Observable<any> {
-    return this.baseService.delete(`${this.adaptive}/domains/${domainSlug}/models/employees/records/${recordId}`, true, {});
   }
 
   // Model Templates

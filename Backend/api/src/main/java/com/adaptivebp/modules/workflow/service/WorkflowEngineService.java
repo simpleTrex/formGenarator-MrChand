@@ -21,8 +21,14 @@ import org.springframework.stereotype.Service;
 
 import com.adaptivebp.modules.appmanagement.model.AppGroup;
 import com.adaptivebp.modules.appmanagement.model.AppGroupMember;
+import com.adaptivebp.modules.appmanagement.permission.AppPermission;
 import com.adaptivebp.modules.appmanagement.repository.AppGroupMemberRepository;
 import com.adaptivebp.modules.appmanagement.repository.AppGroupRepository;
+import com.adaptivebp.modules.organisation.model.DomainGroup;
+import com.adaptivebp.modules.organisation.model.DomainGroupMember;
+import com.adaptivebp.modules.organisation.model.enums.DomainGroupType;
+import com.adaptivebp.modules.organisation.repository.DomainGroupMemberRepository;
+import com.adaptivebp.modules.organisation.repository.DomainGroupRepository;
 import com.adaptivebp.modules.formbuilder.model.DomainFieldType;
 import com.adaptivebp.modules.formbuilder.model.DomainModelField;
 import com.adaptivebp.modules.workflow.dto.response.ExecuteEdgeResponse;
@@ -65,6 +71,12 @@ public class WorkflowEngineService {
 
     @Autowired
     private AppGroupRepository appGroupRepository;
+
+    @Autowired
+    private DomainGroupMemberRepository domainGroupMemberRepository;
+
+    @Autowired
+    private DomainGroupRepository domainGroupRepository;
 
     public WorkflowInstance startWorkflowBySlug(
             String domainId,
@@ -157,7 +169,16 @@ public class WorkflowEngineService {
 
         WorkflowEdge edge = resolveEdge(definition, currentStep, edgeId);
 
-        Set<String> userRoles = loadUserRoles(instance.getAppId(), userId);
+        Set<AppPermission> userPermissions = loadUserPermissions(instance.getAppId(), userId);
+        Set<String> userRoles = loadUserRoles(instance.getDomainId(), userId);
+        boolean isSubmitter = userId != null && userId.equals(instance.getStartedBy());
+
+        // Coarse gate: user must have app execute permission, OR workflow roles, OR be the submitter
+        if (!canExecuteWorkflow(userPermissions) && userRoles.isEmpty() && !isSubmitter) {
+            throw new InsufficientEdgePermissionException("You do not have permission to execute workflow actions");
+        }
+
+        // Fine-grained gate: check the specific edge's role/submitter/userId rules
         if (!hasEdgePermission(edge, userRoles, userId, instance.getStartedBy())) {
             throw new InsufficientEdgePermissionException(
                     "You do not have permission to execute '" + edge.getName() + "'");
@@ -289,7 +310,17 @@ public class WorkflowEngineService {
         response.setReadOnlyFields(new ArrayList<>(roKeys));
 
         // Evaluate available edges against the primary record
-        Set<String> roles = loadUserRoles(instance.getAppId(), userId);
+        Set<AppPermission> userPermissions = loadUserPermissions(instance.getAppId(), userId);
+        Set<String> roles = loadUserRoles(instance.getDomainId(), userId);
+        boolean isSubmitter = userId != null && userId.equals(instance.getStartedBy());
+
+        // Return empty edge list only if user has no app permission, no workflow roles,
+        // and is not the submitter (who may have onlySubmitter edges)
+        if (!canExecuteWorkflow(userPermissions) && roles.isEmpty() && !isSubmitter) {
+            response.setAvailableEdges(List.of());
+            return response;
+        }
+
         List<WorkflowEdge> permittedEdges = collectPermittedEdges(definition, step, roles, userId, instance.getStartedBy());
         List<StepViewResponse.EdgeView> edgeViews = new ArrayList<>();
         Map<String, Object> primaryForConditions = new HashMap<>(instance.getPrimaryRecord());
@@ -343,7 +374,13 @@ public class WorkflowEngineService {
     }
 
     public TaskListResponse getMyTasks(String userId, String domainId, String appId) {
-        Set<String> userRoles = loadUserRoles(appId, userId);
+        Set<String> userRoles = loadUserRoles(domainId, userId);
+
+        // Only bail out early if the user has absolutely no pathway to any edge:
+        // no app execute permission AND no workflow roles. Even then, they could
+        // be the startedBy of an instance with onlySubmitter edges, so we proceed
+        // to the instance loop and let collectPermittedEdges do the filtering.
+        // The loop is the authoritative gate — no duplicate coarse-guard needed.
 
         List<WorkflowInstance> instances = instanceRepository
                 .findByDomainIdAndAppIdAndStatus(domainId, appId, InstanceStatus.ACTIVE);
@@ -377,7 +414,9 @@ public class WorkflowEngineService {
 
             TaskResponse task = new TaskResponse();
             task.setInstanceId(instance.getId());
+            task.setWorkflowDefinitionId(instance.getWorkflowDefinitionId());
             task.setWorkflowName(definition.getName());
+            task.setCurrentStepId(instance.getCurrentStepId());
             task.setCurrentStepName(currentStep.getName());
             task.setStartedAt(instance.getStartedAt());
             task.setWaitingSince(lastPerformedAt(instance));
@@ -501,25 +540,54 @@ public class WorkflowEngineService {
         return roleMatch || userMatch || submitterMatch;
     }
 
-    private Set<String> loadUserRoles(String appId, String userId) {
-        List<AppGroupMember> memberships = appGroupMemberRepository.findByAppIdAndUserId(appId, userId);
+    private Set<String> loadUserRoles(String domainId, String userId) {
+        List<DomainGroupMember> memberships = domainGroupMemberRepository.findByDomainIdAndUserId(domainId, userId);
         if (memberships.isEmpty()) {
             return Set.of();
+        }
+
+        Set<String> groupIds = new HashSet<>();
+        for (DomainGroupMember member : memberships) {
+            groupIds.add(member.getDomainGroupId());
+        }
+
+        List<DomainGroup> groups = domainGroupRepository.findAllById(groupIds);
+        Set<String> roleNames = new HashSet<>();
+        for (DomainGroup group : groups) {
+            if (group.getGroupType() == DomainGroupType.WORKFLOW_ROLE && group.getName() != null) {
+                roleNames.add(group.getName().toLowerCase(Locale.ROOT));
+            }
+        }
+        return roleNames;
+    }
+
+    private Set<AppPermission> loadUserPermissions(String appId, String userId) {
+        List<AppGroup> groups = loadUserAppGroups(appId, userId);
+        Set<AppPermission> permissions = new HashSet<>();
+        for (AppGroup group : groups) {
+            if (group.getPermissions() != null) {
+                permissions.addAll(group.getPermissions());
+            }
+        }
+        return permissions;
+    }
+
+    private List<AppGroup> loadUserAppGroups(String appId, String userId) {
+        List<AppGroupMember> memberships = appGroupMemberRepository.findByAppIdAndUserId(appId, userId);
+        if (memberships.isEmpty()) {
+            return List.of();
         }
 
         Set<String> groupIds = new HashSet<>();
         for (AppGroupMember member : memberships) {
             groupIds.add(member.getGroupId());
         }
+        return appGroupRepository.findAllById(groupIds);
+    }
 
-        List<AppGroup> groups = appGroupRepository.findAllById(groupIds);
-        Set<String> roleNames = new HashSet<>();
-        for (AppGroup group : groups) {
-            if (group.getName() != null) {
-                roleNames.add(group.getName().toLowerCase(Locale.ROOT));
-            }
-        }
-        return roleNames;
+    private boolean canExecuteWorkflow(Set<AppPermission> permissions) {
+        return permissions.contains(AppPermission.APP_EXECUTE_WORKFLOW)
+                || permissions.contains(AppPermission.APP_EXECUTE);
     }
 
     private boolean intersectsIgnoreCase(Set<String> roleNames, Collection<String> allowedRoles) {

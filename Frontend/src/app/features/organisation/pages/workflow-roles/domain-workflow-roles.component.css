@@ -1,26 +1,26 @@
-.du-shell {
+.wr-shell {
   padding: 1.25rem;
 }
 
-.du-head {
+.wr-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
   gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-.du-head h2 {
+.wr-head h2 {
   margin: 0;
   color: #0f172a;
 }
 
-.du-head p {
-  margin: 0.25rem 0 0;
+.wr-head p {
+  margin: 0.2rem 0 0;
   color: #64748b;
 }
 
-.du-btn {
+.wr-btn {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #fff;
@@ -31,45 +31,45 @@
   cursor: pointer;
 }
 
-.du-btn:disabled {
-  opacity: 0.5;
+.wr-btn:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-.du-btn-primary {
+.wr-btn-primary {
   background: #0f172a;
   border-color: #0f172a;
   color: #fff;
 }
 
-.du-btn-ghost {
-  background: transparent;
-}
-
-.du-btn-danger {
+.wr-btn-danger {
   border-color: #ef4444;
   color: #b91c1c;
 }
 
-.du-loading,
-.du-error {
+.wr-btn-ghost {
+  background: transparent;
+}
+
+.wr-loading,
+.wr-error {
   margin-bottom: 0.8rem;
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
 }
 
-.du-loading {
+.wr-loading {
   background: #eff6ff;
   color: #1d4ed8;
 }
 
-.du-error {
+.wr-error {
   background: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fecaca;
 }
 
-.du-group-form {
+.wr-form {
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -77,133 +77,92 @@
   margin-bottom: 1rem;
 }
 
-.du-group-form-head {
+.wr-form-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.7rem;
 }
 
-.du-group-form-head h4 {
+.wr-form-head h4 {
   margin: 0;
 }
 
-.du-field {
+.wr-field {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  margin-bottom: 0.75rem;
 }
 
-.du-field span {
+.wr-field span {
   font-size: 0.8rem;
   color: #334155;
 }
 
-.du-field input {
+.wr-field input {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 0.45rem 0.55rem;
 }
 
-.du-muted {
-  color: #64748b;
-  font-size: 0.75rem;
-}
-
-.du-permissions {
-  margin: 0.75rem 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem 0.9rem;
-}
-
-.du-permissions p {
-  width: 100%;
-  margin: 0;
-  font-size: 0.8rem;
-  color: #334155;
-}
-
-.du-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.84rem;
-}
-
-.du-layout {
+.wr-layout {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
 }
 
 @media (min-width: 960px) {
-  .du-layout {
+  .wr-layout {
     grid-template-columns: 1fr 280px;
   }
 }
 
-.du-groups {
+.wr-roles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 0.9rem;
 }
 
-.du-group-card,
-.du-unassigned {
+.wr-role-card,
+.wr-unassigned {
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 0.9rem;
 }
 
-.du-group-card-head,
-.du-unassigned-head {
+.wr-role-head,
+.wr-unassigned-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.55rem;
   gap: 0.6rem;
+  margin-bottom: 0.55rem;
 }
 
-.du-group-card-head h5,
-.du-unassigned-head h5 {
+.wr-role-head h5,
+.wr-unassigned-head h5 {
   margin: 0;
 }
 
-.du-group-card-head small,
-.du-unassigned-head small {
+.wr-role-head small,
+.wr-unassigned-head small {
   color: #64748b;
 }
 
-.du-group-actions {
+.wr-actions {
   display: flex;
   gap: 0.35rem;
 }
 
-.du-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-bottom: 0.7rem;
-}
-
-.du-chip {
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-radius: 999px;
-  padding: 0.15rem 0.5rem;
-  font-size: 0.72rem;
-}
-
-.du-group-members {
+.wr-members {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
 }
 
-.du-dropzone {
+.wr-dropzone {
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
   color: #64748b;
@@ -212,7 +171,7 @@
   font-size: 0.8rem;
 }
 
-.du-user-card {
+.wr-user {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 0.55rem 0.65rem;
@@ -224,17 +183,17 @@
   cursor: move;
 }
 
-.du-user-card strong {
+.wr-user strong {
   display: block;
-  font-size: 0.85rem;
   color: #0f172a;
+  font-size: 0.85rem;
 }
 
-.du-user-card small {
+.wr-user small {
   color: #64748b;
 }
 
-.du-unassigned {
+.wr-unassigned {
   position: sticky;
   top: 20px;
   height: fit-content;

@@ -154,15 +154,14 @@
           </div>
         </div>
 
-        <!-- Employee Management -->
         <div class="d-manage-section mt-4">
           <div class="d-manage-header">
             <div>
-              <h2 class="d-section-title">Employee Management</h2>
-              <p class="d-muted">Manage employee records for workflows and applications.</p>
+              <h2 class="d-section-title">Workflow Roles</h2>
+              <p class="d-muted">Maintain domain-wide business roles used by workflow edges across all apps.</p>
             </div>
-            <a [routerLink]="['/domain', slug, 'employees']" class="d-outline-btn">
-              Manage Employees →
+            <a [routerLink]="['/domain', slug, 'workflow-roles']" class="d-outline-btn">
+              Manage Workflow Roles →
             </a>
           </div>
         </div>
@@ -191,15 +190,15 @@
       <div *ngIf="mode === 'ACCESS' && canManageUsers">
         <div class="d-section-head">
           <h2 class="d-section-title">Access Management</h2>
-          <p class="d-muted">Manage domain users and employee records.</p>
+          <p class="d-muted">Manage domain access-group assignments and workflow roles.</p>
 
           <!-- Quick Actions -->
           <div class="d-quick-actions mt-3">
             <a [routerLink]="['/domain', slug, 'users']" class="d-outline-btn">
               Manage Users
             </a>
-            <a [routerLink]="['/domain', slug, 'employees']" class="d-outline-btn">
-              Manage Employees
+            <a [routerLink]="['/domain', slug, 'workflow-roles']" class="d-outline-btn">
+              Manage Workflow Roles
             </a>
           </div>
         </div>

@@ -47,7 +47,6 @@ export class AppHomeComponent implements OnInit {
   startingWorkflow = false;
   startError = '';
 
-  domainAccess = { permissions: [] as string[], groups: [] as string[] };
   currentUserAppGroups: any[] = [];
   appPermissions: string[] = [];
 
@@ -111,22 +110,18 @@ export class AppHomeComponent implements OnInit {
       return;
     }
     if (this.isOwnerContext()) {
-      this.domainAccess.permissions = [
-        'DOMAIN_MANAGE_APPS',
-        'DOMAIN_USE_APP'
+      this.appPermissions = [
+        'APP_VIEW',
+        'APP_CONFIGURE',
+        'APP_START_WORKFLOW',
+        'APP_EXECUTE_WORKFLOW',
+        'APP_VIEW_ALL_INSTANCES',
+        'APP_MANAGE_WORKFLOW'
       ];
-      this.domainAccess.groups = ['Domain Admin'];
-      this.appPermissions = ['APP_READ', 'APP_WRITE', 'APP_EXECUTE'];
       return;
     }
     if (this.auth.isLoggedIn()) {
-      this.domainService.getDomainRoles(this.domainSlug).subscribe({
-        next: res => {
-          this.domainAccess = res || { permissions: [], groups: [] };
-          this.loadCurrentUserAppGroups();
-        },
-        error: () => { /* ignore */ }
-      });
+      this.loadCurrentUserAppGroups();
     }
   }
 
@@ -152,7 +147,7 @@ export class AppHomeComponent implements OnInit {
   }
 
   get canManageApp(): boolean {
-    return this.isOwnerContext() || this.hasPermission('DOMAIN_MANAGE_APPS');
+    return this.isOwnerContext() || this.appPermissions.includes('APP_CONFIGURE');
   }
 
   get canManageAppGroups(): boolean {
@@ -160,15 +155,15 @@ export class AppHomeComponent implements OnInit {
   }
 
   get canEditMode(): boolean {
-    return this.isOwnerContext() || this.appPermissions.includes('APP_WRITE');
+    return this.isOwnerContext() || this.appPermissions.includes('APP_CONFIGURE');
   }
 
   get canEnterManageMode(): boolean {
-    return this.canEditMode || this.canManageApp;
+    return this.canEditMode;
   }
 
   get canAccessManager(): boolean {
-    return this.isOwnerContext() || this.appPermissions.includes('APP_EXECUTE');
+    return this.isOwnerContext() || this.appPermissions.includes('APP_CONFIGURE');
   }
 
   enterPreviewMode() {
@@ -248,10 +243,6 @@ export class AppHomeComponent implements OnInit {
     this.loadAppGroups();
   }
 
-  private hasPermission(code: string): boolean {
-    return this.domainAccess.permissions.includes(code);
-  }
-
   // Load current user's app groups
   loadCurrentUserAppGroups() {
     const currentUserId = this.auth.getContext()?.userId;
@@ -263,7 +254,7 @@ export class AppHomeComponent implements OnInit {
         this.currentUserAppGroups = groups || [];
         const permissions = new Set<string>();
         (this.currentUserAppGroups || []).forEach((g: any) => {
-          (g?.permissions || []).forEach((p: string) => permissions.add(p));
+          (g?.permissions || []).forEach((p: string) => this.expandPermissionAliases(p).forEach(x => permissions.add(x)));
         });
         this.appPermissions = Array.from(permissions);
       },
@@ -272,6 +263,37 @@ export class AppHomeComponent implements OnInit {
         this.appPermissions = [];
       }
     });
+  }
+
+  private expandPermissionAliases(permission: string): string[] {
+    const p = (permission || '').trim();
+    if (!p) {
+      return [];
+    }
+    const mapped: string[] = [p];
+    switch (p) {
+      case 'APP_READ':
+      case 'APP_VIEW_WORKFLOWS':
+      case 'APP_VIEW_PROCESSES':
+        mapped.push('APP_VIEW');
+        break;
+      case 'APP_WRITE':
+        mapped.push('APP_CONFIGURE');
+        break;
+      case 'APP_MANAGE_WORKFLOWS':
+      case 'APP_MANAGE_PROCESSES':
+        mapped.push('APP_MANAGE_WORKFLOW');
+        break;
+      case 'APP_START_PROCESS':
+        mapped.push('APP_START_WORKFLOW');
+        break;
+      case 'APP_EXECUTE':
+        mapped.push('APP_EXECUTE_WORKFLOW');
+        break;
+      default:
+        break;
+    }
+    return mapped;
   }
 
   // Load app groups and users

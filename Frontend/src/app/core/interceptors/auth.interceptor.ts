@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest, HTTP_INTERCEPTORS, HttpClient } from '@angular/common/http';
+import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService, _authService } from '../services/auth.service';
 
@@ -12,7 +12,6 @@ export class HttpRequestInterceptor implements HttpInterceptor {
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         let _token: any = this._authService.getCookie('token');
         //let _token: any = localStorage.getItem('token');
-        console.log(_token);
         if (_token) {
             req = req.clone({
                 setHeaders: { token: _token },

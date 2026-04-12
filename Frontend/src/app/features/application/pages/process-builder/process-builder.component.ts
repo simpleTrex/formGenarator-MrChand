@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, NgZone, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomainService } from '../../../../core/services/domain.service';
 import { ProcessService } from '../../../../core/services/process.service';
@@ -12,12 +12,25 @@ import {
 } from '../../../../core/models/process.model';
 import { Observable } from 'rxjs';
 
+interface SvgEdge {
+  id: string;
+  path: string;
+  midX: number;
+  midY: number;
+  name: string;
+}
+
 @Component({
   selector: 'app-process-builder',
   templateUrl: './process-builder.component.html',
   styleUrls: ['./process-builder.component.css']
 })
-export class ProcessBuilderComponent implements OnInit {
+export class ProcessBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
+
+  @ViewChild('graphContainer') private graphContainer?: ElementRef<HTMLElement>;
+  graphSvgEdges: SvgEdge[] = [];
+  private _svgSig = '';
+  private _svgInterval: ReturnType<typeof setInterval> | null = null;
 
   domainSlug = '';
   appSlug = '';
@@ -50,6 +63,8 @@ export class ProcessBuilderComponent implements OnInit {
     private router: Router,
     private processService: ProcessService,
     private domainService: DomainService,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -62,6 +77,65 @@ export class ProcessBuilderComponent implements OnInit {
       return;
     }
     this.resolveWorkflowFromApp();
+  }
+
+  /** Run a lightweight poll entirely outside Angular's zone so it never
+   *  triggers change detection by itself. Only re-enters the zone when
+   *  edge positions actually change, which is rare after initial render. */
+  ngAfterViewInit(): void {
+    this.ngZone.runOutsideAngular(() => {
+      this._svgInterval = setInterval(() => this._pollEdges(), 200);
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this._svgInterval !== null) {
+      clearInterval(this._svgInterval);
+      this._svgInterval = null;
+    }
+  }
+
+  private _pollEdges(): void {
+    if (!this.graphContainer) return;
+    const host = this.graphContainer.nativeElement;
+    const hRect = host.getBoundingClientRect();
+    if (!hRect.width) return;
+
+    const rects = new Map<string, DOMRect>();
+    host.querySelectorAll<HTMLElement>('[data-step-id]').forEach(el =>
+      rects.set(el.getAttribute('data-step-id')!, el.getBoundingClientRect())
+    );
+
+    const edges: SvgEdge[] = [];
+    for (const step of this.steps) {
+      for (const edge of step.edges ?? []) {
+        if (edge.terminal || !edge.targetStepId) continue;
+        const fr = rects.get(step.id);
+        const to = rects.get(edge.targetStepId);
+        if (!fr || !to) continue;
+        const x1 = Math.round(fr.left + fr.width / 2 - hRect.left);
+        const y1 = Math.round(fr.bottom - hRect.top);
+        const x2 = Math.round(to.left + to.width / 2 - hRect.left);
+        const y2 = Math.round(to.top - hRect.top);
+        const cp = Math.round((y1 + y2) / 2);
+        edges.push({
+          id: edge.id,
+          name: edge.name || 'Action',
+          path: `M${x1},${y1} C${x1},${cp} ${x2},${cp} ${x2},${y2}`,
+          midX: Math.round((x1 + x2) / 2),
+          midY: cp,
+        });
+      }
+    }
+
+    const sig = edges.map(e => e.path).join('|');
+    if (sig === this._svgSig) return;   // nothing changed — stay outside zone
+    this._svgSig = sig;
+    // Re-enter Angular zone only when edges actually changed
+    this.ngZone.run(() => {
+      this.graphSvgEdges = edges;
+      this.cdr.markForCheck();
+    });
   }
 
   private resolveWorkflowFromApp(): void {
@@ -87,13 +161,9 @@ export class ProcessBuilderComponent implements OnInit {
     this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug]);
   }
 
-  openExplainer(): void {
-    this.router.navigate(['/domain', this.domainSlug, 'app', this.appSlug, 'workflows', 'explainer']);
-  }
-
   loadRoles(): void {
-    this.domainService.getAppGroups(this.domainSlug, this.appSlug).subscribe({
-      next: (groups) => {
+    this.domainService.getWorkflowRoles(this.domainSlug).subscribe({
+      next: (groups: any[]) => {
         this.availableRoles = Array.from(new Set(
           (groups || []).map((g: any) => g?.name).filter((n: string) => !!n)
         ));
@@ -241,19 +311,43 @@ export class ProcessBuilderComponent implements OnInit {
         }
       }
     }
+    // Any step not reached by BFS (orphaned / disconnected) goes to a floating row
+    const maxReachable = levelById.size > 0 ? Math.max(...Array.from(levelById.values())) : -1;
+    const floatingLevel = maxReachable + 1;
+    for (const step of this.steps) {
+      if (!levelById.has(step.id)) {
+        levelById.set(step.id, floatingLevel);
+      }
+    }
     const maxLevel = Math.max(0, ...Array.from(levelById.values()));
     const levels: WorkflowStep[][] = Array.from({ length: maxLevel + 1 }, () => []);
     for (const step of this.steps) {
       const level = levelById.get(step.id);
       if (level !== undefined) levels[level].push(step);
     }
-    return levels.map(row => row.sort((a, b) => a.order - b.order));
+    return levels.filter(row => row.length > 0).map(row => row.sort((a, b) => a.order - b.order));
+  }
+
+  get orphanStepIds(): Set<string> {
+    if (!this.steps.length) return new Set();
+    const start = this.steps.find(s => s.start) || this.steps[0];
+    const reachable = new Set<string>();
+    const queue: string[] = start?.id ? [start.id] : [];
+    while (queue.length) {
+      const id = queue.shift()!;
+      if (reachable.has(id)) continue;
+      reachable.add(id);
+      const step = this.steps.find(s => s.id === id);
+      for (const edge of step?.edges || []) {
+        if (edge.targetStepId && !edge.terminal) queue.push(edge.targetStepId);
+      }
+    }
+    return new Set(this.steps.filter(s => !reachable.has(s.id)).map(s => s.id));
   }
 
   unlinkedSteps(): WorkflowStep[] {
-    const inbound = new Set<string>();
-    this.steps.forEach(s => (s.edges || []).forEach(e => { if (e.targetStepId) inbound.add(e.targetStepId); }));
-    return this.steps.filter(s => !(s.edges?.length) && !inbound.has(s.id));
+    const ids = this.orphanStepIds;
+    return this.steps.filter(s => ids.has(s.id));
   }
 
   edgeTargetLabel(edge: WorkflowEdge): string {

@@ -254,7 +254,6 @@ h5 {
 /* ── Graph view ─────────────────────────────────────────────────────────────── */
 .wb-graph-card {
   position: relative;
-  overflow: hidden;
 }
 
 .wb-empty-graph {
@@ -268,17 +267,82 @@ h5 {
 }
 
 .wb-graph {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1.4rem;
+  gap: 5rem;
   margin-top: 0.85rem;
-  position: relative;
+  padding: 1.5rem 1rem 2rem;
+  border-radius: 12px;
+  background-color: #f8fafc;
+  background-image: radial-gradient(circle, rgba(15,23,42,0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  min-height: 160px;
 }
 
+/* ── SVG edge layer ─────────────────────────────────────────────────────────── */
+.wb-graph-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  /* NO pointer-events:none here — that blocks children from receiving hover.
+     The SVG background is transparent so it won't swallow node clicks.
+     Nodes sit at z-index 2 (above z-index 0 SVG) so clicks reach them first. */
+  z-index: 0;
+}
+
+.wb-svg-line {
+  fill: none;
+  stroke: rgba(15,23,42,0.18);
+  stroke-width: 1.5;
+  marker-end: url(#wb-arr);
+  pointer-events: none;   /* visual only — no event capture */
+  transition: stroke 150ms ease, stroke-width 150ms ease;
+}
+
+/* Wide transparent stroke for hover hit detection */
+.wb-svg-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 18;
+  pointer-events: stroke; /* captures hover on the path line */
+  cursor: default;
+}
+
+.wb-svg-label {
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  font-size: 10px;
+  fill: #94a3b8;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;   /* visual only */
+  paint-order: stroke;
+  stroke: #f8fafc;
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  transition: fill 150ms ease;
+}
+
+.wb-svg-edge:hover .wb-svg-line {
+  stroke: rgba(59,130,246,0.55);
+  stroke-width: 2;
+  marker-end: url(#wb-arr-hover);
+}
+
+.wb-svg-edge:hover .wb-svg-label {
+  fill: #3b82f6;
+  stroke: #eff6ff;
+}
+
+/* ── Node tree layout ───────────────────────────────────────────────────────── */
 .wb-tree-row {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: center;
-  gap: 2.5rem;
+  gap: 3rem;
   flex-wrap: wrap;
 }
 
@@ -286,43 +350,38 @@ h5 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
 }
 
 .wb-graph-node {
   position: relative;
-  border: 1px solid rgba(15,23,42,0.12);
-  background: linear-gradient(140deg, #ffffff 0%, #f8fafc 100%);
+  z-index: 2;
+  border: 1px solid rgba(15,23,42,0.11);
+  background: #ffffff;
   border-radius: 14px;
-  padding: 0.85rem 0.9rem;
+  padding: 0.85rem 1rem;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  min-width: 160px;
+  box-shadow:
+    0 1px 2px rgba(15,23,42,0.04),
+    0 4px 12px rgba(15,23,42,0.07),
+    0 0 0 0 rgba(59,130,246,0);
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
-.wb-graph-node::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: -18px;
-  width: 10px;
-  height: 10px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: #0f172a;
-  box-shadow: 0 0 0 4px rgba(15,23,42,0.12);
-}
-
 .wb-graph-node:hover {
-  transform: translateY(-2px);
-  border-color: rgba(15,23,42,0.4);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+  border-color: rgba(15,23,42,0.3);
+  box-shadow:
+    0 1px 2px rgba(15,23,42,0.04),
+    0 8px 24px rgba(15,23,42,0.12);
 }
 
 .wb-graph-node.is-selected {
-  border-color: rgba(16,185,129,0.75);
-  box-shadow: 0 18px 32px rgba(16, 185, 129, 0.2);
+  border-color: rgba(59,130,246,0.6);
+  box-shadow:
+    0 1px 2px rgba(15,23,42,0.04),
+    0 8px 24px rgba(59,130,246,0.15),
+    0 0 0 3px rgba(59,130,246,0.12);
 }
 
 .wb-node-header {
@@ -335,129 +394,86 @@ h5 {
 .wb-node-title {
   font-weight: 700;
   color: #0f172a;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 .wb-node-badges {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .wb-node-badge {
-  background: rgba(59,130,246,0.14);
-  color: #1d4ed8;
-  font-size: 0.64rem;
+  background: rgba(59,130,246,0.1);
+  color: #2563eb;
+  font-size: 0.6rem;
   font-weight: 700;
-  padding: 0.2rem 0.5rem;
+  padding: 0.15rem 0.45rem;
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .wb-node-badge-end {
-  background: rgba(16,185,129,0.14);
+  background: rgba(16,185,129,0.1);
   color: #047857;
 }
 
 .wb-node-meta {
-  font-size: 0.7rem;
-  color: #64748b;
-  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-top: 0.3rem;
+  font-family: 'Space Mono', monospace;
 }
 
 .wb-node-stats {
-  font-size: 0.74rem;
-  color: #334155;
-  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  color: #475569;
+  margin-top: 0.45rem;
   display: flex;
-  gap: 0.35rem;
+  gap: 0.3rem;
   align-items: center;
 }
 
-.wb-edge-empty {
-  color: #94a3b8;
-  font-size: 0.8rem;
-  font-style: italic;
-}
-
-.wb-branch {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.wb-branch-spine {
-  width: 2px;
-  height: 20px;
-  background: linear-gradient(180deg, rgba(15,23,42,0.2), rgba(15,23,42,0.05));
-}
-
-.wb-branch-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.wb-edge-chip {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  gap: 0.5rem;
-  align-items: center;
-  background: rgba(15,23,42,0.04);
-  border: 1px dashed rgba(15,23,42,0.12);
-  border-radius: 12px;
-  padding: 0.45rem 0.7rem;
-  font-size: 0.78rem;
-}
-
-.wb-edge-chip-name {
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.wb-edge-chip-target {
-  color: #1e293b;
-  font-weight: 600;
-}
-
-.wb-edge-chip-roles {
-  color: #64748b;
-  text-align: right;
+/* Orphan node — step not reachable from start via BFS */
+.wb-tree-node.is-orphan .wb-graph-node {
+  border-style: dashed;
+  border-color: rgba(234,179,8,0.45);
+  background: #fffbeb;
+  box-shadow: 0 4px 12px rgba(234,179,8,0.08);
 }
 
 .wb-unlinked {
   margin-top: 1.2rem;
-  padding: 0.9rem;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.03);
-  border: 1px dashed rgba(15,23,42,0.12);
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(234,179,8,0.06);
+  border: 1px solid rgba(234,179,8,0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .wb-unlinked-head {
-  font-weight: 700;
-  color: #0f172a;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.6rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #92400e;
 }
 
 .wb-unlinked-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .wb-unlinked-chip {
-  border: 1px solid rgba(15,23,42,0.16);
-  background: #fff;
-  color: #1e293b;
+  border: 1px solid rgba(217,119,6,0.3);
+  background: rgba(253,230,138,0.4);
+  color: #78350f;
   border-radius: 999px;
-  padding: 0.35rem 0.8rem;
-  font-size: 0.78rem;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  cursor: pointer;
 }
 
 /* ── Modal editor ───────────────────────────────────────────────────────────── */

@@ -8,14 +8,12 @@ import { ProcessBuilderComponent } from './pages/process-builder/process-builder
 import { InstanceListComponent } from './pages/instance-list/instance-list.component';
 import { InstanceViewComponent } from './pages/instance-view/instance-view.component';
 import { StartWorkflowComponent } from './pages/start-workflow/start-workflow.component';
-import { WorkflowExplainerComponent } from './pages/workflow-explainer/workflow-explainer.component';
 
 const routes: Routes = [
     { path: ':appSlug',                          component: AppHomeComponent },
     { path: ':appSlug/start',                    component: StartWorkflowComponent },
     { path: ':appSlug/workflows',                component: ProcessBuilderComponent },
     { path: ':appSlug/workflows/builder',        component: ProcessBuilderComponent },
-    { path: ':appSlug/workflows/explainer',      component: WorkflowExplainerComponent },
     { path: ':appSlug/tasks',                    component: InstanceListComponent, data: { mode: 'tasks' } },
     { path: ':appSlug/instances',                component: InstanceListComponent, data: { mode: 'instances' } },
     { path: ':appSlug/instances/:instanceId',     component: InstanceViewComponent },

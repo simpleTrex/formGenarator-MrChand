@@ -22,7 +22,6 @@ import com.adaptivebp.modules.appmanagement.model.Application;
 import com.adaptivebp.modules.appmanagement.permission.AppPermission;
 import com.adaptivebp.modules.appmanagement.port.ApplicationLookupPort;
 import com.adaptivebp.modules.organisation.model.Organisation;
-import com.adaptivebp.modules.organisation.permission.DomainPermission;
 import com.adaptivebp.modules.organisation.port.OrganisationLookupPort;
 import com.adaptivebp.modules.organisation.service.PermissionService;
 import com.adaptivebp.modules.workflow.dto.request.CreateWorkflowRequest;
@@ -166,20 +165,17 @@ public class WorkflowDefinitionController {
     }
 
     private void requireDefinitionManagePermission(Context ctx) {
-        boolean hasDomainPermission = permissionService.hasDomainPermission(
-                ctx.domain().getId(),
-                DomainPermission.DOMAIN_MANAGE_WORKFLOWS);
         boolean hasAppPermission = permissionService.hasAppPermission(
                 ctx.app().getId(),
-                AppPermission.APP_MANAGE_WORKFLOWS);
+            AppPermission.APP_MANAGE_WORKFLOW);
 
-        if (!hasDomainPermission && !hasAppPermission) {
+        if (!hasAppPermission) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient permissions");
         }
     }
 
     private void requireViewPermission(String appId) {
-        if (!permissionService.hasAppPermission(appId, AppPermission.APP_VIEW_WORKFLOWS)) {
+        if (!permissionService.hasAppPermission(appId, AppPermission.APP_VIEW)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient permissions");
         }
     }

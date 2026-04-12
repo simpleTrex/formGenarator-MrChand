@@ -90,7 +90,27 @@ public class PermissionService {
             return true;
         }
         if (principal.getPrincipalType() == PrincipalType.DOMAIN_USER) {
-            return appGroupQueryPort.getAppPermissions(appId, principal.getId()).contains(permission);
+            Set<AppPermission> permissions = appGroupQueryPort.getAppPermissions(appId, principal.getId());
+            if (permissions.contains(permission)) {
+                return true;
+            }
+            return switch (permission) {
+                case APP_VIEW -> permissions.contains(AppPermission.APP_READ);
+                case APP_CONFIGURE -> permissions.contains(AppPermission.APP_WRITE);
+                case APP_MANAGE_WORKFLOW ->
+                        permissions.contains(AppPermission.APP_MANAGE_WORKFLOWS)
+                                || permissions.contains(AppPermission.APP_MANAGE_PROCESSES);
+                case APP_START_WORKFLOW ->
+                    permissions.contains(AppPermission.APP_START_PROCESS)
+                        || permissions.contains(AppPermission.APP_VIEW)
+                        || permissions.contains(AppPermission.APP_READ);
+                case APP_EXECUTE_WORKFLOW ->
+                        permissions.contains(AppPermission.APP_EXECUTE);
+                case APP_VIEW_ALL_INSTANCES ->
+                        permissions.contains(AppPermission.APP_VIEW_PROCESSES)
+                                || permissions.contains(AppPermission.APP_VIEW_WORKFLOWS);
+                default -> false;
+            };
         }
         return false;
     }
