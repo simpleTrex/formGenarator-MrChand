@@ -64,20 +64,21 @@ jobs:
 
       - name: Prepare SSH
         env:
+          VM_HOST: ${{ secrets.VM_HOST }}
           VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
-          VM_KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$VM_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Upload compose file (contains no secrets)
         env:
           VM_HOST: ${{ secrets.VM_HOST }}
           VM_USER: ${{ secrets.VM_USER }}
         run: |
-          ssh -i ~/.ssh/deploy_key "$VM_USER@$VM_HOST" 'mkdir -p ~/formgen && cat > ~/formgen/docker-compose.yml' < docker-compose.prod.yml
+          ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/deploy_key "$VM_USER@$VM_HOST" 'mkdir -p ~/formgen && cat > ~/formgen/docker-compose.yml' < docker-compose.prod.yml
 
       - name: Deploy (secrets are piped over SSH stdin, never written to disk)
         env:
@@ -110,5 +111,4 @@ jobs:
           docker compose ps </dev/null
           free -h
           REMOTE
-          } | ssh -i ~/.ssh/deploy_key "$VM_USER@$VM_HOST" 'bash -s'
-
+          } | ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/deploy_key "$VM_USER@$VM_HOST" 'bash -s'
