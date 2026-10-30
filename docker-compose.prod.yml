@@ -1,0 +1,72 @@
+# Production stack for the Linode VM (1 GB RAM + swap).
+# Deployed by .github/workflows/deploy.yml - all ${VARS} are injected at deploy time
+# from GitHub Secrets; nothing secret is stored in this file or on the server's disk.
+#
+# mem_limit   = max RAM a container may use
+# memswap_limit = max RAM + swap combined (the part above mem_limit is served from swap)
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    # One-line reverse proxy; Caddy obtains/renews the Let's Encrypt certificate automatically
+    command: ["caddy", "reverse-proxy", "--from", "${DOMAIN}", "--to", "frontend:80"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+    mem_limit: 64m
+    memswap_limit: 256m
+
+  frontend:
+    image: ${IMAGE_PREFIX}/formgen-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8005
+    depends_on:
+      - backend
+    mem_limit: 64m
+    memswap_limit: 256m
+
+  backend:
+    image: ${IMAGE_PREFIX}/formgen-backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://app:${MONGO_PASSWORD}@mongo:27017/adaptivebp?authSource=admin
+      UIGENERATOR_APP_JWTSECRET: ${JWT_SECRET}
+      LOGGING_LEVEL_ROOT: INFO
+      # Fixed small heap so it fits in RAM; anything extra can spill into swap
+      JAVA_TOOL_OPTIONS: "-XX:+UseSerialGC -Xmx300m -Xss512k"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    mem_limit: 450m
+    memswap_limit: 1800m
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    command: ["--wiredTigerCacheSizeGB", "0.25"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: app
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    mem_limit: 350m
+    memswap_limit: 1500m
+
+volumes:
+  mongo-data:
+  caddy-data:
+  caddy-config:
+

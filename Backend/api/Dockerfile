@@ -4,12 +4,13 @@
 FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /build
 
-# Resolve dependencies first so this layer is cached until pom.xml changes
+# Resolve dependencies first: this layer is cached (locally and in GitHub Actions)
+# until pom.xml changes
 COPY pom.xml .
-RUN --mount=type=cache,target=/root/.m2 mvn -B -q dependency:go-offline
+RUN mvn -B -q dependency:go-offline
 
 COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 mvn -B -q package -DskipTests \
+RUN mvn -B -q package -DskipTests \
     && cp target/api-*.jar /build/app.jar
 
 # ---------- Stage 2: runtime ----------
