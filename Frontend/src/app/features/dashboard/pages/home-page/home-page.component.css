@@ -1,7 +1,7 @@
 /* ── Home Page — Apple-inspired layout ─────────────────────────────────────── */
 :host {
   display: block;
-  min-height: 100vh;
+  min-height: calc(100vh - var(--nav-height));
   background-color: var(--bg-offwhite);
 }
 

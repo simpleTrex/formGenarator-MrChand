@@ -7,6 +7,10 @@
   --bg-offwhite: #F5F5F7;
   --bg-surface: #FBFBFD;
 
+  /* ── Layout ── */
+  --nav-height: 52px;
+  --z-nav: 900; /* must stay below modal overlays (1000+) */
+
   /* ── Theme layer (overridden per-page via Angular style binding) ── */
   --theme-primary: #1a1a2e;
   --theme-accent: #baff29;

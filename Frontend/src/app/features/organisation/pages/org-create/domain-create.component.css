@@ -1,17 +1,17 @@
 /* ── Shell — two-column layout ─────────────────────────────────────────────── */
-:host { display: block; min-height: 100vh; }
+:host { display: block; min-height: calc(100vh - var(--nav-height)); }
 
 .dc-shell {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: 100vh;
+  min-height: calc(100vh - var(--nav-height));
 }
 @media (max-width: 768px) {
   .dc-shell { grid-template-columns: 1fr; }
   .dc-left  { display: none; }
 }
 
-.fade-in { animation: fadeIn 350ms ease-out both; }
+.fade-in { animation: fadeIn 350ms ease-out backwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* ── Left panel ─────────────────────────────────────────────────────────────── */
