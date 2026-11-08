@@ -94,8 +94,6 @@ gradle-app.setting
 
 # ===== DOCKER =====
 # Docker
-**/.dockerignore
-**/Dockerfile.dockerignore
 
 # ===== IDE/EDITORS =====
 # Local env files (secrets)

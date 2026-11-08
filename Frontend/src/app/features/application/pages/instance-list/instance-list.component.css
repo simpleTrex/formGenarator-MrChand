@@ -1,9 +1,9 @@
 /* ── Shell ───────────────────────────────────────────────────────────────────── */
-:host { display: block; min-height: 100vh; background: var(--bg-surface); }
+:host { display: block; min-height: calc(100vh - var(--nav-height)); background: var(--bg-surface); }
 
-.il-shell { min-height: 100vh; display: flex; flex-direction: column; }
+.il-shell { min-height: calc(100vh - var(--nav-height)); display: flex; flex-direction: column; }
 
-.fade-in { animation: fadeIn 300ms ease-out both; }
+.fade-in { animation: fadeIn 300ms ease-out backwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* ── Nav ─────────────────────────────────────────────────────────────────────── */
@@ -15,7 +15,7 @@
   background: white;
   border-bottom: 1px solid var(--border-light);
   position: sticky;
-  top: 0;
+  top: var(--nav-height);
   z-index: 50;
 }
 
@@ -522,8 +522,8 @@
   border: 1.5px solid rgba(0,0,0,0.08);
   border-radius: 16px;
   position: sticky;
-  top: 80px;
-  max-height: calc(100vh - 110px);
+  top: calc(var(--nav-height) + 80px);
+  max-height: calc(100vh - var(--nav-height) - 110px);
   overflow-y: auto;
   animation: tgPanelIn 220ms ease-out both;
 }

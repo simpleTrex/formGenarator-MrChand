@@ -1,0 +1,41 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./Backend/api
+    restart: unless-stopped
+    environment:
+      # Defaults to the bundled mongo service; set to an Atlas URI in a root .env to use Atlas instead
+      SPRING_DATA_MONGODB_URI: ${SPRING_DATA_MONGODB_URI:-mongodb://mongo:27017/adaptivebp}
+      UIGENERATOR_APP_JWTSECRET: ${JWT_SECRET:-uigeneratorSecretKeyAdaptiveBPPlatform2024SecureToken}
+      LOGGING_LEVEL_ROOT: ${LOG_LEVEL:-INFO}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    expose:
+      - "8005"
+
+  frontend:
+    build:
+      context: ./Frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8005
+    depends_on:
+      - backend
+    ports:
+      - "${APP_PORT:-80}:80"
+
+volumes:
+  mongo-data:
+

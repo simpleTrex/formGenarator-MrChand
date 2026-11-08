@@ -2,7 +2,7 @@
 
 :host {
   display: block;
-  min-height: 100vh;
+  min-height: calc(100vh - var(--nav-height));
   font-family: 'Outfit', -apple-system, sans-serif;
   background:
     radial-gradient(1200px 420px at 10% -10%, rgba(59,130,246,0.08), transparent 60%),
@@ -11,7 +11,9 @@
 }
 
 .fade-in {
-  animation: fadeIn 220ms ease-out both;
+  /* backwards, not both: a transform left filled on the shell would trap the
+     position:fixed step editor inside it, beneath the global nav. */
+  animation: fadeIn 220ms ease-out backwards;
 }
 
 @keyframes fadeIn {
