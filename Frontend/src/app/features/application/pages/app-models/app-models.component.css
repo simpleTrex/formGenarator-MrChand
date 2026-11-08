@@ -2,7 +2,7 @@
 
 :host {
   display: block;
-  min-height: 100vh;
+  min-height: calc(100vh - var(--nav-height));
   background-color: var(--bg-offwhite);
 }
 
@@ -324,7 +324,7 @@
 
 /* Subtle fade-in */
 .fade-in {
-  animation: fadeIn 300ms ease-out both;
+  animation: fadeIn 300ms ease-out backwards;
 }
 
 @keyframes fadeIn {

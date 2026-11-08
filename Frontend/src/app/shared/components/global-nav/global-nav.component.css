@@ -2,9 +2,9 @@
 .gn {
   position: sticky;
   top: 0;
-  z-index: 9999;
+  z-index: var(--z-nav);
   width: 100%;
-  height: 52px;
+  height: var(--nav-height);
   background: rgba(251, 251, 253, 0.72);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -26,11 +26,13 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 /* ── Brand & Logo ── */
 .gn-logo-link {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   color: var(--text-heading);
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -71,6 +73,9 @@
   text-decoration: none;
   transition: color 0.2s ease;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40vw;
 }
 
 .gn-breadcrumb:hover {

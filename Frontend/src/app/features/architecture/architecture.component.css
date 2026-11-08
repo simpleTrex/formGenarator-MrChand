@@ -1,11 +1,11 @@
 /* ── Shell ───────────────────────────────────────────────────────────────────── */
-:host { display: block; background: #f8fafc; min-height: 100vh; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+:host { display: block; background: #f8fafc; min-height: calc(100vh - var(--nav-height)); font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
 
 /* ── Header ──────────────────────────────────────────────────────────────────── */
 .arc-header {
   background: #0f172a;
   border-bottom: 1px solid rgba(255,255,255,0.06);
-  position: sticky; top: 0; z-index: 100;
+  position: sticky; top: var(--nav-height); z-index: 100;
 }
 .arc-header-inner {
   max-width: 1200px; margin: 0 auto;
@@ -30,7 +30,7 @@
   display: grid;
   grid-template-columns: 200px 1fr;
   gap: 0;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - var(--nav-height) - 60px);
 }
 @media (max-width: 768px) {
   .arc-layout { grid-template-columns: 1fr; }
@@ -41,9 +41,9 @@
 .arc-sidebar {
   border-right: 1px solid rgba(0,0,0,0.06);
   padding: 2rem 0;
-  position: sticky; top: 60px;
+  position: sticky; top: calc(var(--nav-height) + 60px);
   align-self: start;
-  max-height: calc(100vh - 60px);
+  max-height: calc(100vh - var(--nav-height) - 60px);
   overflow-y: auto;
 }
 .arc-toc-label {

@@ -1,11 +1,11 @@
 :host {
   display: block;
-  min-height: 100vh;
+  min-height: calc(100vh - var(--nav-height));
   background: var(--bg-surface);
 }
 
 .fade-in {
-  animation: fadeIn 220ms ease-out both;
+  animation: fadeIn 220ms ease-out backwards;
 }
 
 @keyframes fadeIn {
